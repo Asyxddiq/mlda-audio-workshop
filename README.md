@@ -124,16 +124,16 @@ gantt
     title MVP build, then slides
     dateFormat YYYY-MM-DD
     axisFormat %d %b
-    section Weekend 1: build pieces
+    section Weekend 1 - build pieces
     Placeholder + LSTM + hourglass (Asy)      :done,   a1, 2026-09-25, 3d
-    Audio to transcript working (Pasan, Rahini) :active, t1, 2026-09-26, 2d
+    Audio to transcript (Pasan + Rahini)     :active, t1, 2026-09-26, 2d
     Minutes pipeline sketched (Nomt)          :        n1, 2026-09-26, 2d
-    Sync: agree transcript format             :milestone, m1, 2026-09-27, 0d
-    section Weekend 2: connect
+    Sync on transcript format                 :milestone, m1, 2026-09-27, 0d
+    section Weekend 2 - connect
     Real transcript into the LSTM             :        c1, 2026-10-03, 2d
     Decide 80/20 and Part A/B split           :        c2, 2026-10-03, 2d
     Full chain runs once                      :milestone, m2, 2026-10-04, 0d
-    section Weekend 3: freeze
+    section Weekend 3 - freeze
     Participant starter code + debug notes    :        f1, 2026-10-10, 2d
     MVP frozen                                :milestone, m3, 2026-10-11, 0d
     section After
