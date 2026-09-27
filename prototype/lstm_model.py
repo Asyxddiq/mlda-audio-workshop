@@ -273,7 +273,45 @@ def pad_to_multiple_of_4(x_seq: np.ndarray) -> np.ndarray:
 
 
 # ---------------------------------------------------------------------------
-# 5. Run it
+# 5. Importable hand-off for meeting_minutes.py (Nomt)
+# ---------------------------------------------------------------------------
+
+def run_pipeline() -> tuple[list[tuple[str, str]], np.ndarray, list[int]]:
+    """Run the pipeline once and return the hand-off contract from progress.md:
+    turns, the (num_tokens, 8) hourglass output, and turn_end_indices.
+
+    Mirrors the __main__ block below as an importable function instead of a
+    script, so meeting_minutes.py can call this instead of re-running main.
+    """
+    transcript = get_transcript()
+    turns = [
+        (line.split(":", 1)[0].strip(), line.split(":", 1)[1].strip())
+        for line in transcript.strip().splitlines()
+        if ":" in line
+    ]
+
+    EMBEDDING_DIM = 16
+    BASE_UNITS = 8
+
+    all_tokens, turn_end_indices = tokenize_transcript(turns)
+    vocab = build_vocab(all_tokens)
+
+    rng = np.random.default_rng(42)
+    embeddings = rng.uniform(-0.5, 0.5, (len(vocab), EMBEDDING_DIM))
+
+    x_seq = embed_tokens(all_tokens, vocab, embeddings)
+    real_length = len(x_seq)
+    x_padded = pad_to_multiple_of_4(x_seq)
+
+    model = HourglassLSTM(input_size=EMBEDDING_DIM, base_units=BASE_UNITS)
+    output, _layers = model.forward(x_padded)
+    output = output[:real_length]
+
+    return turns, output, turn_end_indices
+
+
+# ---------------------------------------------------------------------------
+# 6. Run it
 # ---------------------------------------------------------------------------
 
 if __name__ == "__main__":
