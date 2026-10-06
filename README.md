@@ -4,12 +4,14 @@ Backend prototype for the MLDA Academics workshop **Deep Learning in Audio Appli
 
 The pipeline is audio → transcript → LSTM → meeting minutes. It is written as small, readable NumPy code so that beginner-to-intermediate participants can follow every step and run it on free Google Colab.
 
-| Component | Owner | Status (26 Sep 2026) |
+| Component | Owner | Status (7 Oct 2026) |
 |---|---|---|
-| Placeholder transcript | Asy | Working |
+| Real audio → transcript (Whisper, pause-based speakers) | Pasan, Rahini | Working; real-audio run still to test |
+| RNN + CTC teaching demo | Pasan, Rahini | Working |
 | 5-layer hourglass LSTM (forward pass, untrained) | Asy | Working |
-| Real audio → transcript (RNN) | Pasan, Rahini | In progress, separate track |
-| Meeting minutes from LSTM output | Nomt | Not started, next |
+| Meeting minutes (keyword labels for now) | Nomt | Working |
+| Trained turn classifier | Asy, Nomt | Scaffold; training data next |
+| Whole chain in one command (`pipeline.py`) | All | Working on the sample meeting |
 
 **Contents:** [Quick start](#quick-start) · [High-level alignment](#high-level-alignment) · [Architecture](#architecture) · [Key commands](#key-commands) · [Limitations](#simplifications-and-known-limitations) · [References](#references)
 
@@ -46,6 +48,13 @@ Hourglass shape (compare with the paper's Table 1):
 
 The only dependency is `numpy`. No GPU is needed; the full run takes well under a second.
 
+To run the whole chain (transcript → LSTM → minutes) in one go:
+
+```bash
+python prototype/pipeline.py                # sample meeting, no audio needed
+python prototype/pipeline.py meeting.wav    # real audio: pip install openai-whisper, plus ffmpeg
+```
+
 ---
 
 ## High-level alignment
@@ -60,9 +69,9 @@ flowchart LR
     C -.-> T1["Transcriber track<br/>Pasan + Rahini"]
     D -.-> T2["LSTM track<br/>Asy + Nomt"]
     E -.-> T3["Meeting minutes<br/>Nomt"]
-    T1 --> P1["prototype/transcript_placeholder.py<br/>(stand-in for now)"]
+    T1 --> P1["prototype/transcriber.py<br/>(Whisper; placeholder if no audio)"]
     T2 --> P2["prototype/lstm_model.py"]
-    T3 --> P3["prototype/meeting_minutes.py<br/>(to be written)"]
+    T3 --> P3["prototype/meeting_minutes.py"]
 ```
 
 ### Team tracks
@@ -158,13 +167,17 @@ gantt
 mlda-audio-workshop/
 ├── README.md                          you are here
 ├── progress.md                        Asy's LSTM-track progress tracker
+├── labelling_guide.md                 rules for labelling training turns
 ├── requirements.txt                   numpy
 └── prototype/
-    ├── transcript_placeholder.py      stand-in for the transcriber (Track 1)
-    └── lstm_model.py                  tokenize, embed, 5-layer hourglass LSTM (Track 2)
+    ├── pipeline.py                    whole chain in one command (start here)
+    ├── transcriber.py                 audio → transcript with Whisper (Track 1)
+    ├── transcript_placeholder.py      sample meeting, used when no audio is given
+    ├── rnn_ctc_demo.py                RNN + CTC teaching demo (Part 5)
+    ├── lstm_model.py                  tokenize, embed, 5-layer hourglass LSTM (Track 2)
+    ├── meeting_minutes.py             label turns, write Markdown minutes (Track 3)
+    └── train_classifier.py            PyTorch training scaffold for the turn classifier
 ```
-
-`prototype/meeting_minutes.py` does not exist yet. Nomt owns it.
 
 ### End-to-end data flow
 
@@ -353,7 +366,7 @@ stateDiagram-v2
     L --> M: contract 2
 ```
 
-Current state: **Placeholder**, **Untrained**, **NotStarted**.
+Current state: transcript **RealTranscriber** (Whisper, falling back to the placeholder when no audio is given), LSTM **Untrained**, minutes **Built** on keyword labels.
 
 ---
 
@@ -364,7 +377,11 @@ Current state: **Placeholder**, **Untrained**, **NotStarted**.
 | What | Command |
 |---|---|
 | Install the one dependency | `pip install -r requirements.txt` |
-| Run the whole prototype | `python prototype/lstm_model.py` |
+| Run the whole chain | `python prototype/pipeline.py` |
+| Run it on real audio | `python prototype/pipeline.py meeting.wav` (needs `pip install openai-whisper` and ffmpeg) |
+| Run the LSTM stage only | `python prototype/lstm_model.py` |
+| Train the turn classifier | `python prototype/train_classifier.py` (needs `pip install torch`) |
+| RNN + CTC teaching demo | `python prototype/rnn_ctc_demo.py` |
 | Print the placeholder transcript only | `python prototype/transcript_placeholder.py` |
 | Check numpy is available | `python -c "import numpy; print(numpy.__version__)"` |
 

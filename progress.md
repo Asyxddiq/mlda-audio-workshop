@@ -5,8 +5,8 @@
 | **Owner** | Asy |
 | **Track** | 2: LSTM (with Nomt, who owns meeting minutes) |
 | **Code** | `prototype/transcript_placeholder.py`, `prototype/lstm_model.py` |
-| **Last updated** | 27 Sep 2026 |
-| **Current phase** | Weekend 1 → 2: pieces built, training scaffolded |
+| **Last updated** | 7 Oct 2026 |
+| **Current phase** | Weekend 2: full chain connected; training data next |
 
 Update this file whenever something is finished, decided or blocked. Tick the box, add a line to the [log](#log), and move the node in the [roadmap](#roadmap).
 
@@ -107,7 +107,7 @@ gantt
 - [ ] Write the one-page labelling guide with Asy; lock the action-item rule (request / acceptance / both)
 - [ ] Choose or create training data: ~100 turns across meeting types, 50/50 (Nomt: CCA + club; Asy: group project + lab stand-up)
 - [ ] Train on the full set in PyTorch/Colab; keep NumPy for the teaching forward pass; port weights back for parity
-- [ ] Swap the placeholder for Track 1's real transcriber and run the full chain once
+- [ ] Swap the placeholder for Track 1's real transcriber and run the full chain once: wired up 7 Oct (`pipeline.py`) and runs on the sample; still needs one run on real audio
 
 ### Weekend 3: freeze
 
@@ -142,6 +142,12 @@ gantt
 - Scaffolded `train_classifier.py`: mirrors the 4-gate cell in PyTorch (not `nn.LSTM`), trainable embeddings with a fixed vocab + `<unk>`, float64 for weight-port parity. Runs on one hand-labelled meeting to prove the loop and time an epoch. Colab-only (PyTorch isn't installable in the build sandbox).
 - Two calls still **proposed, pending Asy**: the action-item labelling rule (request / acceptance / both — we lean toward *both, merged in rendering*), and a curated cross-turn *probe set* for the held-out comparison. Detail lives in the new labelling guide.
 - Note: the scaffold's `GOLD_LABELS` and `meeting_minutes.py`'s stub still use request-only labelling; both need updating together once the action-item rule is locked.
+
+### Wed 7 Oct 2026
+
+- Pasan pushed `transcriber.py` (Whisper, with pause-based speaker labels and a placeholder fallback) and `rnn_ctc_demo.py` (NumPy RNN + CTC teaching demo).
+- Connected the three stages. `run_pipeline()` now takes an audio path or a ready transcript and reads from `transcriber.py`. `meeting_minutes.py` gained `label_turns_keywords()`, which labels any transcript and is now the default; on the sample meeting it gives exactly the stub's labels. New `pipeline.py` runs transcriber → LSTM → minutes in one command.
+- Known gaps: the pause rule merges quick replies ("Sure.", "Agreed.") into the previous speaker's turn, which hides the cross-turn cases the labelling guide relies on. The Whisper path still needs one run on real audio.
 
 <!-- Add new entries above this line, newest date last. -->
 
@@ -203,7 +209,7 @@ sequenceDiagram
 | `turns` | list of `(speaker, text)` | Ready |
 | `output` | NumPy array `(num_tokens, 8)` | Ready (untrained values) |
 | `turn_end_indices` | list of int, one per turn | Ready |
-| A function Nomt can import instead of running `main` | `run_pipeline() -> (turns, output, turn_end_indices)` | Ready (added 27 Sep) |
+| A function Nomt can import instead of running `main` | `run_pipeline(audio_path=None, transcript=None) -> (turns, output, turn_end_indices)` | Ready (audio and transcript input added 7 Oct) |
 
 ---
 
