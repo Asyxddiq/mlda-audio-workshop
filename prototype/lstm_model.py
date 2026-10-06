@@ -61,7 +61,7 @@ ordinary maths. Runs as-is on Google Colab (numpy is preinstalled).
 
 import numpy as np
 
-from transcript_placeholder import get_transcript
+from transcriber import get_transcript  # Track 1; falls back to the placeholder when no audio is given
 
 
 # ---------------------------------------------------------------------------
@@ -276,19 +276,32 @@ def pad_to_multiple_of_4(x_seq: np.ndarray) -> np.ndarray:
 # 5. Importable hand-off for meeting_minutes.py (Nomt)
 # ---------------------------------------------------------------------------
 
-def run_pipeline() -> tuple[list[tuple[str, str]], np.ndarray, list[int]]:
+def run_pipeline(audio_path: str | None = None,
+                 transcript: str | None = None,
+                 ) -> tuple[list[tuple[str, str]], np.ndarray, list[int]]:
     """Run the pipeline once and return the hand-off contract from progress.md:
     turns, the (num_tokens, 8) hourglass output, and turn_end_indices.
 
     Mirrors the __main__ block below as an importable function instead of a
     script, so meeting_minutes.py can call this instead of re-running main.
+
+    Input, in order of preference:
+      - transcript: an already-made "Speaker: text" transcript (skips Track 1)
+      - audio_path: an audio file, transcribed by transcriber.py (Whisper)
+      - neither:    the placeholder transcript (transcriber.py falls back to it)
     """
-    transcript = get_transcript()
+    if transcript is None:
+        transcript = get_transcript(audio_path)
     turns = [
         (line.split(":", 1)[0].strip(), line.split(":", 1)[1].strip())
         for line in transcript.strip().splitlines()
-        if ":" in line
+        if ":" in line and line.split(":", 1)[1].strip()
     ]
+    if not turns:
+        raise ValueError(
+            "No speaker turns found in the transcript (expected lines like "
+            "'Speaker1: text'). Was the audio silent or too short?"
+        )
 
     EMBEDDING_DIM = 16
     BASE_UNITS = 8
