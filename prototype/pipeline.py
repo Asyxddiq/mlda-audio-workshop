@@ -9,15 +9,20 @@ One stage per owner, in order:
                      -> one "Speaker: text" line per turn
   2. Asy             lstm_model.run_pipeline(transcript=...)
                      -> turns, hourglass output (tokens x 8), turn_end_indices
-  3. Nomt            meeting_minutes.label_turns_keywords(turns)
+  3. Nomt            meeting_minutes.label_turns_model(...)  (trained LSTM)
+                     or label_turns_keywords(turns)          (no weights yet)
                      -> one label per turn; generate_minutes() -> Markdown
+
+Trained weights come from `python prototype/train_lstm.py`, which writes
+prototype/trained_lstm.npz. Without that file the pipeline still runs,
+with keyword rules for stage 3.
 
 What this does NOT claim
 ------------------------
-- Stage 3 labels turns with keyword rules, not with the LSTM output: the
-  LSTM is still untrained, so its numbers are passed along and reported
-  but not used yet. When the trained classifier exists, it replaces
-  label_turns_keywords() here and nothing else changes.
+- The trained model learned from 211 hand-written turns plus generated
+  practice meetings (see train_lstm.py for its scores). It catches
+  replies like "Sure." that keyword rules can't, but it still misses
+  some decisions, e.g. reported confirmations like "Venue is confirmed".
 - Speakers come from transcriber.py's pause rule (a gap of 0.8 s or more
   means the next person). Quick replies like "Sure." can be merged into
   the previous speaker's turn, and more than two speakers are not told
@@ -34,7 +39,7 @@ import os
 import sys
 
 from lstm_model import run_pipeline
-from meeting_minutes import generate_minutes, label_turns_keywords
+from meeting_minutes import generate_minutes, label_turns_keywords, label_turns_model
 from transcriber import get_transcript
 
 
@@ -46,8 +51,12 @@ def run(audio_path: str | None = None, verbose: bool = True) -> str:
     # 2. Hourglass LSTM (Asy)
     turns, output, turn_end_indices = run_pipeline(transcript=transcript)
 
-    # 3. Labels + minutes (Nomt)
-    labels = label_turns_keywords(turns)
+    # 3. Labels + minutes (Nomt): trained model, or keyword rules if untrained
+    labels = label_turns_model(turns, output, turn_end_indices)
+    labeller = "trained hourglass LSTM"
+    if labels is None:
+        labels = label_turns_keywords(turns)
+        labeller = "keyword rules; run train_lstm.py to use the trained model"
     minutes = generate_minutes(turns, labels)
 
     if verbose:
@@ -58,10 +67,10 @@ def run(audio_path: str | None = None, verbose: bool = True) -> str:
         for line in transcript.strip().splitlines():
             print(f"      {line}")
         print(f"\n2/3 LSTM        {len(turns)} turns, {output.shape[0]} tokens "
-              f"-> output {output.shape[0]} x {output.shape[1]} (untrained, not used for labels yet)")
+              f"-> output {output.shape[0]} x {output.shape[1]}")
         print(f"\n3/3 Labels      {counts['discussion']} discussion, "
               f"{counts['decision']} decision, {counts['action_item']} action item "
-              f"(keyword rules)\n")
+              f"({labeller})\n")
         print(minutes)
 
     return minutes
