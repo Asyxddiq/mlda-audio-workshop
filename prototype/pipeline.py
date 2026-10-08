@@ -3,6 +3,8 @@ The whole pipeline in one command: audio -> transcript -> LSTM -> minutes.
 
     python prototype/pipeline.py                # sample meeting, no audio needed
     python prototype/pipeline.py meeting.wav    # real audio (see "Real audio" below)
+    python prototype/pipeline.py --compare      # also show keyword-rule vs trained-LSTM label per turn
+    python prototype/pipeline.py --compare meeting.wav
 
 One stage per owner, in order:
   1. Pasan + Rahini  transcriber.get_transcript(audio_path)
@@ -32,7 +34,8 @@ Real audio
 ----------
 Needs Whisper and ffmpeg on top of requirements.txt:
     pip install openai-whisper
-    (ffmpeg: preinstalled on Colab; on Windows, `conda install -c conda-forge ffmpeg`)
+    (ffmpeg: preinstalled on Colab; on Windows, `winget install --id Gyan.FFmpeg -e`
+     or `conda install -c conda-forge ffmpeg`)
 """
 
 import os
@@ -43,7 +46,24 @@ from meeting_minutes import generate_minutes, label_turns_keywords, label_turns_
 from transcriber import get_transcript
 
 
-def run(audio_path: str | None = None, verbose: bool = True) -> str:
+def print_comparison(turns: list[tuple[str, str]], keyword_labels: list[dict],
+                     trained_labels: list[dict] | None) -> None:
+    """One row per turn: keyword-rule label vs trained-LSTM label, * where they differ."""
+    if trained_labels is None:
+        print("Compare         no trained weights (run train_lstm.py), so nothing to compare\n")
+        return
+    print("Compare         keyword rules vs trained LSTM (* = they differ)")
+    print(f"      {'#':>2}  {'speaker':<9} {'text':<60}  {'keywords':<12} {'trained LSTM':<12}")
+    differ = 0
+    for n, ((speaker, text), kw, lstm) in enumerate(zip(turns, keyword_labels, trained_labels), 1):
+        shown = text if len(text) <= 60 else text[:57] + "..."
+        mark = "*" if kw["category"] != lstm["category"] else ""
+        differ += bool(mark)
+        print(f"      {n:>2}  {speaker:<9} {shown:<60}  {kw['category']:<12} {lstm['category']:<12} {mark}")
+    print(f"      {differ} of {len(turns)} turns differ\n")
+
+
+def run(audio_path: str | None = None, verbose: bool = True, compare: bool = False) -> str:
     """Run all three stages and return the minutes as Markdown."""
     # 1. Transcriber (Pasan + Rahini)
     transcript = get_transcript(audio_path)
@@ -53,6 +73,7 @@ def run(audio_path: str | None = None, verbose: bool = True) -> str:
 
     # 3. Labels + minutes (Nomt): trained model, or keyword rules if untrained
     labels = label_turns_model(turns, output, turn_end_indices)
+    trained_labels = labels
     labeller = "trained hourglass LSTM"
     if labels is None:
         labels = label_turns_keywords(turns)
@@ -71,17 +92,22 @@ def run(audio_path: str | None = None, verbose: bool = True) -> str:
         print(f"\n3/3 Labels      {counts['discussion']} discussion, "
               f"{counts['decision']} decision, {counts['action_item']} action item "
               f"({labeller})\n")
+        if compare:
+            print_comparison(turns, label_turns_keywords(turns), trained_labels)
         print(minutes)
 
     return minutes
 
 
 if __name__ == "__main__":
-    audio = sys.argv[1] if len(sys.argv) > 1 else None
+    args = sys.argv[1:]
+    compare = "--compare" in args
+    paths = [a for a in args if a != "--compare"]
+    audio = paths[0] if paths else None
     if audio and not os.path.isfile(audio):
         sys.exit(f"No audio file at {audio}")
     try:
-        run(audio)
+        run(audio, compare=compare)
     except ModuleNotFoundError as error:
         if error.name == "whisper":
             sys.exit("Whisper isn't installed. Run: pip install openai-whisper")
@@ -89,7 +115,7 @@ if __name__ == "__main__":
     except FileNotFoundError as error:
         # Whisper calls the ffmpeg program to read audio.
         sys.exit(f"Couldn't start ffmpeg ({error}). Install it: "
-                 "conda install -c conda-forge ffmpeg")
+                 "winget install --id Gyan.FFmpeg -e  (or: conda install -c conda-forge ffmpeg)")
     except RuntimeError as error:
         if "Failed to load audio" in str(error):
             sys.exit(f"ffmpeg couldn't read {audio}. Try a .wav or .mp3 file.")
