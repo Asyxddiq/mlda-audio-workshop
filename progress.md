@@ -32,7 +32,7 @@ pie showData
 | Training data | Done (draft) | 11 hand-labelled meetings (211 turns) + 60 generated practice meetings; Nomt checked his half 8 Oct (no label changes) |
 | Training | Done | `train_lstm.py` (NumPy). Test accuracy 0.84 vs keyword rules 0.69; probes 9/12 vs 3/12 |
 | Hand-off to Nomt | Done | `run_pipeline()` loads the trained weights; `label_turns_model()` in `meeting_minutes.py` |
-| Real transcriber swap | In progress | Wired up in `pipeline.py`; still needs one run on real audio |
+| Real transcriber swap | In progress | Wired up in `pipeline.py`; tested on synthetic speech 8 Oct; human recording still to do |
 
 ---
 
@@ -109,7 +109,7 @@ gantt
 - [x] Training data: 11 hand-labelled meetings across group project, lab stand-up, CCA committee, club event, hackathon (211 turns), plus 12 probes and a practice-meeting generator (7 Oct, first draft)
 - [x] Train the hourglass + classifier head on it: `train_lstm.py`, NumPy, weights load straight into `lstm_model.py`, no port needed (7 Oct)
 - [ ] Blind check: Asy and Nomt each label 10 of the other's turns; tighten the guide where they disagree, then rerun `train_lstm.py` (sheets prepared 8 Oct; Nomt's 10: 10/10 agree; Asy's 10 pending)
-- [ ] Swap the placeholder for Track 1's real transcriber and run the full chain once: wired up 7 Oct (`pipeline.py`) and runs on the sample; still needs one run on real audio
+- [ ] Swap the placeholder for Track 1's real transcriber and run the full chain once: wired up 7 Oct (`pipeline.py`) and runs on the sample; ran on synthetic text-to-speech audio 8 Oct (see log); a human recording still to do
 
 ### Weekend 3: freeze
 
@@ -162,6 +162,8 @@ gantt
 - Fixed a minutes bug found during the check: `_decision_text()` could pin an agreement on a proposal the group had rejected (an echoed objection like "Same, people really like the medals." was shown as agreeing to "Just give certificates to those runners"). It now stops looking back at an objection or new point. Checked old vs new minutes on all 11 hand-labelled meetings and 60 generated ones: no differences, and the targeted case is fixed. All scripts in `prototype/` still run, and the sample meeting's minutes in `pipeline.py` are unchanged.
 - Blind-check sheets prepared outside the repo (10 of Asy's turns for Nomt, 10 of Nomt's for Asy, keys kept separate); still to be labelled.
 - Nomt blind-labelled 10 of Asy's turns: 10/10 agree with the labels, so no label changes and no retrain. One turn (a conditional offer, "I can redo the template tonight if nobody minds.") wasn't covered by the guide; the rule is now written in. Asy's 10 still to do.
+- First audio run, on **synthetic speech** (Windows text-to-speech, two voices; files kept outside the repo): installed `openai-whisper` and ffmpeg and ran `pipeline.py` on three recordings. The sample meeting came back as 8 turns instead of 9, with one word wrong ("Veneu"): Whisper gave "Can you follow up with catering by Friday?" and "Yes, I'll email them today." back-to-back segments, so the pause rule merged the reply into the request, every later speaker label flipped, and the action item's owner came out as Speaker1. Both quick-reply files (request → "Sure.", proposal → "Sounds good.", update → "Okay.") came out as one single turn, including the control with longer gaps, because Whisper's segment timestamps run end to start even where the audio has 1.3–2.1 s of silence, so the 0.8 s rule never fires (the "quick" 0.4 s gap also came out near 1.3 s, as switching voice adds its own pause). With the turns separated correctly (text path) the trained model labels the three replies right (`action_item`, `decision`, `discussion`); keyword rules get one of three.
+- New `pipeline.py --compare` view: keyword-rule label and trained-LSTM label side by side for every turn, with a `*` where they differ. On the sample meeting 3 of 9 turns differ: the two decisions ("Venue is confirmed...", "Noted, let's add that...") are `decision` for keywords but `discussion` for the LSTM, and "Yes, I'll email them today." is `discussion` for keywords but `action_item` for the LSTM.
 
 <!-- Add new entries above this line, newest date last. -->
 
@@ -238,6 +240,7 @@ sequenceDiagram
 ## Next up
 
 1. **Asy:** blind-label `blind_check_for_asy.md` (10 of Nomt's turns, kept outside the repo), compare with the key, tighten the guide where you disagree; rerun `python prototype/train_lstm.py` only if a label changes. (Nomt's 10: done 8 Oct, 10/10 agree.)
-2. Run `python prototype/pipeline.py meeting.wav` once on a real recording (needs `pip install openai-whisper` and ffmpeg).
-3. Add more `decision` examples, especially decisions reported as facts, ideally from real meetings; retrain and compare against today's numbers.
-4. Decide the participants' 20% (candidates: the classifier head's forward pass, one LSTM backward step, or label 5 turns and retrain).
+2. Run `python prototype/pipeline.py meeting.wav` on a **human** recording (the 8 Oct test used synthetic speech).
+3. **Pasan:** on audio, a reply right after a request ("Sure.") is merged into the previous turn and the later speaker labels flip, because Whisper's segment timestamps don't follow the silences, so the 0.8 s pause rule doesn't fire. This hides exactly the cases the LSTM wins on; see the 8 Oct log.
+4. Add more `decision` examples, especially decisions reported as facts, ideally from real meetings; retrain and compare against today's numbers.
+5. Decide the participants' 20% (candidates: the classifier head's forward pass, one LSTM backward step, or label 5 turns and retrain).
