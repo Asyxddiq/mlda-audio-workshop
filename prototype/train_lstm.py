@@ -54,7 +54,7 @@ Training choices, and why
 
 What this does NOT claim
 ------------------------
-211 hand-written turns is tiny. The model learns which words (and which
+230 hand-written turns is tiny. The model learns which words (and which
 previous turns) go with which label in THESE meetings; it will make
 mistakes on phrasing it hasn't seen. The scores below are on 3 test
 meetings (45 turns) and 12 probes, so one turn either way moves them a

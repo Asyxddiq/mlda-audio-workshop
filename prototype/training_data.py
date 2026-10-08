@@ -33,7 +33,7 @@ can.
 
 Splits (always by whole meeting, never by turn)
 -----------------------------------------------
-train  7 meetings: the model learns from these
+train  8 meetings: the model learns from these
 dev    1 meeting:  picks the best epoch (early stopping)
 test   3 meetings: scored once at the end; includes the 9-turn sample
                    meeting the pipeline demos, so the demo shows held-out
@@ -306,6 +306,30 @@ dis  Kai: I won't be able to come on the second day, by the way.
 dis  Hui: That's fine, we have enough helpers. Alright, thanks everyone.
 """
 
+# Added 8 Oct (training only): settled plans reported as facts (dec) next to
+# finished tasks and still-pending items (dis), following the 8 Oct guide.
+ORIENTATION_1 = """
+dis  Lina: Okay, let's begin. Orientation week is in nine days.
+dec  Tom: The sports hall booking came through yesterday, so day one is sorted.
+dis  Aisha: Nice. What about the welcome packs?
+dis  Jun: I finished packing two hundred of them last night.
+dis  Lina: Great, thanks Jun.
+dec  Tom: The dean also approved the extra budget for snacks.
+dis  Aisha: How much did we get?
+dis  Tom: Three hundred dollars.
+dis  Jun: We still haven't heard back about the second hall.
+act  Lina: Tom, could you chase the facilities office tomorrow?
+act  Tom: Okay.
+dis  Aisha: I printed the campus maps this morning, they're in the club room.
+dec  Lina: Noted, we'll hand them out at registration.
+dis  Jun: The bus company replied but their quote is too high.
+dis  Aisha: Should we just walk the groups over instead?
+dec  Tom: Yeah, let's do that.
+dec  Lina: Okay, walking it is. The safety briefing is fixed for nine on the first morning.
+dis  Jun: That's all from me.
+dis  Lina: Thanks everyone, see you on Monday.
+"""
+
 # The 9-turn sample meeting from transcript_placeholder.py, relabelled with
 # the locked rule (turn 6 "Yes, I'll email them today." is now act).
 SAMPLE_MEETING = """
@@ -328,6 +352,7 @@ MEETINGS = [
     {"name": "cca_committee_1", "split": "train", "turns": _parse(CCA_COMMITTEE_1)},
     {"name": "cca_committee_2", "split": "train", "turns": _parse(CCA_COMMITTEE_2)},
     {"name": "club_event_1",    "split": "train", "turns": _parse(CLUB_EVENT_1)},
+    {"name": "orientation_1",   "split": "train", "turns": _parse(ORIENTATION_1)},
     {"name": "club_event_2",    "split": "dev",   "turns": _parse(CLUB_EVENT_2)},
     {"name": "group_project_3", "split": "test",  "turns": _parse(GROUP_PROJECT_3)},
     {"name": "hackathon_1",     "split": "test",  "turns": _parse(HACKATHON_1)},
@@ -432,6 +457,34 @@ OBJECTIONS = ["Hmm, I'm not sure about that.", "I'd rather not, it's a bit late 
 DECLINES = ["Sorry, I can't this week.", "I'm a bit swamped, maybe someone else?",
             "Not sure I can, I'm away on Friday."]
 
+# Added 8 Oct: the model's weak spot was decisions reported as facts. These
+# templates show settled plans (decision) next to finished tasks and
+# still-pending items (discussion), so the model learns the difference
+# rather than "past tense = decision".
+SETTLED = ["{thing} is confirmed for {when}.", "{thing} is booked for {when}.",
+           "{thing} got approved this morning.",
+           "{org} approved {thing_l}.", "{org} confirmed {thing_l} for {when}.",
+           "Good news, {thing_l} is locked in for {when}.", "{thing} was signed off yesterday.",
+           "{thing} is finalised now, {pending}.", "{org} said yes to {thing_l}."]
+THINGS = ["The hall booking", "Our budget", "The second session", "The room change", "The guest list",
+          "The menu", "The poster design", "The sponsorship", "The extra tables", "The prize money",
+          "The trip date", "The bus booking"]
+ORGS = ["The student union", "The dean's office", "The library", "The sports centre", "The AV team",
+        "The caterer", "Facilities"]
+WHENS = ["Saturday", "the 21st", "next Tuesday", "week twelve", "the afternoon slot", "the 3rd"]
+PENDINGS = ["but we're waiting on the speakers", "though the menu is open",
+            "but the poster needs another pass"]
+STATUS_DONE = ["I sent the invoice to the treasurer yesterday.", "We printed the name cards this morning.",
+               "I've uploaded the photos to the drive.", "We bought the extension cables last week.",
+               "I finished the slides for the talk.", "The posters went up on Monday.",
+               "I emailed the caterer to confirm the numbers.", "I submitted the claim form on Tuesday.",
+               "We moved the chairs back after the session.", "I replied to the dean's office already."]
+NOT_YET = ["The dean hasn't approved it yet.", "We're still waiting for the booking to come through.",
+           "Nothing is confirmed yet for the trip.", "The sponsor still hasn't signed anything.",
+           "The room might change, it isn't fixed yet."]
+NOTED = ["Noted, we'll bring it up again next week.", "Noted, we'll park that for now.",
+         "Okay, noted, we'll raise it with the dean.", "Noted, we'll keep the old format then."]
+
 QUESTIONS = [("Did anyone hear back from the sponsor?", "Not yet."),
              ("How many people are coming?", "Around {n}."),
              ("When is the report due?", "Next Friday, I think."),
@@ -455,8 +508,11 @@ def generate_meetings(n_meetings: int, seed: int = 0) -> list[dict]:
     rng = random.Random(seed)
 
     def fill(template: str, name: str) -> str:
+        thing = rng.choice(THINGS)
         return template.format(task=rng.choice(TASKS), deadline=rng.choice(DEADLINES),
-                               name=name, p=rng.choice(PROPOSALS), n=rng.choice([12, 30, 45, 80, 120]))
+                               name=name, p=rng.choice(PROPOSALS), n=rng.choice([12, 30, 45, 80, 120]),
+                               thing=thing, thing_l=thing[0].lower() + thing[1:], org=rng.choice(ORGS),
+                               when=rng.choice(WHENS), pending=rng.choice(PENDINGS))
 
     meetings = []
     for m in range(n_meetings):
@@ -475,8 +531,10 @@ def generate_meetings(n_meetings: int, seed: int = 0) -> list[dict]:
         say(chair, rng.choice(OPENERS), "discussion")
         for _ in range(rng.randint(3, 6)):
             kind = rng.choices(["request", "propose", "info", "self", "third", "final",
-                                "question", "trap", "chair", "objection", "decline"],
-                               weights=[4, 3, 4, 1.5, 1, 1, 1.5, 1.5, 1, 1, 0.7])[0]
+                                "question", "trap", "chair", "objection", "decline",
+                                "settled", "status", "notyet", "noted"],
+                               weights=[4, 3, 4, 1.5, 1, 1, 1.5, 1.5, 1, 1, 0.7,
+                                        2, 2, 1, 0.8])[0]
             asker = someone_else(turns[-1][0])
             if kind == "request":
                 target = someone_else(asker)
@@ -507,6 +565,19 @@ def generate_meetings(n_meetings: int, seed: int = 0) -> list[dict]:
                 target = someone_else(asker)
                 say(asker, fill(rng.choice(REQUESTS), target), "action_item")
                 say(target, rng.choice(DECLINES), "discussion")
+            elif kind == "settled":              # a plan or approval reported as settled
+                say(asker, fill(rng.choice(SETTLED), ""), "decision")
+                if rng.random() < 0.5:
+                    say(someone_else(asker), rng.choice(ACKS), "discussion")
+            elif kind == "status":               # a finished task: a status update
+                say(asker, rng.choice(STATUS_DONE), "discussion")
+                if rng.random() < 0.5:
+                    say(someone_else(asker), rng.choice(ACKS), "discussion")
+            elif kind == "notyet":               # not settled yet
+                say(asker, rng.choice(NOT_YET), "discussion")
+            elif kind == "noted":                # closing a point by settling what happens next
+                say(asker, fill(rng.choice(INFO), ""), "discussion")
+                say(chair, rng.choice(NOTED), "decision")
             else:  # the chair settles a proposal without asking
                 say(chair, fill(rng.choice(CHAIR_DECIDES), ""), "decision")
         say(chair, rng.choice(CLOSERS), "discussion")
@@ -551,6 +622,19 @@ if __name__ == "__main__":
     for text, grams in leaks:
         print("  LEAK:", text, "<-", [" ".join(g) for g in grams])
     assert not leaks, "probe/test sentences overlap the training data"
-    print("no probe or test sentence shares 5 words in a row with training data: OK\n")
+    print("no probe or test sentence shares 5 words in a row with training data: OK")
+
+    # Dev picks the epoch and seed (and judges retrains), so it must not
+    # overlap the training-only data either.
+    train_only = set()
+    for m in [m for m in MEETINGS if m["split"] == "train"] + generate_meetings(2000, seed=99):
+        for _s, text, _l in m["turns"]:
+            train_only |= five_grams(text)
+    dev_leaks = [t for m in MEETINGS if m["split"] == "dev" for _s, t, _l in m["turns"]
+                 if five_grams(t) & train_only]
+    for text in dev_leaks:
+        print("  DEV LEAK:", text)
+    assert not dev_leaks, "dev sentences overlap the training data"
+    print("no dev sentence shares 5 words in a row with training data: OK\n")
     for speaker, text, label in GENERATED[0]["turns"]:
         print(f"  {label:12s} {speaker}: {text}")
