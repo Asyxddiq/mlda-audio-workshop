@@ -6,7 +6,7 @@
 | **Track** | 2: LSTM (with Nomt, who owns meeting minutes) |
 | **Code** | `prototype/lstm_model.py`, `prototype/train_lstm.py`, `prototype/training_data.py`, `prototype/transcript_placeholder.py` |
 | **Last updated** | 8 Oct 2026 |
-| **Current phase** | Weekend 2: model trained, Nomt's label check done; blind cross-check and a real-audio run next |
+| **Current phase** | Weekend 2: model retrained with more decision examples, Nomt's label check done; blind cross-check and a human-audio run next |
 
 Update this file whenever something is finished, decided or blocked. Tick the box, add a line to the [log](#log), and move the node in the [roadmap](#roadmap).
 
@@ -29,8 +29,8 @@ pie showData
 | Hourglass architecture | Done | 8 / 16 / 32 / 16 / 8, adapted from Li et al. (2024) |
 | What the LSTM should learn | Done | Per-turn classifier: action_item / decision / discussion (see [decisions](#decisions)) |
 | Labelling guide + rule | Done | Rule locked 7 Oct, clarified 8 Oct; blind cross-check: Nomt 10/10, Asy pending |
-| Training data | Done (draft) | 11 hand-labelled meetings (211 turns) + 60 generated practice meetings; Nomt checked his half 8 Oct (no label changes) |
-| Training | Done | `train_lstm.py` (NumPy). Test accuracy 0.84 vs keyword rules 0.69; probes 9/12 vs 3/12 |
+| Training data | Done (draft) | 12 hand-labelled meetings (230 turns) + 60 generated practice meetings; Nomt checked his half 8 Oct (no label changes); decision-as-fact examples added 8 Oct |
+| Training | Done | `train_lstm.py` (NumPy). Retrained 8 Oct: test accuracy 0.76 vs keyword rules 0.69 (first version 0.84); probes 9/12 vs 3/12 |
 | Hand-off to Nomt | Done | `run_pipeline()` loads the trained weights; `label_turns_model()` in `meeting_minutes.py` |
 | Real transcriber swap | In progress | Wired up in `pipeline.py`; works on synthetic speech after the 8 Oct transcriber fix; human recording still to do |
 
@@ -165,6 +165,11 @@ gantt
 - First audio run, on **synthetic speech** (Windows text-to-speech, two voices; files kept outside the repo): installed `openai-whisper` and ffmpeg and ran `pipeline.py` on three recordings. The sample meeting came back as 8 turns instead of 9, with one word wrong ("Veneu"): Whisper gave "Can you follow up with catering by Friday?" and "Yes, I'll email them today." back-to-back segments, so the pause rule merged the reply into the request, every later speaker label flipped, and the action item's owner came out as Speaker1. Both quick-reply files (request → "Sure.", proposal → "Sounds good.", update → "Okay.") came out as one single turn, including the control with longer gaps, because Whisper's segment timestamps run end to start even where the audio has 1.3–2.1 s of silence, so the 0.8 s rule never fires (the "quick" 0.4 s gap also came out near 1.3 s, as switching voice adds its own pause). With the turns separated correctly (text path) the trained model labels the three replies right (`action_item`, `decision`, `discussion`); keyword rules get one of three.
 - New `pipeline.py --compare` view: keyword-rule label and trained-LSTM label side by side for every turn, with a `*` where they differ. On the sample meeting 3 of 9 turns differ: the two decisions ("Venue is confirmed...", "Noted, let's add that...") are `decision` for keywords but `discussion` for the LSTM, and "Yes, I'll email them today." is `discussion` for keywords but `action_item` for the LSTM.
 - Fixed the turn splitting with one change in `transcriber.py`: Whisper now runs with `word_timestamps=True`, so segment times follow the speech and the 0.8 s pause rule fires. Re-ran the three recordings: the sample meeting is now 9 of 9 turns with alternating speakers, and the action item's owner is Speaker2 (the person who accepted); both reply files are 6 of 6 turns, and the trained LSTM labels all three replies right (`action_item`, `decision`, `discussion`) where keyword rules get one of three. One small artefact: the sample's turn 5 picked up a repeated word ("...by Friday? Friday."). The change is in Pasan's file, made with Nomt's approval, and flagged to Pasan to review.
+- **More decision examples, retrained.** The rule for "better" was written down before retraining and judged on dev only: the new model must label the dev meeting's reported-fact decision ("The security office confirmed two officers for the morning.") as a decision, and keep dev accuracy at 0.95 or more and macro-F1 at 0.88 or more. Changes are in the training split only: one new hand-written training meeting (`orientation_1`, 19 turns) and new generator patterns for settled plans and reported confirmations (decision), finished tasks and status updates (discussion), and "Noted, ..." replies. Dev, test and probes are untouched; the 5-word leak check passes, and a new check confirms no dev sentence shares 5 words in a row with the training data.
+- Result: the rule passed (dev 1.00 / 1.00), but held-out scores went down. Test (45 turns): accuracy 0.76 / macro-F1 0.74, was 0.84 / 0.82. The two test meetings nobody looked at: 0.78 / 0.77, was 0.86 / 0.85. Probes 9/12, unchanged. Sample meeting 6/9 turns, was 7/9. Seeds are steadier: test accuracy 0.76 to 0.82 (mean 0.79, macro-F1 mean 0.77), was 0.69 to 0.84 (mean 0.75, macro-F1 mean 0.69). Still 4 of the 10 test decisions missed, and 5 discussion turns are now called decisions.
+- Why the rule passed without a held-out gain: one new generator pattern ("{org} confirmed {thing} for {when}") has the same shape as the dev sentence, so dev saturated (the chosen seed scores 1.00 there) and can no longer tell models apart. A one-turn rule on a 20-turn dev meeting was too thin.
+- Asy decided to ship the retrained model. On the sample meeting the minutes changed: "Good, let's keep monitoring that." is now listed as a decision, "Noted, let's add that to the next agenda." as an action item, and "Venue is confirmed for the 14th" is still missed. The previous weights are in git history if we roll back.
+- New `pipeline.py --meeting NAME` runs any hand-labelled meeting from `training_data.py` through the LSTM and minutes, and `--compare` gains a hand-label column. Unknown options now give an error instead of being read as an audio path. For choosing the demo meeting, turns matching the hand labels (LSTM vs keyword rules): group_project_3 15/18 vs 12/18, hackathon_1 13/18 vs 11/18, sample meeting 6/9 vs 8/9 (first version: 16/18, 15/18, 7/9).
 
 <!-- Add new entries above this line, newest date last. -->
 
@@ -197,6 +202,7 @@ gantt
 | 7 Oct | Model selection on the dev meeting only (5 seeds, lowest dev loss); every seed's test score is printed | With this little data the seed matters; printing all of them stops a lucky seed hiding the spread |
 | 7 Oct | Commit the trained weights (`trained_lstm.npz`, float16, 49 KB) | `pipeline.py` uses the trained model straight after cloning; float16 gives identical labels at half the size |
 | 8 Oct | Keep the 3 borderline labels in Nomt's half; write the rules into the guide instead | Each change would contradict how the same kind of turn is labelled elsewhere; the rules were implicit, which likely feeds the model's weakness on decisions reported as facts |
+| 8 Oct | Ship the retrained model (more decision-as-fact examples) although held-out scores dropped | It passed the improvement rule written before retraining (judged on dev), and seeds are steadier (0.76 to 0.82 vs 0.69 to 0.84). Asy's call; the first version is in git history |
 
 ---
 
@@ -209,7 +215,7 @@ gantt
 - [x] **Action-item labelling rule:** RESOLVED (7 Oct): both the request and the reply, merged in the minutes.
 - [x] **Cross-turn probe set:** RESOLVED (7 Oct): 12 probes in `training_data.py`, never trained on.
 - [ ] **Which 20% do participants complete** in the first hands-on demo (classifier forward pass, the minutes formatter, or one short training run), and what is Part A vs Part B in the extension? Now scoped to *one shared meeting* (decided); exact missing piece still open.
-- [ ] **Decisions reported as facts** ("Venue is confirmed") are the model's weakest spot. More examples in the data, or accept it as the *Try and test* failure case?
+- [ ] **Decisions reported as facts** ("Venue is confirmed") are still the model's weakest spot. 8 Oct: more examples added and retrained; held-out scores dropped and dev now scores 1.00, so it can't pick between models. Next: a bigger dev set (dev and test are fixed, so this needs the team's agreement), or accept it as the *Try and test* failure case?
 
 ---
 
@@ -243,5 +249,5 @@ sequenceDiagram
 1. **Asy:** blind-label `blind_check_for_asy.md` (10 of Nomt's turns, kept outside the repo), compare with the key, tighten the guide where you disagree; rerun `python prototype/train_lstm.py` only if a label changes. (Nomt's 10: done 8 Oct, 10/10 agree.)
 2. Run `python prototype/pipeline.py meeting.wav` on a **human** recording (the 8 Oct test used synthetic speech).
 3. **Pasan:** review the 8 Oct one-line change in `transcriber.py` (`word_timestamps=True`), which fixed turn splitting on audio. Still open: more than two speakers, overlapping speech, and replies that come in under 0.8 s.
-4. Add more `decision` examples, especially decisions reported as facts, ideally from real meetings; retrain and compare against today's numbers.
+4. Decision examples added and retrained 8 Oct (see [log](#log)); held-out scores dropped. Next: agree with the team on a bigger dev set so model selection can tell candidates apart, then add decision examples from real meetings.
 5. Decide the participants' 20% (candidates: the classifier head's forward pass, one LSTM backward step, or label 5 turns and retrain).
