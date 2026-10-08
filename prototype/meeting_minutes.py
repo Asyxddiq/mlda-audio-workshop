@@ -262,6 +262,9 @@ def _decision_text(turns: list[Turn], labels: list[dict], i: int) -> str | None:
             if match:
                 proposal = sentence[match.end():].rstrip(" ?.!")
                 return proposal[:1].upper() + proposal[1:] + " (agreed)"
+        # stop at an objection or new point, so an agreement isn't pinned on a rejected proposal
+        if not (_is_agreement(turns[j][1]) or labels[j]["category"] == "decision"):
+            break
     if not bare or i == 0:
         return text
     return turns[i - 1][1].rstrip(" ?.!") + " (agreed)"
