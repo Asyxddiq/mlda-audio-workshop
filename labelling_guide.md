@@ -6,7 +6,7 @@ training set the same way. One label per turn.
 | | |
 |---|---|
 | **Owners** | Asy, Nomt |
-| **Status** | Rules locked by Asy (7 Oct 2026); blind cross-check still to do |
+| **Status** | Rules locked by Asy (7 Oct 2026); blind cross-check: Nomt's half done (10/10), Asy's pending |
 | **Feeds** | `prototype/training_data.py` (every labelled meeting), `train_lstm.py`, `meeting_minutes.py` |
 | **Last updated** | 8 Oct 2026 |
 
@@ -54,6 +54,10 @@ Why both, rather than one turn:
 
 A self-assigned action in a single turn ("I'll email them today") is request
 and acceptance collapsed into one — label it a single `action_item`.
+
+A conditional offer to do a task ("I can redo the template tonight if nobody
+minds.") is also `action_item`: the speaker takes it on. It becomes
+`discussion` only if someone objects or the offer is turned down.
 
 A reply that **declines** ("Sorry, I can't this week.") is `discussion`; the
 request itself is still `action_item`.
@@ -109,6 +113,7 @@ request itself is still `action_item`.
 | "Should we give certificates?" → "I'd rather wait." → "Same, people like the medals." | all `discussion` | Here "Same" echoes an objection; the decision is the chair's next line, "Okay, we'll wait then." |
 | "Let's prepare ponchos just in case." | `decision` | Ownerless "let's" settles a course of action; `action_item` only with "I'll" or a named person |
 | "The ponchos are in the storeroom, we bought sixty." | `discussion` | A finished task is a status update; compare "The permit was approved on Tuesday." (`decision`: an approval now settled) |
+| "I can redo the template tonight if nobody minds." | `action_item` | A conditional offer is still the speaker taking the task on; `discussion` only if it's turned down |
 
 _Add real examples here as they come up while labelling._
 
@@ -144,7 +149,9 @@ shares 5 words in a row with the training data.
    Asy): 11 meetings, 211 turns, in `training_data.py`. Nomt to check his
    half.
 3. Each label 10 of the **other's** turns blind, then compare — mismatches
-   mean this guide needs a clearer rule.
+   mean this guide needs a clearer rule. Nomt's 10 done 8 Oct: 10/10 agree
+   with the labels (the conditional-offer rule above came out of it). Asy's
+   10 still to do.
 
 ---
 
