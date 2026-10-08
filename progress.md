@@ -5,8 +5,8 @@
 | **Owner** | Asy |
 | **Track** | 2: LSTM (with Nomt, who owns meeting minutes) |
 | **Code** | `prototype/lstm_model.py`, `prototype/train_lstm.py`, `prototype/training_data.py`, `prototype/transcript_placeholder.py` |
-| **Last updated** | 7 Oct 2026 |
-| **Current phase** | Weekend 2: model trained; Nomt's label check and a real-audio run next |
+| **Last updated** | 8 Oct 2026 |
+| **Current phase** | Weekend 2: model trained, Nomt's label check done; blind cross-check and a real-audio run next |
 
 Update this file whenever something is finished, decided or blocked. Tick the box, add a line to the [log](#log), and move the node in the [roadmap](#roadmap).
 
@@ -28,8 +28,8 @@ pie showData
 | LSTM forward pass | Done | Continuous across all turns |
 | Hourglass architecture | Done | 8 / 16 / 32 / 16 / 8, adapted from Li et al. (2024) |
 | What the LSTM should learn | Done | Per-turn classifier: action_item / decision / discussion (see [decisions](#decisions)) |
-| Labelling guide + rule | Done | Rule locked 7 Oct: label the request **and** the reply; blind cross-check still to do |
-| Training data | Done (draft) | 11 hand-labelled meetings (211 turns) + 60 generated practice meetings; Nomt to check his half |
+| Labelling guide + rule | Done | Rule locked 7 Oct, clarified 8 Oct; blind cross-check still to do |
+| Training data | Done (draft) | 11 hand-labelled meetings (211 turns) + 60 generated practice meetings; Nomt checked his half 8 Oct (no label changes) |
 | Training | Done | `train_lstm.py` (NumPy). Test accuracy 0.84 vs keyword rules 0.69; probes 9/12 vs 3/12 |
 | Hand-off to Nomt | Done | `run_pipeline()` loads the trained weights; `label_turns_model()` in `meeting_minutes.py` |
 | Real transcriber swap | In progress | Wired up in `pipeline.py`; still needs one run on real audio |
@@ -108,7 +108,7 @@ gantt
 - [x] Lock the action-item rule in the labelling guide: label the request **and** the reply (7 Oct)
 - [x] Training data: 11 hand-labelled meetings across group project, lab stand-up, CCA committee, club event, hackathon (211 turns), plus 12 probes and a practice-meeting generator (7 Oct, first draft)
 - [x] Train the hourglass + classifier head on it: `train_lstm.py`, NumPy, weights load straight into `lstm_model.py`, no port needed (7 Oct)
-- [ ] Blind check: Asy and Nomt each label 10 of the other's turns; tighten the guide where they disagree, then rerun `train_lstm.py`
+- [ ] Blind check: Asy and Nomt each label 10 of the other's turns; tighten the guide where they disagree, then rerun `train_lstm.py` (sheets prepared 8 Oct)
 - [ ] Swap the placeholder for Track 1's real transcriber and run the full chain once: wired up 7 Oct (`pipeline.py`) and runs on the sample; still needs one run on real audio
 
 ### Weekend 3: freeze
@@ -156,6 +156,12 @@ gantt
 - Result (test, 45 turns): accuracy 0.84 / macro-F1 0.82, against keyword rules 0.69 / 0.59; probes 9/12 against 3/12. Seeds range 0.69–0.84. Weakest spot: decisions reported as facts ("Venue is confirmed"), 4 of 10 missed; on the sample meeting it finds the action item but neither decision.
 - Minutes now merge a request and its reply into one action item (owner = the person who accepted) and show what an "Agreed." agreed to.
 
+### Thu 8 Oct 2026
+
+- Nomt checked his half (4 meetings, 84 turns) with Claude's help. Three borderline turns were kept as labelled, because changing them would contradict how the same kind of turn is labelled elsewhere in the data. The three rules behind them (echoed replies, ownerless "let's", finished tasks vs settled plans) are now written into the labelling guide. No labels changed, so no retrain and `trained_lstm.npz` is unchanged.
+- Fixed a minutes bug found during the check: `_decision_text()` could pin an agreement on a proposal the group had rejected (an echoed objection like "Same, people really like the medals." was shown as agreeing to "Just give certificates to those runners"). It now stops looking back at an objection or new point. Checked old vs new minutes on all 11 hand-labelled meetings and 60 generated ones: no differences, and the targeted case is fixed. All scripts in `prototype/` still run, and the sample meeting's minutes in `pipeline.py` are unchanged.
+- Blind-check sheets prepared outside the repo (10 of Asy's turns for Nomt, 10 of Nomt's for Asy, keys kept separate); still to be labelled.
+
 <!-- Add new entries above this line, newest date last. -->
 
 ---
@@ -186,6 +192,7 @@ gantt
 | 7 Oct | A chair's "Let's X" that settles a choice is a `decision`; procedural "let's" stays `discussion`. Reported confirmations ("Venue is confirmed") are `decision` | Makes the labels consistent across meetings (the review found both labels in use) |
 | 7 Oct | Model selection on the dev meeting only (5 seeds, lowest dev loss); every seed's test score is printed | With this little data the seed matters; printing all of them stops a lucky seed hiding the spread |
 | 7 Oct | Commit the trained weights (`trained_lstm.npz`, float16, 49 KB) | `pipeline.py` uses the trained model straight after cloning; float16 gives identical labels at half the size |
+| 8 Oct | Keep the 3 borderline labels in Nomt's half; write the rules into the guide instead | Each change would contradict how the same kind of turn is labelled elsewhere; the rules were implicit, which likely feeds the model's weakness on decisions reported as facts |
 
 ---
 
@@ -229,7 +236,7 @@ sequenceDiagram
 
 ## Next up
 
-1. **Nomt:** check the drafted labels for his half (CCA committee + club event meetings in `training_data.py`), and both of us blind-label 10 of the other's turns; fix the guide where we disagree, then rerun `python prototype/train_lstm.py`.
+1. **Nomt + Asy:** blind-label the prepared sheets (10 of each other's turns), compare, tighten the guide where you disagree; rerun `python prototype/train_lstm.py` only if a label changes. (Nomt's check of his half: done 8 Oct, no changes.)
 2. Run `python prototype/pipeline.py meeting.wav` once on a real recording (needs `pip install openai-whisper` and ffmpeg).
 3. Add more `decision` examples, especially decisions reported as facts, ideally from real meetings; retrain and compare against today's numbers.
 4. Decide the participants' 20% (candidates: the classifier head's forward pass, one LSTM backward step, or label 5 turns and retrain).

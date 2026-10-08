@@ -9,7 +9,7 @@ The pipeline is audio → transcript → LSTM → meeting minutes. It is written
 | Real audio → transcript (Whisper, pause-based speakers) | Pasan, Rahini | Working; real-audio run still to test |
 | RNN + CTC teaching demo | Pasan, Rahini | Working |
 | 5-layer hourglass LSTM | Asy | Working |
-| Training data: 11 hand-labelled meetings (211 turns) + 60 generated practice meetings | Asy (draft), Nomt to check | First draft |
+| Training data: 11 hand-labelled meetings (211 turns) + 60 generated practice meetings | Asy (draft), Nomt checked his half 8 Oct | Draft; blind cross-check to do |
 | Trained turn classifier (`train_lstm.py`, NumPy) | Asy | Trained; beats keyword rules on held-out meetings |
 | Meeting minutes (trained labels, keyword fallback) | Nomt | Working |
 | Whole chain in one command (`pipeline.py`) | All | Working on the sample meeting |
@@ -500,7 +500,7 @@ Conventions:
 
 | Limitation | Why it's fine for now | What changes later |
 |---|---|---|
-| Training data is small and mostly written by us (211 hand-written turns + generated practice meetings) | Enough to show training works and beats keyword rules | Nomt checks the draft labels; add real meetings |
+| Training data is small and mostly written by us (211 hand-written turns + generated practice meetings) | Enough to show training works and beats keyword rules | Blind cross-check, then add real meetings |
 | Transcript is a hard-coded sample | Lets the LSTM track work before the transcriber exists | Swap in Track 1 behind the same `get_transcript()` |
 | No attention gates on the skips (the paper has them) | Plain addition is easier to teach | Optional stretch topic |
 | Folding lets a word see up to 3 words ahead | Minutes are written from the full transcript anyway | Only matters for live, word-by-word use |
