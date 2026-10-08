@@ -4,9 +4,9 @@
 |---|---|
 | **Owner** | Asy |
 | **Track** | 2: LSTM (with Nomt, who owns meeting minutes) |
-| **Code** | `prototype/transcript_placeholder.py`, `prototype/lstm_model.py` |
-| **Last updated** | 27 Sep 2026 |
-| **Current phase** | Weekend 1 → 2: pieces built, training scaffolded |
+| **Code** | `prototype/lstm_model.py`, `prototype/train_lstm.py`, `prototype/training_data.py`, `prototype/transcript_placeholder.py` |
+| **Last updated** | 8 Oct 2026 |
+| **Current phase** | Weekend 2: model trained, Nomt's label check done; blind cross-check and a real-audio run next |
 
 Update this file whenever something is finished, decided or blocked. Tick the box, add a line to the [log](#log), and move the node in the [roadmap](#roadmap).
 
@@ -16,22 +16,23 @@ Update this file whenever something is finished, decided or blocked. Tick the bo
 
 ```mermaid
 pie showData
-    title LSTM track tasks (14)
-    "Done" : 8
-    "In progress" : 2
+    title LSTM track tasks (18)
+    "Done" : 13
+    "In progress" : 1
     "To do" : 4
 ```
 
 | Area | Status | Note |
 |---|---|---|
 | Placeholder transcript | Done | Same contract the real transcriber will use |
-| LSTM forward pass | Done | Continuous across all 9 turns |
+| LSTM forward pass | Done | Continuous across all turns |
 | Hourglass architecture | Done | 8 / 16 / 32 / 16 / 8, adapted from Li et al. (2024) |
 | What the LSTM should learn | Done | Per-turn classifier: action_item / decision / discussion (see [decisions](#decisions)) |
-| Training | In progress | PyTorch scaffold runs on Colab; ~100-turn dataset is Weekend 2 |
-| Hand-off to Nomt | Done | `run_pipeline()` added; format agreed |
-| Labelling guide + rule | In progress | Draft stub written; action-item rule pending Asy |
-| Real transcriber swap | To do | Waiting on Track 1 (Weekend 2) |
+| Labelling guide + rule | Done | Rule locked 7 Oct, clarified 8 Oct; blind cross-check: Nomt 10/10, Asy pending |
+| Training data | Done (draft) | 11 hand-labelled meetings (211 turns) + 60 generated practice meetings; Nomt checked his half 8 Oct (no label changes) |
+| Training | Done | `train_lstm.py` (NumPy). Test accuracy 0.84 vs keyword rules 0.69; probes 9/12 vs 3/12 |
+| Hand-off to Nomt | Done | `run_pipeline()` loads the trained weights; `label_turns_model()` in `meeting_minutes.py` |
+| Real transcriber swap | In progress | Wired up in `pipeline.py`; works on synthetic speech after the 8 Oct transcriber fix; human recording still to do |
 
 ---
 
@@ -44,11 +45,11 @@ flowchart LR
     C --> D["LSTM v2<br/>continuous + eot"]:::done
     D --> E["Hourglass LSTM<br/>5 layers"]:::done
     E --> F["Explainers +<br/>README + push"]:::done
-    F --> G["Decide what the<br/>LSTM predicts"]:::doing
-    G --> H["Training data"]:::todo
-    H --> I["Training"]:::todo
-    G --> J["Hand-off format<br/>for Nomt"]:::todo
-    I --> K["Swap in real<br/>transcriber"]:::todo
+    F --> G["Decide what the<br/>LSTM predicts"]:::done
+    G --> H["Training data"]:::done
+    H --> I["Training"]:::done
+    G --> J["Hand-off format<br/>for Nomt"]:::done
+    I --> K["Swap in real<br/>transcriber"]:::doing
     J --> K
     K --> L["Decide 80/20 split"]:::todo
     L --> M["Freeze + dry run"]:::todo
@@ -74,11 +75,11 @@ gantt
     section Weekend 1
     Repo, placeholder, LSTM v1 and v2   :done,   w1a, 2026-09-25, 1d
     Hourglass + explainers + docs       :done,   w1b, 2026-09-26, 1d
-    Decide what the LSTM predicts       :active, w1c, 2026-09-27, 1d
+    Decide what the LSTM predicts       :done,   w1c, 2026-09-27, 1d
     section Weekend 2
-    Training data + training            :        w2a, 2026-10-03, 2d
-    Hand-off format agreed with Nomt    :        w2b, 2026-10-03, 1d
-    Real transcriber swapped in         :milestone, w2m, 2026-10-04, 0d
+    Hand-off format agreed with Nomt    :done,   w2b, 2026-10-03, 1d
+    Chain connected + training          :done,   w2a, 2026-10-07, 1d
+    Real-audio run + label check        :active, w2c, 2026-10-08, 3d
     section Weekend 3
     Decide 80/20 split                  :        w3a, 2026-10-10, 1d
     Starter code + dry run              :        w3b, 2026-10-10, 2d
@@ -104,10 +105,11 @@ gantt
 
 - [x] Wrap `main` in an importable `run_pipeline()` for the minutes step (27 Sep)
 - [x] Scaffold `train_classifier.py`: PyTorch, one hand-labelled meeting, loop runs + times an epoch (27 Sep)
-- [ ] Write the one-page labelling guide with Asy; lock the action-item rule (request / acceptance / both)
-- [ ] Choose or create training data: ~100 turns across meeting types, 50/50 (Nomt: CCA + club; Asy: group project + lab stand-up)
-- [ ] Train on the full set in PyTorch/Colab; keep NumPy for the teaching forward pass; port weights back for parity
-- [ ] Swap the placeholder for Track 1's real transcriber and run the full chain once
+- [x] Lock the action-item rule in the labelling guide: label the request **and** the reply (7 Oct)
+- [x] Training data: 11 hand-labelled meetings across group project, lab stand-up, CCA committee, club event, hackathon (211 turns), plus 12 probes and a practice-meeting generator (7 Oct, first draft)
+- [x] Train the hourglass + classifier head on it: `train_lstm.py`, NumPy, weights load straight into `lstm_model.py`, no port needed (7 Oct)
+- [ ] Blind check: Asy and Nomt each label 10 of the other's turns; tighten the guide where they disagree, then rerun `train_lstm.py` (sheets prepared 8 Oct; Nomt's 10: 10/10 agree; Asy's 10 pending)
+- [ ] Swap the placeholder for Track 1's real transcriber and run the full chain once: wired up 7 Oct (`pipeline.py`) and runs on the sample; ran on synthetic text-to-speech audio 8 Oct and works after a transcriber fix (see log); a human recording still to do
 
 ### Weekend 3: freeze
 
@@ -143,6 +145,27 @@ gantt
 - Two calls still **proposed, pending Asy**: the action-item labelling rule (request / acceptance / both — we lean toward *both, merged in rendering*), and a curated cross-turn *probe set* for the held-out comparison. Detail lives in the new labelling guide.
 - Note: the scaffold's `GOLD_LABELS` and `meeting_minutes.py`'s stub still use request-only labelling; both need updating together once the action-item rule is locked.
 
+### Wed 7 Oct 2026
+
+- Pasan pushed `transcriber.py` (Whisper, with pause-based speaker labels and a placeholder fallback) and `rnn_ctc_demo.py` (NumPy RNN + CTC teaching demo).
+- Connected the three stages. `run_pipeline()` now takes an audio path or a ready transcript and reads from `transcriber.py`. `meeting_minutes.py` gained `label_turns_keywords()`, which labels any transcript and is now the default; on the sample meeting it gives exactly the stub's labels. New `pipeline.py` runs transcriber → LSTM → minutes in one command.
+- Known gaps: the pause rule merges quick replies ("Sure.", "Agreed.") into the previous speaker's turn, which hides the cross-turn cases the labelling guide relies on. The Whisper path still needs one run on real audio.
+- **Trained the model.** Locked the action-item rule (request **and** reply) and the probe set. Wrote the first full dataset in `training_data.py`: 11 hand-labelled meetings (211 turns: train 7, dev 1, test 3 including the sample meeting) and 12 probes. A first training run memorised the 146 training turns within ~10 epochs, so added a generator of short practice meetings (training only).
+- `train_lstm.py` trains embeddings + all 5 hourglass layers + a small head with hand-written NumPy backprop, checked against numerical gradients. Settings were picked on the dev meeting only; 5 seeds, keep the lowest dev loss.
+- A separate review of the data found generator phrases too close to the sample meeting and some probes, one inconsistent rule (chair's "Let's X"), and some minutes-rendering bugs. All fixed, then retrained. A 5-word leak check now runs in `training_data.py`.
+- Result (test, 45 turns): accuracy 0.84 / macro-F1 0.82, against keyword rules 0.69 / 0.59; probes 9/12 against 3/12. Seeds range 0.69–0.84. Weakest spot: decisions reported as facts ("Venue is confirmed"), 4 of 10 missed; on the sample meeting it finds the action item but neither decision.
+- Minutes now merge a request and its reply into one action item (owner = the person who accepted) and show what an "Agreed." agreed to.
+
+### Thu 8 Oct 2026
+
+- Nomt checked his half (4 meetings, 84 turns) with Claude's help. Three borderline turns were kept as labelled, because changing them would contradict how the same kind of turn is labelled elsewhere in the data. The three rules behind them (echoed replies, ownerless "let's", finished tasks vs settled plans) are now written into the labelling guide. No labels changed, so no retrain and `trained_lstm.npz` is unchanged.
+- Fixed a minutes bug found during the check: `_decision_text()` could pin an agreement on a proposal the group had rejected (an echoed objection like "Same, people really like the medals." was shown as agreeing to "Just give certificates to those runners"). It now stops looking back at an objection or new point. Checked old vs new minutes on all 11 hand-labelled meetings and 60 generated ones: no differences, and the targeted case is fixed. All scripts in `prototype/` still run, and the sample meeting's minutes in `pipeline.py` are unchanged.
+- Blind-check sheets prepared outside the repo (10 of Asy's turns for Nomt, 10 of Nomt's for Asy, keys kept separate); still to be labelled.
+- Nomt blind-labelled 10 of Asy's turns: 10/10 agree with the labels, so no label changes and no retrain. One turn (a conditional offer, "I can redo the template tonight if nobody minds.") wasn't covered by the guide; the rule is now written in. Asy's 10 still to do.
+- First audio run, on **synthetic speech** (Windows text-to-speech, two voices; files kept outside the repo): installed `openai-whisper` and ffmpeg and ran `pipeline.py` on three recordings. The sample meeting came back as 8 turns instead of 9, with one word wrong ("Veneu"): Whisper gave "Can you follow up with catering by Friday?" and "Yes, I'll email them today." back-to-back segments, so the pause rule merged the reply into the request, every later speaker label flipped, and the action item's owner came out as Speaker1. Both quick-reply files (request → "Sure.", proposal → "Sounds good.", update → "Okay.") came out as one single turn, including the control with longer gaps, because Whisper's segment timestamps run end to start even where the audio has 1.3–2.1 s of silence, so the 0.8 s rule never fires (the "quick" 0.4 s gap also came out near 1.3 s, as switching voice adds its own pause). With the turns separated correctly (text path) the trained model labels the three replies right (`action_item`, `decision`, `discussion`); keyword rules get one of three.
+- New `pipeline.py --compare` view: keyword-rule label and trained-LSTM label side by side for every turn, with a `*` where they differ. On the sample meeting 3 of 9 turns differ: the two decisions ("Venue is confirmed...", "Noted, let's add that...") are `decision` for keywords but `discussion` for the LSTM, and "Yes, I'll email them today." is `discussion` for keywords but `action_item` for the LSTM.
+- Fixed the turn splitting with one change in `transcriber.py`: Whisper now runs with `word_timestamps=True`, so segment times follow the speech and the 0.8 s pause rule fires. Re-ran the three recordings: the sample meeting is now 9 of 9 turns with alternating speakers, and the action item's owner is Speaker2 (the person who accepted); both reply files are 6 of 6 turns, and the trained LSTM labels all three replies right (`action_item`, `decision`, `discussion`) where keyword rules get one of three. One small artefact: the sample's turn 5 picked up a repeated word ("...by Friday? Friday."). The change is in Pasan's file, made with Nomt's approval, and flagged to Pasan to review.
+
 <!-- Add new entries above this line, newest date last. -->
 
 ---
@@ -159,56 +182,66 @@ gantt
 | 26 Sep | `meeting_minutes.py` kept out of the repo | Nomt owns the minutes step; avoid giving him a conflicting starting point |
 | 27 Sep | Train the hourglass **itself** as a per-turn classifier (action_item / decision / discussion), not a separate LSTM | A separate LSTM would leave the hourglass as decoration; the architecture we teach should be the one that does the work |
 | 27 Sep | Keyword rules shipped first, as baseline **and** runtime fallback | Unblocks the pipeline now; doubles as the "where rules break" teaching contrast |
-| 27 Sep | Train in PyTorch on Colab; NumPy hourglass stays forward-pass-only for teaching. Mirror the 4-gate cell (not `nn.LSTM`); float64 for weight-port parity | Autograd handles training; `nn.LSTM`'s packed gates make porting fiddly; NumPy stays readable |
+| 27 Sep | Train in PyTorch on Colab; NumPy hourglass stays forward-pass-only for teaching. Mirror the 4-gate cell (not `nn.LSTM`); float64 for weight-port parity | Autograd handles training; `nn.LSTM`'s packed gates make porting fiddly; NumPy stays readable. **Revised 7 Oct**, see below |
 | 27 Sep | Trainable embeddings, with a **fixed** training vocab + `<unk>` token | Teaches that embeddings are learned too; `<unk>` stops unseen words (held-out / *Try and test*) crashing. Not framed as "learns meaning" — too little data for that |
 | 27 Sep | Seed ~15–20% of training turns with cross-turn-dependent labels (e.g. "Sure." after a request) | Gives the hourglass an honest reason to exist; keyword rules provably can't catch these |
 | 27 Sep | ~100 hand-labelled turns across meeting types, 50/50 — Nomt: CCA committee + club event; Asy: group project + lab stand-up. Split train/held-out **by meeting** | Variety covers participants' likely contexts; splitting individual turns leaks vocab/state and inflates held-out scores |
 | 27 Sep | Evaluate with per-label / confusion matrix; beat **both** the majority-class and keyword baselines | Most turns are "discussion", so plain accuracy flatters the model |
 | 27 Sep | The graded 20% is done on **one shared meeting**; participants' own context lives only in *Try and test*, with keyword rules as the fallback there | 30 people each training/debugging their own data in one session would break debug time |
 | 27 Sep | Minutes format: Markdown — Decisions + Action Items | Matches the repo's Markdown-first docs; short and demo-friendly |
-| 27 Sep | **[PROPOSED, pending Asy]** Label action items on **both** the request and the acceptance; merge the pair in rendering (task + deadline from the request, owner from the acceptor) | Task and owner live in different turns; also creates the keyword-free acceptance turns that need memory. Final rule goes in the [labelling guide](labelling_guide.md) |
-| 27 Sep | **[PROPOSED, pending Asy]** A curated held-out cross-turn **probe set** (8–10 examples), reported as its own scored slice next to the baselines | The "hourglass earns its keep" claim is too small/noisy to rest on aggregate held-out accuracy |
+| 7 Oct | **Locked:** label action items on **both** the request and the acceptance; merge the pair in the minutes (task + deadline from the request, owner from the acceptor) | Task and owner live in different turns; also creates the keyword-free acceptance turns that need memory. See the [labelling guide](labelling_guide.md) |
+| 7 Oct | **Locked:** a held-out cross-turn **probe set**: 12 two-turn exchanges, the same bare replies under all three labels | The "hourglass earns its keep" claim is too small/noisy to rest on aggregate held-out accuracy |
+| 7 Oct | Train in **NumPy** (`train_lstm.py`), with hand-written backprop checked against numerical gradients. The PyTorch scaffold stays as a reference | Same weight shapes as `lstm_model.py`, so no port step; numpy is the only dependency; PyTorch couldn't be installed where the training was run |
+| 7 Oct | Add generated practice meetings to the **training** split only; dev, test and probes stay hand-written | 146 hand-written training turns were memorised in ~10 epochs; the generator adds many more cross-turn examples |
+| 7 Oct | A chair's "Let's X" that settles a choice is a `decision`; procedural "let's" stays `discussion`. Reported confirmations ("Venue is confirmed") are `decision` | Makes the labels consistent across meetings (the review found both labels in use) |
+| 7 Oct | Model selection on the dev meeting only (5 seeds, lowest dev loss); every seed's test score is printed | With this little data the seed matters; printing all of them stops a lucky seed hiding the spread |
+| 7 Oct | Commit the trained weights (`trained_lstm.npz`, float16, 49 KB) | `pipeline.py` uses the trained model straight after cloning; float16 gives identical labels at half the size |
+| 8 Oct | Keep the 3 borderline labels in Nomt's half; write the rules into the guide instead | Each change would contradict how the same kind of turn is labelled elsewhere; the rules were implicit, which likely feeds the model's weakness on decisions reported as facts |
 
 ---
 
 ## Open questions
 
 - [x] **What should the LSTM predict?** RESOLVED (27 Sep): per-turn classification — action_item / decision / discussion — by training the hourglass itself. See [decisions](#decisions).
-- [x] **Where does training data come from?** RESOLVED (27 Sep): ~100 hand-labelled turns across meeting types, 50/50 with Asy. See [decisions](#decisions).
+- [x] **Where does training data come from?** RESOLVED (27 Sep): hand-labelled turns across meeting types, 50/50 with Asy. First draft written 7 Oct. See [decisions](#decisions).
 - [x] **Minutes format:** RESOLVED (27 Sep): Markdown — Decisions + Action Items.
-- [x] **Training in NumPy or a framework?** RESOLVED (27 Sep): PyTorch on Colab for training, NumPy kept for the teaching forward pass.
-- [ ] **Action-item labelling rule:** request, acceptance, or both? Leaning toward *both, merged in rendering* — pending Asy and the [labelling guide](labelling_guide.md).
-- [ ] **Cross-turn probe set:** how many examples, and which held-out meetings carry them? Pending Asy.
+- [x] **Training in NumPy or a framework?** RESOLVED (27 Sep), revised 7 Oct: NumPy (`train_lstm.py`) for training as well; the PyTorch scaffold is kept as a reference.
+- [x] **Action-item labelling rule:** RESOLVED (7 Oct): both the request and the reply, merged in the minutes.
+- [x] **Cross-turn probe set:** RESOLVED (7 Oct): 12 probes in `training_data.py`, never trained on.
 - [ ] **Which 20% do participants complete** in the first hands-on demo (classifier forward pass, the minutes formatter, or one short training run), and what is Part A vs Part B in the extension? Now scoped to *one shared meeting* (decided); exact missing piece still open.
+- [ ] **Decisions reported as facts** ("Venue is confirmed") are the model's weakest spot. More examples in the data, or accept it as the *Try and test* failure case?
 
 ---
 
 ## Hand-off to Nomt
 
-What `lstm_model.py` already gives the meeting-minutes step:
+What `lstm_model.py` gives the meeting-minutes step:
 
 ```mermaid
 sequenceDiagram
     participant L as lstm_model.py (Asy)
     participant M as meeting_minutes.py (Nomt)
     L->>M: turns: list of (speaker, text), 9 items
-    L->>M: output: array, 86 tokens x 8 numbers
-    L->>M: turn_end_indices: [10, 21, 31, 41, 50, 56, 65, 75, 85]
+    L->>M: output: array, 88 tokens x 8 numbers (trained weights)
+    L->>M: turn_end_indices: [10, 21, 31, 41, 51, 57, 66, 77, 87]
     Note over M: output[turn_end_indices[k]] is the vector<br/>after turn k, shaped by every turn before it
-    M-->>M: turn vectors -> summary / action items
+    M-->>M: head (8 -> 3 scores) -> label per turn -> minutes
 ```
 
 | Item | Shape / type | Status |
 |---|---|---|
 | `turns` | list of `(speaker, text)` | Ready |
-| `output` | NumPy array `(num_tokens, 8)` | Ready (untrained values) |
+| `output` | NumPy array `(num_tokens, 8)` | Ready (trained weights when `trained_lstm.npz` exists, random otherwise) |
 | `turn_end_indices` | list of int, one per turn | Ready |
-| A function Nomt can import instead of running `main` | `run_pipeline() -> (turns, output, turn_end_indices)` | Ready (added 27 Sep) |
+| A function Nomt can import instead of running `main` | `run_pipeline(audio_path=None, transcript=None, use_trained=True) -> (turns, output, turn_end_indices)` | Ready (audio and transcript input added 7 Oct) |
+| Turn labels from the trained model | `label_turns_model(turns, output, turn_end_indices)` in `meeting_minutes.py` | Ready (7 Oct); falls back to `label_turns_keywords()` if there are no weights |
 
 ---
 
 ## Next up
 
-1. Write the one-page [labelling guide](labelling_guide.md) with Asy and lock the action-item rule (request / acceptance / both); each label 10 of the other's turns to check agreement.
-2. Once the rule is locked, update `train_classifier.py`'s `GOLD_LABELS`, `meeting_minutes.py`'s stub, and add the request→acceptance merge to the renderer — together, so they stay consistent.
-3. Build the ~100-turn dataset across meeting types (50/50), then train on Colab and port the weights back into the NumPy hourglass for parity.
+1. **Asy:** blind-label `blind_check_for_asy.md` (10 of Nomt's turns, kept outside the repo), compare with the key, tighten the guide where you disagree; rerun `python prototype/train_lstm.py` only if a label changes. (Nomt's 10: done 8 Oct, 10/10 agree.)
+2. Run `python prototype/pipeline.py meeting.wav` on a **human** recording (the 8 Oct test used synthetic speech).
+3. **Pasan:** review the 8 Oct one-line change in `transcriber.py` (`word_timestamps=True`), which fixed turn splitting on audio. Still open: more than two speakers, overlapping speech, and replies that come in under 0.8 s.
+4. Add more `decision` examples, especially decisions reported as facts, ideally from real meetings; retrain and compare against today's numbers.
+5. Decide the participants' 20% (candidates: the classifier head's forward pass, one LSTM backward step, or label 5 turns and retrain).

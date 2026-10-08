@@ -4,12 +4,15 @@ Backend prototype for the MLDA Academics workshop **Deep Learning in Audio Appli
 
 The pipeline is audio → transcript → LSTM → meeting minutes. It is written as small, readable NumPy code so that beginner-to-intermediate participants can follow every step and run it on free Google Colab.
 
-| Component | Owner | Status (26 Sep 2026) |
+| Component | Owner | Status (7 Oct 2026) |
 |---|---|---|
-| Placeholder transcript | Asy | Working |
-| 5-layer hourglass LSTM (forward pass, untrained) | Asy | Working |
-| Real audio → transcript (RNN) | Pasan, Rahini | In progress, separate track |
-| Meeting minutes from LSTM output | Nomt | Not started, next |
+| Real audio → transcript (Whisper, pause-based speakers) | Pasan, Rahini | Works on synthetic speech since the 8 Oct fix; human recording still to test. A reply under 0.8 s can still be merged; more than two speakers are not told apart |
+| RNN + CTC teaching demo | Pasan, Rahini | Working |
+| 5-layer hourglass LSTM | Asy | Working |
+| Training data: 11 hand-labelled meetings (211 turns) + 60 generated practice meetings | Asy (draft), Nomt checked his half 8 Oct | Draft; blind cross-check to do |
+| Trained turn classifier (`train_lstm.py`, NumPy) | Asy | Trained; beats keyword rules on held-out meetings |
+| Meeting minutes (trained labels, keyword fallback) | Nomt | Working |
+| Whole chain in one command (`pipeline.py`) | All | Working on the sample meeting |
 
 **Contents:** [Quick start](#quick-start) · [High-level alignment](#high-level-alignment) · [Architecture](#architecture) · [Key commands](#key-commands) · [Limitations](#simplifications-and-known-limitations) · [References](#references)
 
@@ -27,8 +30,8 @@ python prototype/lstm_model.py
 Expected output (abridged):
 
 ```text
-Vocab size: 69 words (incl. <eot>)
-Tokens in conversation: 86 (padded to 88 so it divides by 4)
+Vocab size: 66 words (incl. <eot>)
+Tokens in conversation: 88 (padded to 88 so it divides by 4)
 Fold -> unfold round trip is lossless: True
 
 Hourglass shape (compare with the paper's Table 1):
@@ -46,6 +49,19 @@ Hourglass shape (compare with the paper's Table 1):
 
 The only dependency is `numpy`. No GPU is needed; the full run takes well under a second.
 
+To run the whole chain (transcript → LSTM → minutes) in one go:
+
+```bash
+python prototype/pipeline.py                # sample meeting, no audio needed
+python prototype/pipeline.py meeting.wav    # real audio: pip install openai-whisper, plus ffmpeg
+```
+
+The trained weights (`prototype/trained_lstm.npz`) are in the repo, so the pipeline labels turns with the trained model straight away. To retrain them from [`training_data.py`](prototype/training_data.py) (a few minutes on a laptop CPU, numpy only):
+
+```bash
+python prototype/train_lstm.py
+```
+
 ---
 
 ## High-level alignment
@@ -60,9 +76,9 @@ flowchart LR
     C -.-> T1["Transcriber track<br/>Pasan + Rahini"]
     D -.-> T2["LSTM track<br/>Asy + Nomt"]
     E -.-> T3["Meeting minutes<br/>Nomt"]
-    T1 --> P1["prototype/transcript_placeholder.py<br/>(stand-in for now)"]
+    T1 --> P1["prototype/transcriber.py<br/>(Whisper; placeholder if no audio)"]
     T2 --> P2["prototype/lstm_model.py"]
-    T3 --> P3["prototype/meeting_minutes.py<br/>(to be written)"]
+    T3 --> P3["prototype/meeting_minutes.py"]
 ```
 
 ### Team tracks
@@ -158,13 +174,20 @@ gantt
 mlda-audio-workshop/
 ├── README.md                          you are here
 ├── progress.md                        Asy's LSTM-track progress tracker
+├── labelling_guide.md                 rules for labelling training turns
 ├── requirements.txt                   numpy
 └── prototype/
-    ├── transcript_placeholder.py      stand-in for the transcriber (Track 1)
-    └── lstm_model.py                  tokenize, embed, 5-layer hourglass LSTM (Track 2)
+    ├── pipeline.py                    whole chain in one command (start here)
+    ├── transcriber.py                 audio → transcript with Whisper (Track 1)
+    ├── transcript_placeholder.py      sample meeting, used when no audio is given
+    ├── rnn_ctc_demo.py                RNN + CTC teaching demo (Part 5)
+    ├── lstm_model.py                  tokenize, embed, 5-layer hourglass LSTM (Track 2)
+    ├── meeting_minutes.py             label turns, write Markdown minutes (Track 3)
+    ├── training_data.py               hand-labelled meetings, probe set, practice-meeting generator
+    ├── train_lstm.py                  trains the hourglass + classifier head (NumPy backprop)
+    ├── trained_lstm.npz               the trained weights (made by train_lstm.py)
+    └── train_classifier.py            earlier PyTorch scaffold (Nomt), kept for reference
 ```
-
-`prototype/meeting_minutes.py` does not exist yet. Nomt owns it.
 
 ### End-to-end data flow
 
@@ -182,15 +205,15 @@ sequenceDiagram
     Main->>TP: get_transcript()
     TP-->>Main: 9 speaker-labelled lines
     Main->>Tok: tokenize_transcript(turns)
-    Tok-->>Main: 86 tokens (with <eot>) + turn_end_indices
+    Tok-->>Main: 88 tokens (with <eot>) + turn_end_indices
     Main->>Tok: build_vocab, embed_tokens
-    Tok-->>Main: 86 x 16 numbers
-    Main->>Main: pad_to_multiple_of_4 -> 88 x 16
+    Tok-->>Main: 88 x 16 numbers
+    Main->>Main: pad_to_multiple_of_4 -> 88 x 16 (already a multiple of 4)
     Main->>HG: forward(x_padded)
     HG->>HG: layer 1 -> fold -> layer 2 -> fold -> layer 3
     HG->>HG: unfold + skip -> layer 4 -> unfold + skip -> layer 5
     HG-->>Main: 88 x 8 output (+ every layer's output)
-    Main->>Out: drop padding -> 86 x 8
+    Main->>Out: drop padding -> 88 x 8
     Out-->>Main: one 8-number vector per word, read off at each turn end
 ```
 
@@ -233,14 +256,14 @@ A computer can only do maths on numbers, so each word goes through three steps. 
 
 ```mermaid
 flowchart LR
-    A["'Venue is confirmed ...'"] -->|"split on spaces,<br/>lowercase"| B["venue · is · confirmed · ..."]
-    B -->|"look up / assign id"| C["ids: 27 · 5 · 28 · ..."]
-    C -->|"pick row id of the<br/>69 x 16 embedding table"| D["16 numbers per word"]
+    A["'Venue is confirmed ...'"] -->|"lowercase, split into words;<br/>? and ! become their own tokens"| B["venue · is · confirmed · ..."]
+    B -->|"look up / assign id"| C["ids: 25 · 5 · 26 · ..."]
+    C -->|"pick row id of the<br/>66 x 16 embedding table"| D["16 numbers per word"]
     E["end of each turn"] -->|"insert <eot>"| B
 ```
 
-- **Vocabulary:** 69 unique tokens, including the `<eot>` end-of-turn marker.
-- **Embeddings:** random for now (seed 42). Training would move words used in similar ways closer together.
+- **Vocabulary:** 66 unique tokens in the sample meeting, including the `<eot>` end-of-turn marker. The trained model uses a fixed 392-word vocabulary from its training data instead, and any word outside it becomes `<unk>`.
+- **Embeddings:** random in this walk-through (seed 42). In the trained model they are learned along with everything else.
 - **The whole conversation is one sequence.** The LSTM never resets between speakers; `<eot>` is how it can tell a new person is talking.
 
 ### Step 2: the hourglass LSTM
@@ -258,7 +281,7 @@ flowchart TD
     L4 -->|"unfold<br/>44x16 -> 88x8"| A5(("+"))
     L1 -. "skip" .-> A5
     A5 --> L5["Layer 5<br/>88 steps · 8 units"]
-    L5 --> OUT["output<br/>drop padding -> 86 x 8"]
+    L5 --> OUT["output<br/>drop padding -> 88 x 8"]
 ```
 
 | Layer | Our units | Our time steps | Paper units | Paper time steps |
@@ -330,7 +353,45 @@ o_t  = sigmoid(W_o · [h_prev, x_t] + b_o)     how much to show
 h_t  = o_t * tanh(c_t)                        output for this word
 ```
 
-Each gate has an 8 x 24 weight grid plus 8 biases: 800 numbers in layer 1 and 13,888 across all five layers. They are random until the model is trained, which is why every gate currently sits near 0.5.
+Each gate has an 8 x 24 weight grid plus 8 biases: 800 numbers in layer 1 and 13,888 across all five layers. In `lstm_model.py`'s walk-through they are random, which is why every gate sits near 0.5; `train_lstm.py` learns them.
+
+### Step 4: training the classifier
+
+`train_lstm.py` teaches the hourglass to label each turn as **discussion**, **decision** or **action_item**. It trains the same network `lstm_model.py` runs, plus a small head on top, and saves the weights in the same shapes, so `lstm_model.py` loads them directly.
+
+```mermaid
+flowchart LR
+    D["training_data.py<br/>labelled meetings"] --> E["embeddings<br/>(learned)"]
+    E --> H["hourglass LSTM<br/>5 layers (learned)"]
+    H -->|"8 numbers at each<br/>turn's last token"| HD["head: 8 -> 3 scores<br/>(learned)"]
+    HD --> P["softmax -><br/>label per turn"]
+    P -->|"compare with gold label:<br/>cross-entropy loss"| L(("loss"))
+    L -. "backprop through time,<br/>Adam update" .-> E
+    L -.-> H
+    L -.-> HD
+```
+
+| Data | Meetings | Turns | Used for |
+|---|---|---|---|
+| Hand-written: group project, lab stand-up, CCA committee, club event | 7 | 146 | training |
+| Generated practice meetings (phrase lists in `training_data.py`) | 60 | 588 | training only |
+| Hand-written: club event (a follow-up to a training meeting, so dev scores run a bit optimistic) | 1 | 20 | dev: picks the best epoch and seed |
+| Hand-written: group project, hackathon, the sample meeting | 3 | 45 | **test**, scored once |
+| Probe set: bare replies ("Sure.", "Okay.") after a request, a proposal or plain information | 12 | 12 replies | **cross-turn test**, never trained on |
+
+Results on the held-out data (seed chosen by dev loss before looking at test):
+
+| Labeller | Test accuracy | Test macro-F1 | Probes correct |
+|---|---|---|---|
+| **Trained hourglass LSTM** | **0.84** | **0.82** | **9 / 12** |
+| Keyword rules | 0.69 | 0.59 | 3 / 12 |
+| Always "discussion" | 0.56 | 0.24 | 3 / 12 |
+
+- The keyword lists were written while looking at the sample meeting, which flatters them there. On the two test meetings nobody looked at while writing rules (36 turns): model 0.86 accuracy / 0.85 macro-F1, keyword rules 0.64 / 0.50.
+- Across the 5 seeds trained, test accuracy ranged from 0.69 to 0.84 (mean 0.75; macro-F1 mean 0.69). With this little data the starting weights matter a lot, so all five scores are printed every run.
+- What it gets right that keywords can't: "Sure." after "Kai, you handle the judging rubric" (action item) vs "Makes sense." after "How about we split the prizes?" (decision) vs "Okay." after "The bus was late again" (discussion).
+- What it still misses: decisions reported as facts ("Venue is confirmed for the 14th"), 4 of the 10 test decisions. On the sample meeting it finds the action item but neither decision.
+- A separate review checked all 211 hand-written labels against the rules and looked for test sentences leaking into training; `python prototype/training_data.py` re-runs the leak check (no probe or test sentence shares 5 words in a row with the training data).
 
 ### Component status
 
@@ -343,7 +404,7 @@ stateDiagram-v2
     }
     state "LSTM" as L {
         [*] --> Untrained
-        Untrained --> Trained: data + training decided
+        Untrained --> Trained: train_lstm.py (7 Oct)
     }
     state "Minutes" as M {
         [*] --> NotStarted
@@ -353,7 +414,7 @@ stateDiagram-v2
     L --> M: contract 2
 ```
 
-Current state: **Placeholder**, **Untrained**, **NotStarted**.
+Current state: transcript **RealTranscriber** (Whisper, falling back to the placeholder when no audio is given), LSTM **Trained**, minutes **Built** on the trained model's labels (keyword rules if the weights file is missing).
 
 ---
 
@@ -364,16 +425,23 @@ Current state: **Placeholder**, **Untrained**, **NotStarted**.
 | What | Command |
 |---|---|
 | Install the one dependency | `pip install -r requirements.txt` |
-| Run the whole prototype | `python prototype/lstm_model.py` |
+| Run the whole chain | `python prototype/pipeline.py` |
+| Run it on real audio | `python prototype/pipeline.py meeting.wav` (needs `pip install openai-whisper` and ffmpeg) |
+| Compare keyword rules with the trained LSTM | `python prototype/pipeline.py --compare` (shows both labels for every turn; also works with `meeting.wav`) |
+| Run the LSTM stage only | `python prototype/lstm_model.py` |
+| Train the LSTM classifier | `python prototype/train_lstm.py` (numpy only, a few minutes) |
+| Check the training data | `python prototype/training_data.py` |
+| Earlier PyTorch scaffold | `python prototype/train_classifier.py` (needs `pip install torch`) |
+| RNN + CTC teaching demo | `python prototype/rnn_ctc_demo.py` |
 | Print the placeholder transcript only | `python prototype/transcript_placeholder.py` |
 | Check numpy is available | `python -c "import numpy; print(numpy.__version__)"` |
 
 ### Google Colab (free tier)
 
-The repo is private, so the simplest route in Colab is to upload the two files:
+The repo is private, so the simplest route in Colab is to upload the files:
 
 1. Open a new notebook at colab.research.google.com.
-2. In the Files panel on the left, upload `transcript_placeholder.py` and `lstm_model.py` (both are needed; one imports the other).
+2. In the Files panel on the left, upload `transcript_placeholder.py`, `transcriber.py` and `lstm_model.py` (`lstm_model.py` imports the other two). Add `trained_lstm.npz` too if you want the trained weights.
 3. Run in a cell:
 
 ```python
@@ -433,12 +501,13 @@ Conventions:
 
 | Limitation | Why it's fine for now | What changes later |
 |---|---|---|
-| Weights are random (no training) | Proves shapes and wiring end to end | Choose a task + data, then train |
+| Training data is small and mostly written by us (211 hand-written turns + generated practice meetings) | Enough to show training works and beats keyword rules | Blind cross-check, then add real meetings |
 | Transcript is a hard-coded sample | Lets the LSTM track work before the transcriber exists | Swap in Track 1 behind the same `get_transcript()` |
 | No attention gates on the skips (the paper has them) | Plain addition is easier to teach | Optional stretch topic |
 | Folding lets a word see up to 3 words ahead | Minutes are written from the full transcript anyway | Only matters for live, word-by-word use |
-| Whitespace tokenizer ("14th," keeps its comma) | Simple enough to explain in one slide | Strip punctuation or use a library tokenizer |
-| NumPy forward pass only | Gates stay visible as plain maths; runs anywhere | Training may move to PyTorch or Keras on Colab |
+| Simple tokenizer: lowercase words, `?` and `!` as tokens, other punctuation dropped | Simple enough to explain in one slide | A library tokenizer, if ever needed |
+| Training is hand-written NumPy backprop, not a framework | No port between frameworks; one dependency; checked against numerical gradients | PyTorch scaffold (`train_classifier.py`) is there if we switch |
+| The trained model misses some decisions (reported confirmations like "Venue is confirmed") | Visible, honest failure case for *Try and test* | More decision examples in the data |
 
 ---
 

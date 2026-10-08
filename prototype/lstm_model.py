@@ -45,10 +45,10 @@ What we simplified for the workshop
 - The paper cleans noisy speech audio. We apply the same shape of network
   to our transcript tokens instead. The architecture carries over; the
   task is ours.
-- Still a forward pass only (no training yet). The weights are random,
-  so the hidden-state values are not meaningful content-wise. What this
-  proves is that the shapes, the folding and the skips are wired up
-  correctly end to end.
+- This file is the forward pass only. Training lives in train_lstm.py
+  (plain NumPy backpropagation), which saves trained_lstm.npz;
+  run_pipeline() loads it when it exists. The __main__ walk-through below
+  still uses random weights, to show the shapes, folding and skips.
 
 Why continuous across turns: the reason this workshop teaches LSTM is
 long-range memory across MANY turns (e.g. remembering in turn 9 that
@@ -59,9 +59,12 @@ Written in plain NumPy, no ML framework, so the gates stay visible as
 ordinary maths. Runs as-is on Google Colab (numpy is preinstalled).
 """
 
+import os
+import re
+
 import numpy as np
 
-from transcript_placeholder import get_transcript
+from transcriber import get_transcript  # Track 1; falls back to the placeholder when no audio is given
 
 
 # ---------------------------------------------------------------------------
@@ -228,6 +231,16 @@ class HourglassLSTM:
 TURN_BOUNDARY_TOKEN = "<eot>"  # marks "end of turn" so the model can see speaker changes
 
 
+def split_words(text: str) -> list[str]:
+    """Lowercase words, with ? and ! kept as their own tokens.
+
+    "Sure." and "sure" become the same word, and "Can you do it?" ends in a
+    separate "?" token -- a useful signal that a turn is a request.
+        "Can you check it?" -> ["can", "you", "check", "it", "?"]
+    """
+    return re.findall(r"[a-z0-9']+|[?!]", text.lower())
+
+
 def tokenize_transcript(turns: list[tuple[str, str]]) -> tuple[list[str], list[int]]:
     """Flatten (speaker, text) turns into one long list of words, plus the
     position of the LAST token of each turn (used to read off the hidden
@@ -240,7 +253,7 @@ def tokenize_transcript(turns: list[tuple[str, str]]) -> tuple[list[str], list[i
     turn_end_indices: list[int] = []
 
     for i, (_speaker, text) in enumerate(turns):
-        all_tokens.extend(text.lower().split())
+        all_tokens.extend(split_words(text))
         if i < len(turns) - 1:
             all_tokens.append(TURN_BOUNDARY_TOKEN)
         turn_end_indices.append(len(all_tokens) - 1)
@@ -276,38 +289,95 @@ def pad_to_multiple_of_4(x_seq: np.ndarray) -> np.ndarray:
 # 5. Importable hand-off for meeting_minutes.py (Nomt)
 # ---------------------------------------------------------------------------
 
-def run_pipeline() -> tuple[list[tuple[str, str]], np.ndarray, list[int]]:
+def run_pipeline(audio_path: str | None = None,
+                 transcript: str | None = None,
+                 use_trained: bool = True,
+                 ) -> tuple[list[tuple[str, str]], np.ndarray, list[int]]:
     """Run the pipeline once and return the hand-off contract from progress.md:
     turns, the (num_tokens, 8) hourglass output, and turn_end_indices.
 
     Mirrors the __main__ block below as an importable function instead of a
     script, so meeting_minutes.py can call this instead of re-running main.
+
+    Input, in order of preference:
+      - transcript: an already-made "Speaker: text" transcript (skips Track 1)
+      - audio_path: an audio file, transcribed by transcriber.py (Whisper)
+      - neither:    the placeholder transcript (transcriber.py falls back to it)
+
+    Weights: the trained ones from trained_lstm.npz if train_lstm.py has
+    been run (and use_trained is True), otherwise random ones as before.
     """
-    transcript = get_transcript()
+    if transcript is None:
+        transcript = get_transcript(audio_path)
     turns = [
         (line.split(":", 1)[0].strip(), line.split(":", 1)[1].strip())
         for line in transcript.strip().splitlines()
-        if ":" in line
+        if ":" in line and line.split(":", 1)[1].strip()
     ]
+    if not turns:
+        raise ValueError(
+            "No speaker turns found in the transcript (expected lines like "
+            "'Speaker1: text'). Was the audio silent or too short?"
+        )
 
     EMBEDDING_DIM = 16
     BASE_UNITS = 8
 
     all_tokens, turn_end_indices = tokenize_transcript(turns)
-    vocab = build_vocab(all_tokens)
 
-    rng = np.random.default_rng(42)
-    embeddings = rng.uniform(-0.5, 0.5, (len(vocab), EMBEDDING_DIM))
+    trained = load_trained_model() if use_trained else None
+    if trained is not None:
+        # Trained: fixed vocab from training; words it never saw -> <unk> (id 0)
+        vocab = {word: i for i, word in enumerate(trained["vocab"])}
+        x_seq = trained["embeddings"][[vocab.get(word, 0) for word in all_tokens]]
+        model = trained["model"]
+    else:
+        # Untrained: random embeddings and random LSTM weights (the original demo)
+        vocab = build_vocab(all_tokens)
+        rng = np.random.default_rng(42)
+        embeddings = rng.uniform(-0.5, 0.5, (len(vocab), EMBEDDING_DIM))
+        x_seq = embed_tokens(all_tokens, vocab, embeddings)
+        model = HourglassLSTM(input_size=EMBEDDING_DIM, base_units=BASE_UNITS)
 
-    x_seq = embed_tokens(all_tokens, vocab, embeddings)
     real_length = len(x_seq)
     x_padded = pad_to_multiple_of_4(x_seq)
-
-    model = HourglassLSTM(input_size=EMBEDDING_DIM, base_units=BASE_UNITS)
     output, _layers = model.forward(x_padded)
     output = output[:real_length]
 
     return turns, output, turn_end_indices
+
+
+# ---------------------------------------------------------------------------
+# 5b. Trained weights (made by train_lstm.py)
+# ---------------------------------------------------------------------------
+
+TRAINED_WEIGHTS = os.path.join(os.path.dirname(os.path.abspath(__file__)), "trained_lstm.npz")
+
+
+def load_trained_model(path: str = TRAINED_WEIGHTS) -> dict | None:
+    """Load train_lstm.py's output, or return None if it hasn't been run.
+
+    The file holds the vocab, the embedding table, every gate of the 5
+    layers, and the classifier head, in exactly the shapes this file uses,
+    so loading is just copying arrays into a fresh HourglassLSTM.
+    """
+    if not os.path.isfile(path):
+        return None
+    saved = np.load(path)
+    model = HourglassLSTM(int(saved["embedding_dim"]), int(saved["base_units"]))
+    layers = [model.layer1, model.layer2, model.layer3, model.layer4, model.layer5]
+    for n, layer in enumerate(layers, start=1):
+        for gate in ("f", "i", "c", "o"):
+            setattr(layer, f"W_{gate}", saved[f"layer{n}_W_{gate}"].astype(np.float64))
+            setattr(layer, f"b_{gate}", saved[f"layer{n}_b_{gate}"].astype(np.float64))
+    return {
+        "model": model,
+        "vocab": [str(word) for word in saved["vocab"]],
+        "embeddings": saved["embeddings"].astype(np.float64),
+        "head_W": saved["head_W"].astype(np.float64),
+        "head_b": saved["head_b"].astype(np.float64),
+        "labels": [str(label) for label in saved["labels"]],
+    }
 
 
 # ---------------------------------------------------------------------------
@@ -361,8 +431,10 @@ if __name__ == "__main__":
         print(f"  -> output after this turn (first 4 of 8 dims): {np.round(h[:4], 3)}")
 
     print(
-        "\nWeights are still random (no training yet), so these values are not "
-        "meaningful content-wise. What this shows is the full hourglass running "
+        "\nThis walk-through uses RANDOM starting weights, so these values are "
+        "not meaningful content-wise. What it shows is the full hourglass running "
         "end to end over all 9 turns: shapes fold and unfold correctly, skips "
-        "line up, and state carries through the whole conversation."
+        "line up, and state carries through the whole conversation. "
+        "train_lstm.py trains these weights; run_pipeline() and pipeline.py "
+        "use the trained ones."
     )

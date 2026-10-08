@@ -1,7 +1,10 @@
 """
 Training scaffold for the meeting-minutes classifier (Asy + Nomt).
 
-STATUS: scaffold, not the real trained model. One meeting (the same 9-turn
+STATUS: kept as the PyTorch reference. The real training now lives in
+train_lstm.py (NumPy, full dataset in training_data.py, 7 Oct 2026).
+
+Original scaffold notes: not the real trained model. One meeting (the same 9-turn
 sample transcript everything else in this repo uses), hand-labelled, just
 to prove the training loop runs, the loss drops, and to time one epoch
 before Weekend 2. Weekend 2 replaces GOLD_LABELS with ~100 turns across
@@ -48,14 +51,16 @@ UNK_TOKEN = "<unk>"
 
 # Hand-labelled for the current 9-turn sample transcript. Matches the
 # categories label_turns_stub() uses in meeting_minutes.py, so both files
-# agree on what "this meeting" actually looks like.
+# agree on what "this meeting" actually looks like. Turn 6 ("Yes, I'll
+# email them today.") is action_item under the rule locked 7 Oct: label
+# the request AND the reply that accepts it.
 GOLD_LABELS = [
     "discussion", "discussion", "discussion", "decision",
-    "action_item", "discussion", "discussion", "discussion", "decision",
+    "action_item", "action_item", "discussion", "discussion", "decision",
 ]
 
-# Kept only as a comparison baseline for this training script -- NOT used
-# in meeting_minutes.py, which still runs on label_turns_stub().
+# Comparison baseline. meeting_minutes.py and train_lstm.py use the same
+# lists (the keyword fallback labeller and its baseline).
 _DECISION_KEYWORDS = ["confirmed", "agreed", "approved", "decided", "noted"]
 _ACTION_KEYWORDS = ["can you", "could you", "please", "follow up"]
 
