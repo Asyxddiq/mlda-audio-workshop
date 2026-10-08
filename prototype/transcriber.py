@@ -33,7 +33,8 @@ def _transcribe_segments(audio_path: str) -> list[dict]:
 
     if _model is None:
         _model = whisper.load_model(WHISPER_MODEL)
-    result = _model.transcribe(audio_path)
+    # without word times, segment times ignore silences and the pause rule never fires
+    result = _model.transcribe(audio_path, word_timestamps=True)
     return result["segments"]
 
 

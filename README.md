@@ -6,7 +6,7 @@ The pipeline is audio → transcript → LSTM → meeting minutes. It is written
 
 | Component | Owner | Status (7 Oct 2026) |
 |---|---|---|
-| Real audio → transcript (Whisper, pause-based speakers) | Pasan, Rahini | Working; real-audio run still to test |
+| Real audio → transcript (Whisper, pause-based speakers) | Pasan, Rahini | Works on synthetic speech since the 8 Oct fix; human recording still to test. A reply under 0.8 s can still be merged; more than two speakers are not told apart |
 | RNN + CTC teaching demo | Pasan, Rahini | Working |
 | 5-layer hourglass LSTM | Asy | Working |
 | Training data: 11 hand-labelled meetings (211 turns) + 60 generated practice meetings | Asy (draft), Nomt checked his half 8 Oct | Draft; blind cross-check to do |

@@ -26,9 +26,10 @@ What this does NOT claim
   replies like "Sure." that keyword rules can't, but it still misses
   some decisions, e.g. reported confirmations like "Venue is confirmed".
 - Speakers come from transcriber.py's pause rule (a gap of 0.8 s or more
-  means the next person). Quick replies like "Sure." can be merged into
-  the previous speaker's turn, and more than two speakers are not told
-  apart.
+  means the next person). Works on synthetic speech since the 8 Oct fix;
+  a human recording is still to test. A reply that follows in under 0.8 s
+  can still be merged into the previous speaker's turn, and more than two
+  speakers are not told apart.
 
 Real audio
 ----------
