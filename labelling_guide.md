@@ -8,12 +8,15 @@ training set the same way. One label per turn.
 | **Owners** | Asy, Nomt |
 | **Status** | Rules locked by Asy (7 Oct 2026); blind cross-check still to do |
 | **Feeds** | `prototype/training_data.py` (every labelled meeting), `train_lstm.py`, `meeting_minutes.py` |
-| **Last updated** | 7 Oct 2026 |
+| **Last updated** | 8 Oct 2026 |
 
 > **Locked 7 Oct 2026.** Asy confirmed both proposals: action items are
 > labelled on both the request and the reply, and the cross-turn probe set
 > is in. The first full dataset (`prototype/training_data.py`) follows these
 > rules. Still to do: the blind cross-check in step 3 of the process.
+>
+> Clarified 8 Oct (Nomt's check of his half): echoed replies, ownerless
+> "let's", finished tasks vs settled plans. No labels changed.
 
 ---
 
@@ -70,9 +73,19 @@ request itself is still `action_item`.
   `discussion`.
 - The chair settling a choice ("Okay, Thursday it is.", "Let's go with the
   cheaper one.") is `decision`. Procedural "let's" ("Let's start.", "Let's
-  keep monitoring that.") stays `discussion`.
+  keep monitoring that.") stays `discussion`. A "Let's X" with no owner that
+  settles what will happen ("Let's prepare ponchos just in case.") is also
+  `decision`; it becomes `action_item` only when someone takes it on
+  ("I'll ...") or is named ("Mei, please ...").
 - Reporting that something is now final ("The permit was approved on
   Tuesday.", "Venue is confirmed for the 14th.") is `decision`.
+- Reporting a task someone has finished ("I submitted the abstract
+  yesterday.", "We bought sixty ponchos.") is `discussion`, a status update.
+  The test is whether a plan or approval is now settled, not whether
+  something happened in the past.
+- A reply that just echoes another ("Same.", "Me too.", "Same here.") takes
+  the label of the line it echoes: an echoed agreement is `decision`, an
+  echoed objection is `discussion`.
 - Acknowledging plain information ("The venue closes at ten." → "Okay.") is
   `discussion`.
 
@@ -92,6 +105,10 @@ request itself is still `action_item`.
 | "Venue is confirmed for the 14th." | `decision` | Reporting that something is final |
 | "We have three sponsors confirmed so far." | `decision` | Borderline (it's also a running count); kept as `decision` for consistency with the line above |
 | "Noted, let's add that to the next agenda." | `decision` | Closing/agreeing to carry forward |
+| "I propose we buy tripods." → "Agreed." → "Same here." | `discussion`, `decision`, `decision` | "Same" takes the label of the line it echoes; here an agreement |
+| "Should we give certificates?" → "I'd rather wait." → "Same, people like the medals." | all `discussion` | Here "Same" echoes an objection; the decision is the chair's next line, "Okay, we'll wait then." |
+| "Let's prepare ponchos just in case." | `decision` | Ownerless "let's" settles a course of action; `action_item` only with "I'll" or a named person |
+| "The ponchos are in the storeroom, we bought sixty." | `discussion` | A finished task is a status update; compare "The permit was approved on Tuesday." (`decision`: an approval now settled) |
 
 _Add real examples here as they come up while labelling._
 
