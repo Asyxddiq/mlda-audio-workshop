@@ -4,13 +4,13 @@ Backend prototype for the MLDA Academics workshop **Deep Learning in Audio Appli
 
 The pipeline is audio → transcript → LSTM → meeting minutes. It is written as small, readable NumPy code so that beginner-to-intermediate participants can follow every step and run it on free Google Colab.
 
-| Component | Owner | Status (8 Oct 2026) |
+| Component | Owner | Status (11 Oct 2026) |
 |---|---|---|
 | Real audio → transcript (Whisper, pause-based speakers) | Pasan, Rahini | Works on synthetic speech since the 8 Oct fix; human recording still to test. A reply under 0.8 s can still be merged; more than two speakers are not told apart |
 | RNN + CTC teaching demo | Pasan, Rahini | Working |
 | 5-layer hourglass LSTM | Asy | Working |
 | Training data: 12 hand-labelled meetings (230 turns) + 60 generated practice meetings | Asy (draft), Nomt checked his half 8 Oct | Draft; blind cross-check to do |
-| Trained turn classifier (`train_lstm.py`, NumPy) | Asy | Retrained 8 Oct with more decision examples; beats keyword rules on held-out meetings, but scores lower than the first version (see [results](#step-4-training-the-classifier)) |
+| Trained turn classifier (`train_lstm.py`, NumPy) | Asy | Working; ships the 7 Oct weights (the 8 Oct retrain scored lower on held-out data and was rolled back 11 Oct); beats keyword rules on held-out meetings (see [results](#step-4-training-the-classifier)) |
 | Meeting minutes (trained labels, keyword fallback) | Nomt | Working |
 | Whole chain in one command (`pipeline.py`) | All | Working on the sample meeting |
 
@@ -263,7 +263,7 @@ flowchart LR
     E["end of each turn"] -->|"insert <eot>"| B
 ```
 
-- **Vocabulary:** 66 unique tokens in the sample meeting, including the `<eot>` end-of-turn marker. The trained model uses a fixed 424-word vocabulary from its training data instead, and any word outside it becomes `<unk>`.
+- **Vocabulary:** 66 unique tokens in the sample meeting, including the `<eot>` end-of-turn marker. The trained model uses a fixed 392-word vocabulary from its training data instead, and any word outside it becomes `<unk>`.
 - **Embeddings:** random in this walk-through (seed 42). In the trained model they are learned along with everything else.
 - **The whole conversation is one sequence.** The LSTM never resets between speakers; `<eot>` is how it can tell a new person is talking.
 
@@ -380,19 +380,20 @@ flowchart LR
 | Hand-written: group project, hackathon, the sample meeting | 3 | 45 | **test**, scored once |
 | Probe set: bare replies ("Sure.", "Okay.") after a request, a proposal or plain information | 12 | 12 replies | **cross-turn test**, never trained on |
 
-Results on the held-out data (seed chosen by dev loss before looking at test):
+Results on the held-out data for the shipped weights (`trained_lstm.npz`, trained 7 Oct; seed chosen by dev loss before looking at test):
 
 | Labeller | Test accuracy | Test macro-F1 | Probes correct |
 |---|---|---|---|
-| **Trained hourglass LSTM** | **0.76** | **0.74** | **9 / 12** |
+| **Trained hourglass LSTM** | **0.84** | **0.82** | **9 / 12** |
 | Keyword rules | 0.69 | 0.59 | 3 / 12 |
 | Always "discussion" | 0.56 | 0.24 | 3 / 12 |
 
-- The keyword lists were written while looking at the sample meeting, which flatters them there. On the two test meetings nobody looked at while writing rules (36 turns): model 0.78 accuracy / 0.77 macro-F1, keyword rules 0.64 / 0.50.
-- Across the 5 seeds trained, test accuracy ranged from 0.76 to 0.82 (mean 0.79; macro-F1 mean 0.77). With this little data the starting weights matter a lot, so all five scores are printed every run.
+- The shipped weights were trained on the 7 Oct version of the data (7 training meetings, 146 turns, plus generated practice meetings). `training_data.py` now also holds the 8 Oct decision-as-fact additions in the table above, which a new `train_lstm.py` run would use.
+- The keyword lists were written while looking at the sample meeting, which flatters them there. On the two test meetings nobody looked at while writing rules (36 turns): model 0.86 accuracy / 0.85 macro-F1, keyword rules 0.64 / 0.50.
+- Across the 5 seeds trained on 7 Oct, test accuracy ranged from 0.69 to 0.84. With this little data the starting weights matter a lot, so all five scores are printed every run.
 - What it gets right that keywords can't: "Sure." after "Kai, you handle the judging rubric" (action item) vs "Makes sense." after "How about we split the prizes?" (decision) vs "Okay." after "The bus was late again" (discussion).
-- What it still misses: decisions reported as facts ("Venue is confirmed for the 14th"), 4 of the 10 test decisions, and it calls 5 discussion turns decisions. On the sample meeting it gets 6 of 9 turns right: it finds the action item but neither decision, and it calls "Good, let's keep monitoring that." a decision.
-- These are the numbers after the 8 Oct retrain, which added decision-as-fact examples to the training data. The first version scored higher on test (0.84 / 0.82; 0.86 / 0.85 on the two untouched meetings; 7 of 9 on the sample meeting) but varied more between seeds (0.69 to 0.84). The rule for "better" was written before retraining and judged on dev: get the dev meeting's reported confirmation right without losing anything else. The new model passed it (dev 1.00), yet scored lower on held-out data, because a single 20-turn dev meeting is too small to choose between models. We kept the retrained version; details in [progress.md](progress.md).
+- What it still misses: decisions reported as facts ("Venue is confirmed for the 14th"), 4 of the 10 test decisions. On the sample meeting it gets 7 of 9 turns right: it finds the action item but neither decision, so the minutes list no decisions. On `group_project_3` (`python prototype/pipeline.py --meeting group_project_3 --compare`) it matches 16 of 18 hand labels, keyword rules 12.
+- The 8 Oct retrain on the extra decision examples passed the improvement rule written beforehand (dev 1.00) but scored lower on held-out data (test 0.76 / 0.74; 0.78 / 0.77 on the two untouched meetings; 6 of 9 on the sample meeting, with two wrong items in its minutes). One new generated pattern matches the dev sentence's shape, so the single 20-turn dev meeting saturated and could no longer tell models apart. It was rolled back on 11 Oct; details in [progress.md](progress.md).
 - A separate review checked the first 211 hand-written labels against the rules and looked for test sentences leaking into training; `python prototype/training_data.py` re-runs the leak check (no probe or test sentence shares 5 words in a row with the training data).
 
 ### Component status
