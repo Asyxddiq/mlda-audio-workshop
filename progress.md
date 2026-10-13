@@ -4,9 +4,9 @@
 |---|---|
 | **Owner** | Asy |
 | **Track** | 2: LSTM (with Nomt, who owns meeting minutes) |
-| **Code** | `prototype/lstm_model.py`, `prototype/train_lstm.py`, `prototype/training_data.py`, `prototype/transcript_placeholder.py` |
-| **Last updated** | 11 Oct 2026 |
-| **Current phase** | Weekend 3: 7 Oct model restored (8 Oct retrain rolled back 11 Oct); blind cross-check, a human-audio run and the demo-meeting choice next |
+| **Code** | `prototype/lstm_model.py`, `prototype/train_lstm.py`, `prototype/training_data.py`, `prototype/transcript_placeholder.py`, `prototype/hands_on.py`, `prototype/scorecard.py`, `prototype/compare_rnn.py` |
+| **Last updated** | 13 Oct 2026 |
+| **Current phase** | Weekend 3: hands-on, `--text`, scorecard and RNN comparison built 13 Oct; the 13 Oct retrain was not shipped (7 Oct weights stay); blind check, real meetings, a human-audio run and the demo-meeting choice next |
 
 Update this file whenever something is finished, decided or blocked. Tick the box, add a line to the [log](#log), and move the node in the [roadmap](#roadmap).
 
@@ -17,9 +17,9 @@ Update this file whenever something is finished, decided or blocked. Tick the bo
 ```mermaid
 pie showData
     title LSTM track tasks (18)
-    "Done" : 13
-    "In progress" : 1
-    "To do" : 4
+    "Done" : 14
+    "In progress" : 2
+    "To do" : 2
 ```
 
 | Area | Status | Note |
@@ -29,8 +29,10 @@ pie showData
 | Hourglass architecture | Done | 8 / 16 / 32 / 16 / 8, adapted from Li et al. (2024) |
 | What the LSTM should learn | Done | Per-turn classifier: action_item / decision / discussion (see [decisions](#decisions)) |
 | Labelling guide + rule | Done | Rule locked 7 Oct, clarified 8 Oct; blind cross-check: Nomt 10/10, Asy pending |
-| Training data | Done (draft) | 12 hand-labelled meetings (230 turns) + 60 generated practice meetings; Nomt checked his half 8 Oct (no label changes); decision-as-fact examples added 8 Oct |
-| Training | Done | `train_lstm.py` (NumPy). Shipped weights: 7 Oct, test accuracy 0.84 vs keyword rules 0.69; probes 9/12 vs 3/12. The 8 Oct retrain (0.76) was rolled back 11 Oct |
+| Training data | Done (draft) | 40 hand-labelled meetings (577 turns: train 464, dev 68, test 45) + 60 generated practice meetings + a frozen 6-meeting scorecard (105 turns); Nomt checked his half 8 Oct (no label changes); 24 training and 4 dev meetings added 13 Oct, not yet checked by a person |
+| Training | Done | `train_lstm.py` (NumPy, 5-seed ensemble since 13 Oct). Shipped weights: 7 Oct, test accuracy 0.84 vs keyword rules 0.69; probes 9/12 vs 3/12. The 8 Oct retrain was rolled back 11 Oct; the 13 Oct retrain failed its ship rule and was not shipped (see [log](#log)) |
+| Participants' hands-on | Done | `hands_on.py`: Part A the RNN step (+ memory off), Part B the LSTM notebook update (+ forget knob); `pipeline.py --text` for their own lines |
+| RNN vs LSTM check | Done | `compare_rnn.py`: no clear difference (rule written beforehand) |
 | Hand-off to Nomt | Done | `run_pipeline()` loads the trained weights; `label_turns_model()` in `meeting_minutes.py` |
 | Real transcriber swap | In progress | Wired up in `pipeline.py`; works on synthetic speech after the 8 Oct transcriber fix; human recording still to do |
 
@@ -51,7 +53,7 @@ flowchart LR
     G --> J["Hand-off format<br/>for Nomt"]:::done
     I --> K["Swap in real<br/>transcriber"]:::doing
     J --> K
-    K --> L["Decide 80/20 split"]:::todo
+    K --> L["Decide 80/20 split"]:::done
     L --> M["Freeze + dry run"]:::todo
 
     classDef done fill:#dcefe5,stroke:#1f8a5f,color:#1c1d1f
@@ -113,8 +115,8 @@ gantt
 
 ### Weekend 3: freeze
 
-- [ ] Decide which 20% participants complete, and the Part A/B split for the extension
-- [ ] Write participant starter code and a debug-time cheat sheet
+- [x] Decide which 20% participants complete: write the RNN step, then the LSTM notebook update and the forget knob, then personalise with their own lines (agenda agreed 13 Oct)
+- [ ] Write participant starter code and a debug-time cheat sheet: starter code done (`hands_on.py`, `pipeline.py --text`, 13 Oct); cheat sheet to do
 - [ ] Dry run with someone outside the LSTM track, then freeze
 
 ---
@@ -177,6 +179,29 @@ gantt
 - Re-scored the restored weights against the current code and data: test 0.84 / 0.82, untouched meetings 0.86 / 0.85, sample 7/9, probes 9/12, matching the 7 Oct numbers. The 7 Oct vocabulary (392 words) is stored in the weights file, so the newer `training_data.py` doesn't affect it.
 - Kept everything else from 8 Oct: the decision-as-fact training examples, the dev-vs-train leak check, and `pipeline.py --meeting`. With the restored weights, `--meeting group_project_3` matches 16/18 hand labels against 12/18 for keyword rules, which makes it a strong candidate for the live demo.
 
+### Tue 13 Oct 2026
+
+- **Rebuilt from Nomt's 11 Oct state (e052a01).** An earlier session's 13 Oct work was lost before it was pushed (its workspace was reset), so everything below was rebuilt and retrained from scratch; the figures shared in chat from that lost session don't apply.
+- New `pipeline.py --text FILE`: run your own lines ("Speaker: text", optionally with `act` / `dec` / `dis` in front of every line for a hand-label column), and see which words the model never saw. Example: `prototype/my_meeting_example.txt` (7 lines; the 7 Oct model gets 7/7, keyword rules 5/7).
+- New `hands_on.py` for the participants' 20% (with `hands_on_reference.py` and `--solution`). Part A: write `h = tanh(W_x·x + W_h·h_prev + b)`; two 12-word sentences that differ only in the first word show the memory gap fading by about 58% per step, and with `MEMORY_ON = False` the gap is 0 from word 2. Part B: write `c = f·c_prev + i·g`, which then runs inside the trained model; with `FORGET_KNOB = -6` the notebook loses the first word at once, with `+6` it still holds it at word 12, and the 7 Oct model's test score goes from 38/45 at 0 to 9/45 at −6 and 25/45 at +6. Both knob extremes hurt the trained model, so block 8 should say that, not "keep a lot = better memory".
+- Ensemble support: `trained_lstm.npz` can hold several models (`m0_`, `m1_`... keys), `lstm_model.label_probabilities()` averages them, and `label_turns_model()` uses it. Old single-model files load as before, so the shipped 7 Oct file is unchanged.
+- **Scorecard written first and frozen.** Six new meetings (105 turns: hall council, tutoring, band, research group, football, charity drive) were written before any new training data or training, then hash-locked (`scorecard.py` refuses to run if `scorecard_data.py` changes) and only scored once, after the ship decision. Three of its lines were reworded before that first score because the leak check found 5-word overlaps with older training lines. Caveat: Claude wrote them after seeing the earlier model's weak spots.
+- **More data:** 24 training meetings (299 turns) and 4 dev meetings (dev is now 5 meetings, 68 turns, so it no longer saturates). The leak check now covers the scorecard as well; one new dev line was reworded to pass it.
+- **Ship rule, written before training:** dev accuracy and macro-F1 both +0.03 or more against the 7 Oct model, no held-out measure lower (test, the two untouched test meetings, probes, sample), plus the 11 Oct team rule (test macro-F1 at least 0.82, no wrong items in the demo minutes). Fixed settings, no sweeps: 5 seeds kept as an ensemble, `<unk>` dropout 0.15.
+
+| KPI | Shipped (7 Oct) | 13 Oct ensemble | Keyword rules | Rule |
+|---|---|---|---|---|
+| Dev accuracy / macro-F1 (68 turns) | 0.90 / 0.87 | **0.94 / 0.92** | | pass |
+| Test accuracy / macro-F1 (45 turns) | 0.84 / 0.82 | 0.84 / 0.83 | 0.69 / 0.59 | pass (equal) |
+| Two untouched test meetings, accuracy (36 turns) | **0.86** | 0.83 | 0.64 | **fail** |
+| Probes (of 12) | **9** | 8 | 3 | **fail** |
+| Sample meeting (of 9) | 7 | **8** | 8 | pass |
+| Scorecard accuracy / macro-F1 (105 turns, after the decision) | 0.78 / 0.72 | **0.84 / 0.79** | 0.76 / 0.61 | not in the rule |
+
+- **Result: not shipped.** Better on dev and the scorecard, but lower on the untouched test meetings and the probes, so `trained_lstm.npz` keeps the 7 Oct weights. Same pattern as 8 Oct: our own extra writing lifts dev more than the meetings nobody tuned on. Single seeds: test accuracy 0.78 to 0.87.
+- **Flagged failures (13 Oct ensemble):** decisions stated as facts ("Venue is confirmed for the 14th", "We have three sponsors confirmed so far"); the chair settling a plan ("Okay, Thursday at four then."); 3 of 4 agreement probes called discussion; missed requests ("Could you order for seventy instead of sixty this time?", "I'll let the venue team know."); false action items ("Can you remind me where the form is?", "I won't be able to come on the second day"); on the scorecard decision precision is 0.57 (too many turns called decisions). Its demo minutes have no wrong items.
+- **RNN vs LSTM** (`compare_rnn.py`, for Pasan and Rahini): same hourglass with plain RNN layers, both trained on the same data with the same 5 seeds. Rule written before the run: "LSTM better" needs +1 probe and +0.05 macro-F1 on 5-seed means. Test means: LSTM 0.82 / 0.80, probes 7.6; RNN 0.80 / 0.76, probes 9.0. Verdict: **no clear difference** (+0.046 macro-F1 for the LSTM, but 1.4 fewer probes). Memory reach (how much blanking the turn d back moves the current prediction): LSTM 0.074 / 0.011 / 0.004 / 0.001 for 1 to 4 turns back, RNN 0.077 / 0.020 / 0.006 / 0.000. Both use about one turn of context, which is all this task needs.
+
 <!-- Add new entries above this line, newest date last. -->
 
 ---
@@ -210,6 +235,12 @@ gantt
 | 8 Oct | Keep the 3 borderline labels in Nomt's half; write the rules into the guide instead | Each change would contradict how the same kind of turn is labelled elsewhere; the rules were implicit, which likely feeds the model's weakness on decisions reported as facts |
 | 8 Oct | Ship the retrained model (more decision-as-fact examples) although held-out scores dropped | It passed the improvement rule written before retraining (judged on dev), and seeds are steadier (0.76 to 0.82 vs 0.69 to 0.84). Asy's call; the first version is in git history. **Reversed 11 Oct**, see below |
 | 11 Oct | Roll back to the 7 Oct weights; keep the 8 Oct data, checks and `--meeting` | Worse on every held-out measure and wrong items in the demo minutes; the dev rule it passed can't separate models once dev saturates. Nomt's call, for Asy to confirm in review |
+| 13 Oct | Participants' 20%: write the RNN step (Part A) and the LSTM notebook update plus forget knob (Part B) in `hands_on.py`; personalise with their own lines through `pipeline.py --text` | Matches the agreed agenda; one line of maths each with an instant check; their own lines need no retraining |
+| 13 Oct | A frozen scorecard: 6 meetings written before training, hash-checked, aggregate scores only | Dev saturated on 8 Oct; this is a second held-out look that can't be tuned against turn by turn |
+| 13 Oct | Bigger dev set (5 meetings, 68 turns) | The 8 Oct lesson: one 20-turn dev meeting couldn't tell models apart |
+| 13 Oct | Ensemble support in the code; default `ENSEMBLE = True` for new training runs | Steadier than one seed; old single-model weight files still load |
+| 13 Oct | Keep the 7 Oct weights; don't ship the 13 Oct ensemble | Failed the do-no-harm check written beforehand (untouched test 0.83 vs 0.86, probes 8 vs 9), although better on dev and the scorecard. Revisit with real meetings as a new test set, not by changing the rule after seeing the results |
+| 13 Oct | RNN vs LSTM: "no clear difference" | Rule written before the run; both models use about one turn of context |
 
 ---
 
@@ -221,8 +252,9 @@ gantt
 - [x] **Training in NumPy or a framework?** RESOLVED (27 Sep), revised 7 Oct: NumPy (`train_lstm.py`) for training as well; the PyTorch scaffold is kept as a reference.
 - [x] **Action-item labelling rule:** RESOLVED (7 Oct): both the request and the reply, merged in the minutes.
 - [x] **Cross-turn probe set:** RESOLVED (7 Oct): 12 probes in `training_data.py`, never trained on.
-- [ ] **Which 20% do participants complete** in the first hands-on demo (classifier forward pass, the minutes formatter, or one short training run), and what is Part A vs Part B in the extension? Now scoped to *one shared meeting* (decided); exact missing piece still open.
-- [ ] **Decisions reported as facts** ("Venue is confirmed") are still the model's weakest spot. 8 Oct: more examples added and retrained; held-out scores dropped and dev now scores 1.00, so it can't pick between models. 11 Oct: rolled back to the 7 Oct weights. Next: a bigger dev set (dev and test are fixed, so this needs the team's agreement), or accept it as the *Try and test* failure case?
+- [x] **Which 20% do participants complete?** RESOLVED (13 Oct): the RNN step and the LSTM notebook update plus forget knob (`hands_on.py`), then their own lines through `pipeline.py --text`.
+- [ ] **Decisions reported as facts** ("Venue is confirmed") are still the model's weakest spot. 8 Oct: more examples added and retrained; held-out scores dropped and dev now scores 1.00, so it can't pick between models. 11 Oct: rolled back to the 7 Oct weights. 13 Oct: dev enlarged to 5 meetings and 24 more training meetings added; still missed, and that retrain wasn't shipped. Next: examples from real meetings, or accept it as the *Try and test* failure case.
+- [ ] **Ship the 13 Oct ensemble anyway?** It failed the rule written beforehand but scores higher on dev and the scorecard. A small set of real team meetings, labelled and used as a fresh test, would settle it fairly.
 
 ---
 
@@ -247,15 +279,17 @@ sequenceDiagram
 | `output` | NumPy array `(num_tokens, 8)` | Ready (trained weights when `trained_lstm.npz` exists, random otherwise) |
 | `turn_end_indices` | list of int, one per turn | Ready |
 | A function Nomt can import instead of running `main` | `run_pipeline(audio_path=None, transcript=None, use_trained=True) -> (turns, output, turn_end_indices)` | Ready (audio and transcript input added 7 Oct) |
-| Turn labels from the trained model | `label_turns_model(turns, output, turn_end_indices)` in `meeting_minutes.py` | Ready (7 Oct); falls back to `label_turns_keywords()` if there are no weights |
+| Turn labels from the trained model | `label_turns_model(turns, output, turn_end_indices)` in `meeting_minutes.py` | Ready (7 Oct); falls back to `label_turns_keywords()` if there are no weights; averages an ensemble since 13 Oct |
+| Label probabilities, averaged over every model in the weights file | `label_probabilities(turns)` in `lstm_model.py` | Ready (13 Oct) |
 
 ---
 
 ## Next up
 
-1. **Asy:** blind-label `blind_check_for_asy.md` (10 of Nomt's turns, kept outside the repo), compare with the key, tighten the guide where you disagree; rerun `python prototype/train_lstm.py` only if a label changes. (Nomt's 10: done 8 Oct, 10/10 agree.)
-2. Run `python prototype/pipeline.py meeting.wav` on a **human** recording (the 8 Oct test used synthetic speech).
-3. **Pasan:** review the 8 Oct one-line change in `transcriber.py` (`word_timestamps=True`), which fixed turn splitting on audio. Still open: more than two speakers, overlapping speech, and replies that come in under 0.8 s.
-4. Decision examples added 8 Oct; the retrain was rolled back 11 Oct (see [log](#log)). Next: agree with the team on a bigger dev set so model selection can tell candidates apart, then add decision examples from real meetings. Until then, a `train_lstm.py` run overwrites `trained_lstm.npz`: only commit the new file if it beats 0.84 / 0.82 on test and the demo minutes have no wrong items.
-5. Decide the participants' 20% (candidates: the classifier head's forward pass, one LSTM backward step, or label 5 turns and retrain).
-6. Choose the live demo meeting: the sample meeting (model 7/9, keyword rules 8/9, no decisions found) or `group_project_3` via `pipeline.py --meeting` (model 16/18, keyword rules 12/18).
+1. **Asy:** blind-label §blind_check_for_asy.md§ (10 of Nomt's turns, kept outside the repo), compare with the key, tighten the guide where you disagree. (Nomt's 10: done 8 Oct, 10/10 agree.)
+2. **Team:** collect 5 to 10 short real meetings (CCA, project or club, with permission), label them with the guide, and keep them as a fresh test set. That settles the 7 Oct vs 13 Oct model question fairly, and gives the decision examples the model still lacks.
+3. **Nomt:** review the 13 Oct changes, especially the ensemble path in §label_turns_model()§, §pipeline.py --text§ and §hands_on.py§.
+4. Run §python prototype/pipeline.py meeting.wav§ on a **human** recording (the 8 Oct test used synthetic speech).
+5. **Pasan:** review the 8 Oct one-line change in §transcriber.py§ (§word_timestamps=True§). Still open: more than two speakers, overlapping speech, replies under 0.8 s. Pasan and Rahini: the RNN vs LSTM result is in the 13 Oct log.
+6. Dry-run §hands_on.py§ on free Colab with someone outside the LSTM track, and write the debug-time cheat sheet.
+7. Choose the live demo meeting: the sample meeting (7 Oct model 7/9, keyword rules 8/9, no decisions found) or §group_project_3§ via §pipeline.py --meeting§ (model 16/18, keyword rules 12/18).
