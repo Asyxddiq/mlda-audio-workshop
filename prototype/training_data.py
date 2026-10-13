@@ -330,6 +330,449 @@ dis  Jun: That's all from me.
 dis  Lina: Thanks everyone, see you on Monday.
 """
 
+# ---------------------------------------------------------------------------
+# Added 13 Oct (training only): 24 more meetings in new settings, so the
+# model sees more ways of saying the same thing. Written by Claude, same
+# rules as labelling_guide.md. Batch 1 (12) then batch 2 (12).
+# ---------------------------------------------------------------------------
+
+PHOTO_CLUB_1 = """
+dis  Jia: Hi all, let's start. The exhibition is in two weeks.
+dis  Ken: I printed the first twenty photos this afternoon.
+dis  Jia: Looks great.
+dis  Lara: Do we have frames for all of them?
+dis  Ken: Only for twelve, the shop ran out.
+act  Jia: Lara, could you check the other branch tomorrow?
+act  Lara: Sure, it's on my way home.
+dis  Ken: Should we print captions under each photo or put a list at the door?
+dis  Lara: A list is cheaper.
+dec  Jia: Okay, a list at the door then.
+dec  Ken: Fine with me.
+dec  Lara: The arts centre booked us the small gallery for the whole week.
+dis  Jia: Brilliant. That's it for now.
+"""
+
+DRAMA_CLUB_1 = """
+dis  Nora: Okay, quick production meeting before rehearsal.
+dis  Eli: The script changes are done, I sent them to the cast last night.
+dis  Nora: Thanks.
+dis  Pia: The lights in the hall flicker during the second act.
+dis  Eli: Is that the bulbs or the dimmer?
+dis  Pia: Probably the dimmer, the technician said it's old.
+act  Nora: Can you ask the technician to look at it before Friday?
+act  Pia: Okay.
+act  Eli: For costumes, we're still missing the two soldier jackets. I'll borrow them from the theatre society.
+dis  Pia: Should we sell tickets online this year?
+dec  Nora: Yes, let's do it online.
+dec  Eli: Agreed, it's easier for everyone.
+dis  Nora: Alright, places for act one please.
+"""
+
+ROBOTICS_TEAM_1 = """
+dis  Raj: Morning, let's go through the robot before the qualifier.
+dis  Sofia: The left motor overheats after ten minutes.
+dis  Tim: I replaced the fan on Monday, it didn't help.
+dis  Raj: Hmm, okay.
+dis  Sofia: Maybe we lower the speed limit in the code.
+dis  Tim: I'd rather not, we need the speed for the ramp.
+dis  Raj: What if we add a heat sink instead?
+dec  Tim: Yeah, that's better.
+dec  Sofia: Okay, heat sink it is.
+act  Raj: Tim, you order the heat sink today.
+act  Tim: Got it.
+dec  Sofia: The organisers confirmed our slot for nine thirty.
+dis  Raj: Good. Back to testing then.
+"""
+
+NEWSPAPER_1 = """
+dis  Ava: Let's begin, we need to lock the next issue by Thursday.
+dis  Ben: I have the interview with the dean, it's about eight hundred words.
+dis  Ava: That's a bit long.
+dis  Ben: I can cut it to six hundred.
+dis  Cara: The sports page is empty, nobody covered the finals.
+act  Ava: Cara, would you write a short piece on the finals by Wednesday?
+act  Cara: Yes, I'll do it tonight.
+dis  Ben: Should we keep the crossword?
+dec  Ava: Let's keep it, people like it.
+dis  Cara: The printer sent the new price list, it went up again.
+dis  Ava: Okay, noted for now.
+act  Ben: I'll compare it with the other printer and report back.
+dis  Ava: Thanks, see you Thursday.
+"""
+
+RECYCLING_DRIVE_1 = """
+dis  Ella: Okay, let's talk about the recycling drive.
+dis  Finn: We collected forty bags of plastic last weekend.
+dis  Ella: That's a lot more than I expected.
+dis  Gita: The collection bins near the canteen are always full by noon.
+dis  Finn: How about we put two more bins there?
+dec  Ella: Sure.
+dec  Gita: Same.
+act  Ella: Finn, can you ask facilities for the extra bins?
+act  Finn: No problem.
+dis  Gita: Did the town council reply about the pickup?
+dec  Ella: Yes, they agreed to collect every Thursday from next week.
+dis  Gita: Nice.
+dis  Finn: That's all from me.
+"""
+
+STUDY_GROUP_1 = """
+dis  Ivy: Okay, let's plan the revision for the final.
+dis  Jon: The exam covers chapters one to nine.
+dis  Kim: Can you remind me which chapters were cancelled?
+dis  Jon: Only chapter ten, the lecturer dropped it.
+dis  Ivy: Should we split the chapters and each make a summary?
+dec  Kim: Good idea.
+dec  Jon: Yeah, okay.
+act  Ivy: I'll take chapters one to three.
+act  Kim: I can do four to six.
+act  Jon: Then I'll do seven to nine.
+dis  Kim: When should we share them?
+dec  Ivy: Let's share them by Sunday night.
+dis  Jon: Okay, see you then.
+"""
+
+DANCE_CLUB_1 = """
+dis  Lily: Hi everyone, quick one about the showcase.
+dis  Max: The studio is free on Saturday mornings only.
+dis  Lily: Okay.
+dis  Nia: We still don't have the music for the group piece.
+act  Lily: Nia, please send me three options by tomorrow.
+act  Nia: Will do.
+dis  Max: The costume budget is around two hundred dollars.
+dis  Nia: That's not much for twelve dancers.
+dis  Lily: Maybe we should wear black and just buy matching scarves.
+dec  Max: Works for me.
+dec  Nia: Sounds good.
+dec  Lily: The student union approved our showcase date this morning.
+dis  Max: Finally. Okay, let's warm up.
+"""
+
+CAREER_FAIR_1 = """
+dis  Omar: Okay, let's start, the career fair is in ten days.
+dis  Pam: We have eighteen companies registered so far.
+dis  Omar: Got it.
+dis  Quinn: Three of them asked for a power socket at their booth.
+act  Omar: Can you check the floor plan for sockets?
+act  Quinn: Sure, I'll look at it after lunch.
+dis  Pam: Should we give the companies lunch as well?
+dis  Quinn: The budget is tight this year.
+dis  Pam: Hmm, okay.
+dec  Omar: Let's just give them coffee and snacks then.
+dec  Pam: Fair enough.
+dis  Quinn: I sent the reminder email to all students yesterday.
+dis  Omar: Great, thanks. That's all.
+"""
+
+CHESS_CLUB_1 = """
+dis  Ray: Alright, let's go through the tournament plans.
+dis  Sara: We have twenty eight players signed up.
+dis  Ray: Do we have enough boards?
+dis  Sara: We have fifteen, so yes.
+dis  Ray: Okay.
+dis  Toby: Should we use the rapid format so it finishes on time?
+dec  Sara: Yeah, let's do that.
+dec  Ray: Agreed.
+act  Sara: Toby, you prepare the pairings the night before.
+act  Toby: Okay, will do.
+dec  Sara: The library confirmed we can use the reading room all day.
+dis  Toby: Nice. Anything else?
+dis  Ray: No, that's it.
+"""
+
+WELCOME_NIGHT_1 = """
+dis  Uma: Okay, welcome night planning.
+dis  Vic: We expect about sixty new students.
+dis  Wes: The hall holds eighty, so we're fine.
+dis  Uma: Good.
+dis  Vic: For food, should we order pizza or noodles?
+dis  Wes: Noodles are cheaper and more people can eat them.
+dec  Uma: Then we'll go with noodles.
+dec  Vic: Okay.
+act  Wes: I'll call the restaurant tomorrow to place the order.
+dis  Vic: We still need someone to run the games.
+act  Uma: Vic, can you plan two icebreaker games?
+act  Vic: Sure.
+dis  Uma: Okay, that's everything.
+"""
+
+FOOD_FAIR_1 = """
+dis  Xena: Let's start. The food fair is next Saturday.
+dis  Yusuf: Nine stalls have confirmed, we wanted twelve.
+dis  Xena: Hmm, okay.
+dis  Zoe: The health office asked for a list of all the stalls.
+act  Xena: Zoe, could you send them the list by Wednesday?
+act  Zoe: Okay, I'll do it tomorrow.
+dis  Yusuf: The tents from last year are torn.
+dis  Zoe: We could rent new ones, it's about a hundred dollars.
+dec  Xena: Okay, let's rent them.
+dec  Yusuf: Fine by me.
+dec  Zoe: The campus police signed off on the road closure yesterday.
+dis  Xena: Great news. See you all on Saturday.
+"""
+
+JOURNAL_CLUB_1 = """
+dis  Adam: Okay, let's pick the paper for next week.
+dis  Beth: I suggested the one on speech recognition in noisy rooms.
+dis  Carl: I read it, it's quite long.
+dis  Adam: How about we just cover the first half?
+dec  Beth: Sure.
+dec  Carl: That works for me.
+act  Adam: Beth, you lead the discussion since you picked it.
+act  Beth: Okay.
+dis  Carl: I finished the slides for last week's paper, they're on the drive.
+dis  Adam: Thanks Carl.
+dis  Beth: Is the room still the same?
+dis  Adam: Yes, same room, same time.
+dis  Carl: Okay, see you then.
+"""
+
+MODEL_UN_1 = """
+dis  Dina: Hi all, let's prepare for the conference.
+dis  Eric: Our delegation got the climate committee.
+dis  Dina: Okay.
+dis  Fay: We need position papers by the fifteenth.
+act  Dina: Eric, can you draft ours this weekend?
+act  Eric: Yes, I'll start on Saturday.
+dis  Fay: Should we practise speeches on Thursday?
+dec  Dina: Good idea, let's practise on Thursday.
+dec  Eric: Sounds good.
+dis  Fay: The registration fee is forty dollars each.
+dec  Dina: The faculty agreed to cover half of it.
+dis  Eric: Oh, that helps.
+dis  Dina: Okay, that's all for today.
+"""
+
+CAMPUS_RADIO_1 = """
+dis  Gus: Okay, let's go, short meeting today.
+dis  Hope: The new microphones came in on Tuesday.
+dis  Gus: Nice.
+dis  Iris: Our Friday show has almost no listeners.
+dis  Hope: What if we move it to the lunchtime slot?
+dis  Iris: I'm not sure, the lunch slot clashes with the news.
+dis  Gus: Let's think about it and decide next week.
+dis  Hope: Someone needs to update the show schedule online.
+act  Iris: I can do it tonight.
+act  Gus: Thanks. Also, the studio key is missing again. Hope, please ask security for a spare.
+act  Hope: Okay.
+dis  Gus: Alright, see you next week.
+"""
+
+GARDENING_CLUB_1 = """
+dis  Jade: Morning everyone, let's check on the garden.
+dis  Kurt: The tomatoes are doing well, the lettuce not so much.
+dis  Lena: I think the lettuce needs more shade.
+dis  Jade: Should we put up a net over that bed?
+dec  Kurt: Yeah, okay.
+dec  Lena: Agreed.
+act  Jade: Kurt, could you buy a shade net this week?
+act  Kurt: Sure.
+dis  Lena: I watered everything on Sunday and Monday.
+dis  Jade: Thank you.
+dec  Kurt: The estate office said yes to the second garden plot.
+dis  Lena: That's great news.
+dis  Jade: Okay, let's get to work.
+"""
+
+ALUMNI_DINNER_1 = """
+dis  Mark: Okay, let's go through the alumni dinner.
+dis  Nina: Fifty two alumni have replied yes.
+dis  Mark: Got it.
+dis  Owen: The hotel wants the final numbers by Monday.
+act  Mark: Nina, please send them the numbers on Monday morning.
+act  Nina: Okay, will do.
+dis  Owen: Should we invite the old club advisor as a guest of honour?
+dec  Nina: Yes, let's invite her.
+dec  Mark: Same.
+act  Owen: I'll write to her tonight.
+dis  Nina: We printed the name tags on Friday.
+dis  Mark: Great, that's all from me.
+"""
+
+PEER_MENTORING_1 = """
+dis  Pria: Let's start, we have the mentor matching to discuss.
+dis  Ravi: Thirty mentors and forty five first years signed up.
+dis  Pria: So some mentors will have two mentees.
+dis  Sean: Should we ask for volunteers to take two?
+dec  Pria: Yes, let's ask for volunteers first.
+dec  Ravi: Okay.
+act  Sean: I'll send the message to the mentors today.
+dis  Ravi: The training session for mentors is fixed for the third.
+dis  Pria: Do we have a room?
+dec  Ravi: Yes, the counselling centre booked their seminar room for us.
+dis  Sean: Good.
+dis  Pria: Okay, thanks everyone.
+"""
+
+ESPORTS_CLUB_1 = """
+dis  Troy: Okay team, quick meeting about the league.
+dis  Una: We lost two of our three matches last week.
+dis  Troy: Yeah, I saw.
+dis  Vik: Our practice times keep changing, that's the main problem.
+dis  Una: How about fixed practice every Tuesday and Thursday?
+dec  Vik: Works for me.
+act  Troy: Okay, Tuesday and Thursday it is. Una, can you post the schedule in the group?
+act  Una: Yep.
+dis  Vik: The lab computers were updated, the game runs faster now.
+dis  Troy: Good to know. Alright, that's it.
+"""
+
+STARTUP_TEAM_1 = """
+dis  Walt: Let's start, we have the pitch in nine days.
+dis  Xia: I finished the first version of the deck yesterday.
+dis  Walt: Thanks, I'll read it tonight.
+dis  Yan: The judges want to see a working demo.
+dis  Xia: The demo crashes when two people log in at once.
+act  Walt: Yan, could you look at that bug this week?
+act  Yan: Okay, I'll try tomorrow.
+dis  Xia: Should we mention the pilot with the cafe?
+dec  Walt: Yes, let's put it on the second slide.
+dec  Yan: Agreed.
+dec  Xia: The incubator accepted us for the spring programme.
+dis  Walt: Wow, that's great. Okay, back to work.
+"""
+
+CHOIR_CONCERT_1 = """
+dis  Zoey: Okay, let's plan the winter concert.
+dis  Alan: We have eight songs ready.
+dis  Zoey: Got it.
+dis  Bree: The piano in the hall is out of tune.
+act  Zoey: Bree, can you call the tuner this week?
+act  Bree: Sure, I'll call on Monday.
+dis  Alan: Do we sell tickets or keep it free?
+dis  Bree: Last time it was free and the hall was full.
+dec  Zoey: Then let's keep it free.
+dec  Alan: Okay.
+dec  Bree: The music department lent us the hall for the evening of the ninth.
+dis  Zoey: Perfect. Let's start with the first song.
+"""
+
+BLOOD_DRIVE_1 = """
+dis  Cleo: Hi all, the blood drive is in three weeks.
+dis  Dan: The blood bank sent the forms this morning.
+dis  Cleo: Okay.
+dis  Emma: Last time a lot of people didn't show up.
+dis  Dan: Maybe we should send a text reminder the day before.
+dec  Cleo: Yes, let's do that.
+dec  Emma: Good call.
+act  Cleo: Emma, could you set up the reminders?
+act  Emma: Okay, I'll set them up this weekend.
+dec  Dan: The sports hall is booked for the whole day.
+dis  Emma: That's a relief.
+dis  Cleo: Okay, see you next week.
+"""
+
+EXCHANGE_INFO_1 = """
+dis  Fred: Okay, let's plan the exchange info session.
+dis  Gina: Four partner universities said they can join online.
+dis  Fred: Nice.
+dis  Hugo: Do we have a room with a good camera?
+dis  Gina: The seminar room on level five has one.
+act  Fred: Can you book it for the twentieth?
+act  Gina: Okay.
+dis  Hugo: Should we record the session for people who can't come?
+dec  Fred: Yes, let's record it.
+dec  Gina: Sure.
+dis  Hugo: I made the poster last night, it's in the drive.
+dis  Fred: Thanks Hugo. That's all.
+"""
+
+ASTRONOMY_CLUB_1 = """
+dis  Iko: Okay, let's talk about the stargazing night.
+dis  Jay: The forecast says clear skies on Friday.
+dis  Iko: Okay.
+dis  Kia: We only have two telescopes working.
+dis  Jay: The third one needs a new lens, about eighty dollars.
+dis  Iko: Should we buy the lens?
+dec  Kia: Yeah, why not.
+dec  Jay: Agreed.
+act  Iko: Jay, you order the lens today.
+act  Jay: Will do.
+dec  Kia: Security agreed to keep the rooftop open until midnight.
+dis  Iko: Great. See you Friday.
+"""
+
+YEARBOOK_1 = """
+dis  Lou: Let's start, the yearbook goes to print in a month.
+dis  Mia: I collected photos from eleven clubs so far.
+dis  Lou: Good.
+dis  Ned: Some clubs haven't sent anything yet.
+act  Lou: Ned, please email the remaining clubs this week.
+act  Ned: Okay.
+dis  Mia: Should we add a page for the graduating staff?
+dec  Lou: Yes, let's add one page.
+dec  Ned: Fine by me.
+act  Mia: I'll ask the office for the list of staff.
+dis  Ned: I already fixed the typos in the first ten pages.
+dis  Lou: Thanks Ned. Okay, that's it.
+"""
+
+# ---------------------------------------------------------------------------
+# Added 13 Oct (dev only): 4 more dev meetings, so dev has enough turns to
+# tell models apart (the 8 Oct retrain showed one 20-turn dev meeting
+# saturates). Never trained on.
+# ---------------------------------------------------------------------------
+
+MUSIC_CLUB_1 = """
+dis  Abel: Okay, let's get started on the open mic.
+dis  Bina: Fourteen acts have signed up.
+dis  Abel: Nice.
+dis  Cruz: The sound system from the union is booked for the evening.
+dec  Abel: Great, so the sound is sorted.
+dis  Bina: The stage is quite small for the band acts.
+dis  Cruz: Maybe the band acts should all go in the second half?
+dec  Bina: Sounds good.
+act  Abel: Agreed. Cruz, can you put together the running order?
+act  Cruz: Sure.
+dis  Bina: I printed the flyers yesterday.
+dis  Abel: Thanks. Okay, that's all.
+"""
+
+DEBATE_TEAM_1 = """
+dis  Dara: Let's begin, the regional debate is in two weeks.
+dis  Emil: We got the motion on public transport.
+dis  Dara: Okay.
+dis  Faye: We need a third speaker, Leon is sick.
+dis  Emil: Maybe we can ask Tasha, she debated last year.
+act  Dara: Faye, could you message Tasha today?
+act  Faye: Yes, I'll text her now.
+dis  Emil: Should we practise against the second team on Saturday?
+dec  Dara: Sure.
+dec  Faye: Okay.
+dec  Emil: The coach confirmed the bus for the competition.
+dis  Dara: Good. See you Saturday.
+"""
+
+CODING_CLUB_1 = """
+dis  Gabe: Okay, let's plan the beginner workshop.
+dis  Hiro: Thirty students registered.
+dis  Gabe: Got it.
+dis  Ines: The lab only has twenty five computers.
+dis  Hiro: Some people can bring their own laptops.
+dis  Gabe: Should we ask everyone to bring a laptop just in case?
+dec  Ines: Yeah, let's do that.
+dec  Hiro: Same.
+act  Gabe: Ines, please add that to the registration email.
+act  Ines: Okay.
+act  Hiro: I'll prepare the exercises for the first hour.
+dis  Gabe: Thanks. That's everything.
+"""
+
+HOSTEL_FLOOR_1 = """
+dis  Jana: Hi everyone, floor meeting, it won't take long.
+dis  Kris: The kitchen is getting really messy.
+dis  Liam: Yeah, someone left dishes for three days.
+dis  Jana: What if we make a cleaning roster?
+dec  Kris: Good idea.
+dec  Liam: Okay.
+act  Jana: Kris, can you draw up the roster?
+act  Kris: Sure, I'll put it on the fridge.
+dis  Liam: Also the fire drill is on Wednesday at ten.
+dis  Jana: Okay.
+dec  Kris: The warden agreed to fix the shower on our floor this week.
+dis  Jana: Finally. Alright, that's it.
+"""
+
 # The 9-turn sample meeting from transcript_placeholder.py, relabelled with
 # the locked rule (turn 6 "Yes, I'll email them today." is now act).
 SAMPLE_MEETING = """
@@ -353,7 +796,38 @@ MEETINGS = [
     {"name": "cca_committee_2", "split": "train", "turns": _parse(CCA_COMMITTEE_2)},
     {"name": "club_event_1",    "split": "train", "turns": _parse(CLUB_EVENT_1)},
     {"name": "orientation_1",   "split": "train", "turns": _parse(ORIENTATION_1)},
+    # 13 Oct, batch 1 (training)
+    {"name": "photo_club_1",      "split": "train", "turns": _parse(PHOTO_CLUB_1)},
+    {"name": "drama_club_1",      "split": "train", "turns": _parse(DRAMA_CLUB_1)},
+    {"name": "robotics_team_1",   "split": "train", "turns": _parse(ROBOTICS_TEAM_1)},
+    {"name": "newspaper_1",       "split": "train", "turns": _parse(NEWSPAPER_1)},
+    {"name": "recycling_drive_1", "split": "train", "turns": _parse(RECYCLING_DRIVE_1)},
+    {"name": "study_group_1",     "split": "train", "turns": _parse(STUDY_GROUP_1)},
+    {"name": "dance_club_1",      "split": "train", "turns": _parse(DANCE_CLUB_1)},
+    {"name": "career_fair_1",     "split": "train", "turns": _parse(CAREER_FAIR_1)},
+    {"name": "chess_club_1",      "split": "train", "turns": _parse(CHESS_CLUB_1)},
+    {"name": "welcome_night_1",   "split": "train", "turns": _parse(WELCOME_NIGHT_1)},
+    {"name": "food_fair_1",       "split": "train", "turns": _parse(FOOD_FAIR_1)},
+    {"name": "journal_club_1",    "split": "train", "turns": _parse(JOURNAL_CLUB_1)},
+    # 13 Oct, batch 2 (training)
+    {"name": "model_un_1",        "split": "train", "turns": _parse(MODEL_UN_1)},
+    {"name": "campus_radio_1",    "split": "train", "turns": _parse(CAMPUS_RADIO_1)},
+    {"name": "gardening_club_1",  "split": "train", "turns": _parse(GARDENING_CLUB_1)},
+    {"name": "alumni_dinner_1",   "split": "train", "turns": _parse(ALUMNI_DINNER_1)},
+    {"name": "peer_mentoring_1",  "split": "train", "turns": _parse(PEER_MENTORING_1)},
+    {"name": "esports_club_1",    "split": "train", "turns": _parse(ESPORTS_CLUB_1)},
+    {"name": "startup_team_1",    "split": "train", "turns": _parse(STARTUP_TEAM_1)},
+    {"name": "choir_concert_1",   "split": "train", "turns": _parse(CHOIR_CONCERT_1)},
+    {"name": "blood_drive_1",     "split": "train", "turns": _parse(BLOOD_DRIVE_1)},
+    {"name": "exchange_info_1",   "split": "train", "turns": _parse(EXCHANGE_INFO_1)},
+    {"name": "astronomy_club_1",  "split": "train", "turns": _parse(ASTRONOMY_CLUB_1)},
+    {"name": "yearbook_1",        "split": "train", "turns": _parse(YEARBOOK_1)},
     {"name": "club_event_2",    "split": "dev",   "turns": _parse(CLUB_EVENT_2)},
+    # 13 Oct (dev only)
+    {"name": "music_club_1",    "split": "dev",   "turns": _parse(MUSIC_CLUB_1)},
+    {"name": "debate_team_1",   "split": "dev",   "turns": _parse(DEBATE_TEAM_1)},
+    {"name": "coding_club_1",   "split": "dev",   "turns": _parse(CODING_CLUB_1)},
+    {"name": "hostel_floor_1",  "split": "dev",   "turns": _parse(HOSTEL_FLOOR_1)},
     {"name": "group_project_3", "split": "test",  "turns": _parse(GROUP_PROJECT_3)},
     {"name": "hackathon_1",     "split": "test",  "turns": _parse(HACKATHON_1)},
     {"name": "sample_meeting",  "split": "test",  "turns": _parse(SAMPLE_MEETING)},
@@ -616,13 +1090,15 @@ if __name__ == "__main__":
     for m in [m for m in MEETINGS if m["split"] != "test"] + generate_meetings(2000, seed=99):
         for _s, text, _l in m["turns"]:
             seen |= five_grams(text)
+    from scorecard_data import SCORECARD     # 13 Oct: the frozen scorecard is held out too
     held_out = [t for p in PROBES for _s, t, _l in p]
     held_out += [t for m in MEETINGS if m["split"] == "test" for _s, t, _l in m["turns"]]
+    held_out += [t for m in SCORECARD for _s, t, _l in m["turns"]]
     leaks = [(t, sorted(five_grams(t) & seen)) for t in held_out if five_grams(t) & seen]
     for text, grams in leaks:
         print("  LEAK:", text, "<-", [" ".join(g) for g in grams])
-    assert not leaks, "probe/test sentences overlap the training data"
-    print("no probe or test sentence shares 5 words in a row with training data: OK")
+    assert not leaks, "probe/test/scorecard sentences overlap the training data"
+    print("no probe, test or scorecard sentence shares 5 words in a row with training data: OK")
 
     # Dev picks the epoch and seed (and judges retrains), so it must not
     # overlap the training-only data either.

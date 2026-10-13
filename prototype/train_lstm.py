@@ -40,21 +40,23 @@ Training choices, and why
 - Split by MEETING (train / dev / test, see training_data.py), never by
   turn, so the test meetings are conversations the model has never seen.
 - Training also uses 60 short generated practice meetings
-  (training_data.generate_meetings). The 146 hand-written training turns
-  alone were memorised within ~10 epochs.
-- Words seen only once in training become <unk>, and 25% of training
+  (training_data.generate_meetings). The first 146 hand-written training
+  turns alone were memorised within ~10 epochs.
+- Words seen only once in training become <unk>, and 15% of training
   words are randomly swapped for <unk> each epoch. Otherwise the model
   memorises rare words and has no idea what to do with a new one.
 - Early stopping: after each epoch, check the loss on the dev meeting and
   keep the weights from the best epoch.
-- 5 random seeds are trained; the one with the lowest dev loss is kept.
-  The test meetings and the probe set are only looked at after that
-  choice, and every seed's test score is printed so a lucky seed can't
-  hide.
+- 5 random seeds are trained. Since 13 Oct all 5 are kept as an
+  ENSEMBLE: each turn's label probabilities are averaged over the 5
+  models, which is steadier than trusting one lucky seed. (ENSEMBLE =
+  False keeps only the seed with the lowest dev loss, as before.) The test
+  meetings and the probe set are only looked at after training, and every
+  seed's test score is printed so a lucky seed can't hide.
 
 What this does NOT claim
 ------------------------
-230 hand-written turns is tiny. The model learns which words (and which
+A few hundred hand-written turns is tiny. The model learns which words (and which
 previous turns) go with which label in THESE meetings; it will make
 mistakes on phrasing it hasn't seen. The scores below are on 3 test
 meetings (45 turns) and 12 probes, so one turn either way moves them a
@@ -81,8 +83,9 @@ PATIENCE = 15          # stop if dev loss hasn't improved for this many epochs
 LEARNING_RATE = 0.005
 LR_DECAY = 0.95       # learning rate is multiplied by this after every epoch
 WEIGHT_DECAY = 1e-4
-UNK_DROPOUT = 0.25
+UNK_DROPOUT = 0.15     # 13 Oct: was 0.25
 SEEDS = [0, 1, 2, 3, 4]
+ENSEMBLE = True        # 13 Oct: average all 5 seeds instead of keeping one
 
 # Same keyword lists as train_classifier.py and meeting_minutes.py.
 _DECISION_KEYWORDS = ["confirmed", "agreed", "approved", "decided", "noted"]
@@ -261,13 +264,27 @@ def predict(model: TrainableModel, example: dict) -> np.ndarray:
     return model.forward(example["ids"], example["ends"]).argmax(axis=1)
 
 
+class Ensemble:
+    """Several trained models voting together: average their label
+    probabilities, then take the most likely label. forward() returns log
+    probabilities, so predict() and evaluate() work on it unchanged."""
+
+    def __init__(self, models: list):
+        self.models = models
+        self.vocab = models[0].vocab
+
+    def forward(self, ids, ends):
+        probs = np.mean([softmax(m.forward(ids, ends)) for m in self.models], axis=0)
+        return np.log(probs + 1e-12)
+
+
 # ---------------------------------------------------------------------------
 # 4. Gradient check: analytic backward vs. numerical estimate
 # ---------------------------------------------------------------------------
 
-def check_gradients(seed: int = 0) -> float:
+def check_gradients(seed: int = 0, model_cls=None) -> float:
     rng = np.random.default_rng(seed)
-    model = TrainableModel([UNK_TOKEN] + [f"w{i}" for i in range(9)], seed=seed)
+    model = (model_cls or TrainableModel)([UNK_TOKEN] + [f"w{i}" for i in range(9)], seed=seed)
     ids = rng.integers(0, 10, size=13)
     ends, labels = [3, 8, 12], np.array([0, 2, 1])
     _loss, grads = loss_and_grad(model, ids, ends, labels)
@@ -305,8 +322,8 @@ def mean_loss(model, examples) -> float:
     return float(np.mean(losses))
 
 
-def train_one_seed(vocab, train, dev, seed, verbose=False):
-    model = TrainableModel(vocab, seed)
+def train_one_seed(vocab, train, dev, seed, verbose=False, model_cls=None):
+    model = (model_cls or TrainableModel)(vocab, seed)   # compare_rnn.py passes an RNN here
     rng = np.random.default_rng(1000 + seed)
     params = model.params()
     m = {k: np.zeros_like(v) for k, v in params.items()}
@@ -394,11 +411,18 @@ def probe_results(model, word_to_id):
     return np.array(gold), np.array(model_pred), np.array(kw_pred)
 
 
-def save(model: TrainableModel, path: str):
+def save(models: list, path: str):
+    """Save one model (same keys as before) or several (an ensemble: each
+    member's arrays get an m0_, m1_, ... prefix, plus a 'members' count)."""
     # float16 halves the file; checked to give identical labels on every
     # meeting and probe. lstm_model.py converts back to float64 on load.
-    arrays = {k: v.astype(np.float16) for k, v in model.params().items()}
-    np.savez_compressed(path, vocab=np.array(model.vocab), labels=np.array(LABELS),
+    if len(models) == 1:
+        arrays = {k: v.astype(np.float16) for k, v in models[0].params().items()}
+    else:
+        arrays = {f"m{n}_{k}": v.astype(np.float16)
+                  for n, model in enumerate(models) for k, v in model.params().items()}
+        arrays["members"] = np.array(len(models))
+    np.savez_compressed(path, vocab=np.array(models[0].vocab), labels=np.array(LABELS),
                         embedding_dim=EMBEDDING_DIM, base_units=BASE_UNITS, **arrays)
 
 
@@ -435,8 +459,17 @@ if __name__ == "__main__":
               f"test accuracy {test_acc:.2f}, macro-F1 {test_f1:.2f}")
     print(f"({time.perf_counter() - start:.0f}s for {len(SEEDS)} seeds)\n")
 
-    dev_loss, seed, model = min(runs, key=lambda r: r[0])
-    print(f"Kept seed {seed} (lowest dev loss; chosen before looking at test)\n")
+    dev_loss, seed, best = min(runs, key=lambda r: r[0])
+    members = [best] + [m for _d, s, m in runs if s != seed]
+    if ENSEMBLE:
+        model = Ensemble(members)
+        print(f"Ensemble of all {len(members)} seeds (label probabilities averaged)")
+    else:
+        model = best
+        print(f"Kept seed {seed} (lowest dev loss; chosen before looking at test)")
+    dev_results, _g, _p = evaluate(model, split["dev"], data["dev"])
+    print(f"Dev ({sum(len(e['labels']) for e in data['dev'])} turns): accuracy "
+          f"{dev_results['model'][0]:.2f}, macro-F1 {dev_results['model'][1]:.2f}\n")
 
     results, gold, pred = evaluate(model, split["test"], data["test"])
     p_gold, p_model, p_kw = probe_results(model, word_to_id)
@@ -473,6 +506,6 @@ if __name__ == "__main__":
               f"gold {LABELS[g]:11s} model {LABELS[p]}")
 
     path = os.path.join(os.path.dirname(os.path.abspath(__file__)), WEIGHTS_FILE)
-    save(model, path)
+    save(members if ENSEMBLE else [best], path)
     print(f"\nSaved {WEIGHTS_FILE} ({os.path.getsize(path) / 1024:.0f} KB). "
           "pipeline.py now labels turns with the trained model.")

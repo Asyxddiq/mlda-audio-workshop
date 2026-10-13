@@ -8,6 +8,11 @@ The whole pipeline in one command: audio -> transcript -> LSTM -> minutes.
     python prototype/pipeline.py --compare --meeting hackathon_1
                                                 # a labelled meeting from training_data.py,
                                                 # with its hand labels as a third column
+    python prototype/pipeline.py --compare --text my_meeting.txt
+                                                # your own lines, one "Speaker: text" per
+                                                # line; add "act " / "dec " / "dis " in
+                                                # front of every line to see hand labels too
+                                                # (example: prototype/my_meeting_example.txt)
 
 One stage per owner, in order:
   1. Pasan + Rahini  transcriber.get_transcript(audio_path)
@@ -24,8 +29,8 @@ with keyword rules for stage 3.
 
 What this does NOT claim
 ------------------------
-- The trained model learned from 230 hand-written turns plus generated
-  practice meetings (see train_lstm.py for its scores). It catches
+- The trained model learned from a few hundred hand-written turns plus
+  generated practice meetings (see README for its scores). It catches
   replies like "Sure." that keyword rules can't, but it still misses
   some decisions, e.g. reported confirmations like "Venue is confirmed".
 - Speakers come from transcriber.py's pause rule (a gap of 0.8 s or more
@@ -96,13 +101,58 @@ def load_meeting(name: str) -> tuple[str, list[str]]:
     raise ValueError(f"No meeting called {name!r}. Choose one of: {names}")
 
 
+LABEL_PREFIXES = {"act": "action_item", "dec": "decision", "dis": "discussion",
+                  "action_item": "action_item", "decision": "decision", "discussion": "discussion"}
+
+
+def load_text(path: str) -> tuple[str, list[str] | None]:
+    """Your own meeting from a text file, as (transcript, hand labels or None).
+
+    One turn per line, "Speaker: text". Optionally start EVERY line with a
+    label (act / dec / dis) to get a hand-label column in --compare:
+        act  Mei: Can you send the slides tonight?
+    Blank lines and lines starting with # are skipped.
+    """
+    lines, labels = [], []
+    with open(path, encoding="utf-8") as f:
+        for number, raw in enumerate(f, 1):
+            line = raw.strip()
+            if not line or line.startswith("#"):
+                continue
+            first = line.split(maxsplit=1)[0].lower()
+            if first in LABEL_PREFIXES and len(line.split(maxsplit=1)) > 1:
+                labels.append(LABEL_PREFIXES[first])
+                line = line.split(maxsplit=1)[1].strip()
+            if ":" not in line or not line.split(":", 1)[1].strip():
+                raise ValueError(f"{path}, line {number}: expected 'Speaker: text', got {raw.strip()!r}")
+            lines.append(line)
+    if not lines:
+        raise ValueError(f"{path} has no 'Speaker: text' lines")
+    if labels and len(labels) != len(lines):
+        raise ValueError(f"{path}: label every line (act / dec / dis) or none of them; "
+                         f"{len(labels)} of {len(lines)} lines have one")
+    return "\n".join(lines), (labels or None)
+
+
+def unknown_words(turns: list[tuple[str, str]]) -> list[str]:
+    """Words the trained model never saw in training: it reads them as <unk>."""
+    from lstm_model import load_trained_model, split_words
+    trained = load_trained_model()
+    if trained is None:
+        return []
+    known = set(trained["vocab"])
+    return sorted({w for _s, t in turns for w in split_words(t) if w not in known})
+
+
 def run(audio_path: str | None = None, verbose: bool = True, compare: bool = False,
-        meeting: str | None = None) -> str:
+        meeting: str | None = None, text: str | None = None) -> str:
     """Run all three stages and return the minutes as Markdown."""
-    # 1. Transcriber (Pasan + Rahini), or a labelled meeting's text (--meeting)
+    # 1. Transcriber (Pasan + Rahini), a labelled meeting (--meeting) or your own text (--text)
     gold = None
     if meeting:
         transcript, gold = load_meeting(meeting)
+    elif text:
+        transcript, gold = load_text(text)
     else:
         transcript = get_transcript(audio_path)
 
@@ -120,6 +170,7 @@ def run(audio_path: str | None = None, verbose: bool = True, compare: bool = Fal
 
     if verbose:
         source = (f"labelled meeting '{meeting}' in training_data.py" if meeting
+                  else f"text file {text}" if text
                   else audio_path if audio_path else "placeholder sample (no audio given)")
         counts = {c: sum(label["category"] == c for label in labels)
                   for c in ("discussion", "decision", "action_item")}
@@ -133,6 +184,9 @@ def run(audio_path: str | None = None, verbose: bool = True, compare: bool = Fal
               f"({labeller})\n")
         if compare:
             print_comparison(turns, label_turns_keywords(turns), trained_labels, gold)
+        unknown = unknown_words(turns) if text else []
+        if unknown:
+            print(f"Words the model never saw in training (read as <unk>): {', '.join(unknown)}\n")
         print(minutes)
 
     return minutes
@@ -141,24 +195,28 @@ def run(audio_path: str | None = None, verbose: bool = True, compare: bool = Fal
 if __name__ == "__main__":
     args = sys.argv[1:]
     compare = "--compare" in args
-    meeting = None
-    if "--meeting" in args:
-        at = args.index("--meeting")
-        if at + 1 >= len(args):
-            sys.exit("--meeting needs a name, e.g. --meeting hackathon_1")
-        meeting = args[at + 1]
-        del args[at:at + 2]
+    options = {}
+    for option, example in (("--meeting", "--meeting hackathon_1"), ("--text", "--text my_meeting.txt")):
+        if option in args:
+            at = args.index(option)
+            if at + 1 >= len(args) or args[at + 1].startswith("--"):
+                sys.exit(f"{option} needs a value, e.g. {example}")
+            options[option] = args[at + 1]
+            del args[at:at + 2]
+    meeting, text = options.get("--meeting"), options.get("--text")
     unknown = [a for a in args if a.startswith("--") and a != "--compare"]
     if unknown:
-        sys.exit(f"Unknown option {unknown[0]}. Options: --compare, --meeting NAME")
+        sys.exit(f"Unknown option {unknown[0]}. Options: --compare, --meeting NAME, --text FILE")
     paths = [a for a in args if a != "--compare"]
     audio = paths[0] if paths else None
-    if audio and meeting:
-        sys.exit("Give either an audio file or --meeting, not both")
+    if sum(bool(x) for x in (audio, meeting, text)) > 1:
+        sys.exit("Give only one input: an audio file, --meeting NAME or --text FILE")
     if audio and not os.path.isfile(audio):
         sys.exit(f"No audio file at {audio}")
+    if text and not os.path.isfile(text):
+        sys.exit(f"No text file at {text}")
     try:
-        run(audio, compare=compare, meeting=meeting)
+        run(audio, compare=compare, meeting=meeting, text=text)
     except ModuleNotFoundError as error:
         if error.name == "whisper":
             sys.exit("Whisper isn't installed. Run: pip install openai-whisper")

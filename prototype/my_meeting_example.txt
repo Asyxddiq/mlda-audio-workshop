@@ -1,0 +1,10 @@
+# Example for: python prototype/pipeline.py --compare --text prototype/my_meeting_example.txt
+# One turn per line, "Speaker: text". The label in front (act / dec / dis) is
+# optional: label every line or none. Swap in 5 lines from your own meeting.
+dis  Aiden: Okay, quick check on the bake sale.
+dis  Bea: We have twelve trays of brownies so far.
+dis  Aiden: Should we also sell drinks?
+dec  Bea: Sure, let's do that.
+act  Aiden: Can you buy the cups tomorrow?
+act  Bea: Okay.
+dis  Aiden: Great, see you Friday.

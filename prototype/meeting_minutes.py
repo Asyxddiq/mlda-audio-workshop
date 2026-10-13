@@ -35,7 +35,7 @@ One label dict per turn, aligned by index with `turns`:
 import re
 import sys
 
-from lstm_model import load_trained_model, run_pipeline
+from lstm_model import label_probabilities, load_trained_model, run_pipeline
 
 Turn = tuple[str, str]  # (speaker, text)
 
@@ -162,12 +162,18 @@ def label_turns_model(turns: list[Turn], output, turn_end_indices: list[int]) ->
 
     `output` must come from run_pipeline() with the trained weights loaded.
     The classifier head maps the 8 numbers at each turn's last token to 3
-    scores; the highest wins. Returns None if there are no trained weights.
+    scores; the highest wins. If trained_lstm.npz holds an ensemble, each
+    member's label probabilities are averaged first. Returns None if there
+    are no trained weights.
     """
     trained = load_trained_model()
     if trained is None:
         return None
-    scores = output[turn_end_indices] @ trained["head_W"].T + trained["head_b"]
+    if len(trained["members"]) > 1:
+        # An ensemble (13 Oct): average every member's label probabilities.
+        scores = label_probabilities(turns, trained)
+    else:
+        scores = output[turn_end_indices] @ trained["head_W"].T + trained["head_b"]
     categories = [trained["labels"][k] for k in scores.argmax(axis=1)]
     return add_owners_and_deadlines(turns, categories)
 

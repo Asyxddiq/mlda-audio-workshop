@@ -354,30 +354,68 @@ def run_pipeline(audio_path: str | None = None,
 TRAINED_WEIGHTS = os.path.join(os.path.dirname(os.path.abspath(__file__)), "trained_lstm.npz")
 
 
+def _load_member(saved, prefix: str) -> dict:
+    """One trained model's arrays (prefix "" for a single model, "m0_" etc.
+    for an ensemble member) copied into a fresh HourglassLSTM."""
+    model = HourglassLSTM(int(saved["embedding_dim"]), int(saved["base_units"]))
+    layers = [model.layer1, model.layer2, model.layer3, model.layer4, model.layer5]
+    for n, layer in enumerate(layers, start=1):
+        for gate in ("f", "i", "c", "o"):
+            setattr(layer, f"W_{gate}", saved[f"{prefix}layer{n}_W_{gate}"].astype(np.float64))
+            setattr(layer, f"b_{gate}", saved[f"{prefix}layer{n}_b_{gate}"].astype(np.float64))
+    return {
+        "model": model,
+        "embeddings": saved[f"{prefix}embeddings"].astype(np.float64),
+        "head_W": saved[f"{prefix}head_W"].astype(np.float64),
+        "head_b": saved[f"{prefix}head_b"].astype(np.float64),
+    }
+
+
 def load_trained_model(path: str = TRAINED_WEIGHTS) -> dict | None:
     """Load train_lstm.py's output, or return None if it hasn't been run.
 
     The file holds the vocab, the embedding table, every gate of the 5
     layers, and the classifier head, in exactly the shapes this file uses,
     so loading is just copying arrays into a fresh HourglassLSTM.
+
+    Since 13 Oct the file can hold an ENSEMBLE of several trained models
+    (train_lstm.py, ENSEMBLE = True). "members" lists all of them; the
+    top-level "model", "embeddings", "head_W", "head_b" are member 0, so
+    code that only wants one model keeps working.
     """
     if not os.path.isfile(path):
         return None
     saved = np.load(path)
-    model = HourglassLSTM(int(saved["embedding_dim"]), int(saved["base_units"]))
-    layers = [model.layer1, model.layer2, model.layer3, model.layer4, model.layer5]
-    for n, layer in enumerate(layers, start=1):
-        for gate in ("f", "i", "c", "o"):
-            setattr(layer, f"W_{gate}", saved[f"layer{n}_W_{gate}"].astype(np.float64))
-            setattr(layer, f"b_{gate}", saved[f"layer{n}_b_{gate}"].astype(np.float64))
+    if "members" in saved.files:
+        members = [_load_member(saved, f"m{n}_") for n in range(int(saved["members"]))]
+    else:
+        members = [_load_member(saved, "")]
     return {
-        "model": model,
+        **members[0],
+        "members": members,
         "vocab": [str(word) for word in saved["vocab"]],
-        "embeddings": saved["embeddings"].astype(np.float64),
-        "head_W": saved["head_W"].astype(np.float64),
-        "head_b": saved["head_b"].astype(np.float64),
         "labels": [str(label) for label in saved["labels"]],
     }
+
+
+def label_probabilities(turns: list[tuple[str, str]], trained: dict | None = None) -> np.ndarray | None:
+    """Probability of each label for each turn, averaged over every model in
+    trained_lstm.npz (one row per turn, columns in trained["labels"] order).
+    Returns None if there are no trained weights."""
+    trained = trained or load_trained_model()
+    if trained is None:
+        return None
+    vocab = {word: i for i, word in enumerate(trained["vocab"])}
+    tokens, ends = tokenize_transcript(turns)
+    ids = [vocab.get(word, 0) for word in tokens]
+    all_probs = []
+    for member in trained["members"]:
+        x = member["embeddings"][ids]
+        output, _layers = member["model"].forward(pad_to_multiple_of_4(x))
+        scores = output[:len(x)][ends] @ member["head_W"].T + member["head_b"]
+        e = np.exp(scores - scores.max(axis=1, keepdims=True))
+        all_probs.append(e / e.sum(axis=1, keepdims=True))
+    return np.mean(all_probs, axis=0)
 
 
 # ---------------------------------------------------------------------------
