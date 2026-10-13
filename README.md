@@ -10,10 +10,10 @@ The pipeline is audio → transcript → LSTM → meeting minutes. It is written
 | RNN + CTC teaching demo | Pasan, Rahini | Working |
 | 5-layer hourglass LSTM | Asy | Working |
 | Training data: 40 hand-labelled meetings (577 turns) + 60 generated practice meetings, plus a frozen 6-meeting scorecard (105 turns) | Asy (drafted by Claude); Nomt checked his half (4 meetings) 8 Oct | Draft; the 29 meetings added 8 and 13 Oct are not yet checked by a person; Asy's blind check to do |
-| Trained turn classifier (`train_lstm.py`, NumPy) | Asy | Working; ships the 7 Oct weights. The 13 Oct retrain (5-seed ensemble, about 3x the hand-written data) scored higher on dev and the new scorecard but failed the do-no-harm check written beforehand, so it is **not** shipped (see [results](#step-4-training-the-classifier)) |
+| Trained turn classifier (`train_lstm.py`, NumPy) | Asy | Working; ships the **tuned 13 Oct ensemble** (5 seeds, settings tuned on dev). It passed the ship rule written beforehand: test 0.84, the two untouched test meetings 0.86, probes 9/12 (none below the 7 Oct model), 0.90 on the new scorecard (see [results](#step-4-training-the-classifier)) |
 | Meeting minutes (trained labels, keyword fallback) | Nomt | Working |
 | Participants' hands-on (`hands_on.py`) | Asy | Ready 13 Oct: Part A writes the RNN step and switches its memory off; Part B writes the LSTM notebook update and turns the forget knob. `--solution` runs the answers |
-| RNN vs LSTM comparison (`compare_rnn.py`) | Asy, for Pasan and Rahini | Done 13 Oct: **no clear difference** on our data by the rule written beforehand; both use about one turn of context |
+| RNN vs LSTM comparison (`compare_rnn.py`) | Asy, for Pasan and Rahini | Done 13 Oct, with both the old and the tuned settings: **no clear difference** on our data by the rule written beforehand; both use about one turn of context |
 | Whole chain in one command (`pipeline.py`) | All | Working on the sample meeting |
 
 **Contents:** [Quick start](#quick-start) · [High-level alignment](#high-level-alignment) · [Architecture](#architecture) · [Key commands](#key-commands) · [Limitations](#simplifications-and-known-limitations) · [References](#references)
@@ -273,7 +273,7 @@ flowchart LR
     E["end of each turn"] -->|"insert <eot>"| B
 ```
 
-- **Vocabulary:** 66 unique tokens in the sample meeting, including the `<eot>` end-of-turn marker. The trained model uses a fixed 392-word vocabulary from its training data instead, and any word outside it becomes `<unk>`.
+- **Vocabulary:** 66 unique tokens in the sample meeting, including the `<eot>` end-of-turn marker. The trained model uses a fixed 553-word vocabulary from its training data instead, and any word outside it becomes `<unk>`.
 - **Embeddings:** random in this walk-through (seed 42). In the trained model they are learned along with everything else.
 - **The whole conversation is one sequence.** The LSTM never resets between speakers; `<eot>` is how it can tell a new person is talking.
 
@@ -392,7 +392,7 @@ flowchart LR
 | Probe set: bare replies ("Sure.", "Okay.") after a request, a proposal or plain information | 12 | 12 replies | **cross-turn test**, never trained on |
 | Scorecard (`scorecard_data.py`): hall council, tutoring, band, research group, football, charity drive | 6 | 105 | **second look**, frozen 13 Oct before any training; aggregate scores only |
 
-Results on the held-out data for the shipped weights (`trained_lstm.npz`, trained 7 Oct; seed chosen by dev loss before looking at test):
+Results on the held-out data for the 7 Oct weights (shipped until 13 Oct; seed chosen by dev loss before looking at test):
 
 | Labeller | Test accuracy | Test macro-F1 | Probes correct |
 |---|---|---|---|
@@ -408,23 +408,27 @@ Results on the held-out data for the shipped weights (`trained_lstm.npz`, traine
 - The 8 Oct retrain on the extra decision examples passed the improvement rule written beforehand (dev 1.00) but scored lower on held-out data (test 0.76 / 0.74; 0.78 / 0.77 on the two untouched meetings; 6 of 9 on the sample meeting, with two wrong items in its minutes). One new generated pattern matches the dev sentence's shape, so the single 20-turn dev meeting saturated and could no longer tell models apart. It was rolled back on 11 Oct; details in [progress.md](progress.md).
 - A separate review checked the first 211 hand-written labels against the rules and looked for test sentences leaking into training; `python prototype/training_data.py` re-runs the leak check (no probe, test or scorecard sentence shares 5 words in a row with the training data; the scorecard was added to the check 13 Oct).
 
-#### 13 Oct retrain (not shipped)
+#### 13 Oct retrains: the tuned ensemble is shipped
 
-The same model trained on about 3x the hand-written data (24 new training meetings, 4 new dev meetings), kept as an **ensemble** of all 5 seeds (each turn's label probabilities averaged), with `<unk>` dropout 0.15. The ship rule was written before training: dev accuracy and macro-F1 both up by 0.03 or more, **and** no held-out measure below the shipped model (test, the two untouched test meetings, probes, sample meeting). It passed on dev and failed the held-out check, so `trained_lstm.npz` still holds the 7 Oct weights. To reproduce it: `python prototype/train_lstm.py` (about 12 minutes; it overwrites `trained_lstm.npz`).
+Two retrains on about 3x the hand-written data (24 new training meetings, 4 new dev meetings), both kept as an **ensemble** of 5 seeds (each turn's label probabilities averaged), with `<unk>` dropout 0.15. The ship rule was written before training: dev accuracy and macro-F1 both up by 0.03 or more, **and** no held-out measure below the 7 Oct model (test, the two untouched test meetings, probes, sample meeting), test macro-F1 at least 0.82, and no wrong items in the demo minutes.
 
-| KPI | Shipped (7 Oct) | 13 Oct ensemble | Keyword rules | Ship rule |
+1. **First retrain** (old settings: learning rate 0.005, 16-number embeddings): passed on dev, failed the held-out check, not shipped.
+2. **Tuned retrain, shipped.** Settings were tuned on dev only. Twelve one-at-a-time changes, 3 seeds each, ranked by dev log-loss: learning rate 0.01 and 32-number embeddings helped, 16 units barely; `<unk>` dropout 0.05 or 0.30, learning rate 0.003, weight decay 0.001, 12 units, keeping words seen once, and 0 or 150 generated meetings did not. The best combination (learning rate 0.01 + 32-number embeddings) was trained with 5 seeds; 10 seeds, or keeping the best seeds by dev loss, did no better on dev accuracy or macro-F1. The held-out sets were scored once, after the choice. `python prototype/train_lstm.py` reproduces it exactly (about 12 minutes).
+
+| KPI | 7 Oct | First 13 Oct retrain | **Tuned 13 Oct (shipped)** | Keyword rules |
 |---|---|---|---|---|
-| Dev accuracy / macro-F1 (68 turns) | 0.90 / 0.87 | **0.94 / 0.92** | | pass |
-| Test accuracy / macro-F1 (45 turns) | 0.84 / 0.82 | 0.84 / 0.83 | 0.69 / 0.59 | pass (equal) |
-| The two untouched test meetings, accuracy (36 turns) | **0.86** | 0.83 | 0.64 | **fail** |
-| Probes correct (of 12) | **9** | 8 | 3 | **fail** |
-| Sample meeting turns correct (of 9) | 7 | **8** | 8 | pass |
-| Scorecard accuracy / macro-F1 (105 turns; scored once, after the decision) | 0.78 / 0.72 | **0.84 / 0.79** | 0.76 / 0.61 | not part of the rule |
+| Dev accuracy / macro-F1 (68 turns) | 0.90 / 0.87 | 0.94 / 0.92 | **0.96 / 0.95** | |
+| Test accuracy / macro-F1 (45 turns) | 0.84 / 0.82 | 0.84 / 0.83 | 0.84 / 0.825 | 0.69 / 0.59 |
+| The two untouched test meetings, accuracy (36 turns) | 0.86 | 0.83 | 0.86 | 0.64 |
+| Probes correct (of 12) | 9 | 8 | 9 | 3 |
+| Sample meeting turns correct (of 9) | 7 | 8 | 7 | 8 |
+| Scorecard accuracy / macro-F1 (105 turns; each model scored once, after its ship decision) | 0.78 / 0.72 | 0.84 / 0.79 | **0.90 / 0.87** | 0.76 / 0.61 |
+| Ship rule | | failed | **passed** | |
 
-- The 5 single seeds of the 13 Oct run range from 0.78 to 0.87 test accuracy; the ensemble is steadier than any one of them.
-- Scorecard per label (precision / recall), shipped vs 13 Oct: decision 0.62 / 0.59 vs 0.57 / 0.76, action_item 0.76 / 0.65 vs 0.94 / 0.75, discussion 0.82 / 0.87 vs 0.91 / 0.88. The 13 Oct model finds more decisions but also calls too many turns decisions.
-- **Flagged failures (13 Oct ensemble):** decisions stated as facts are still missed ("Venue is confirmed for the 14th", "We have three sponsors confirmed so far"); the chair settling a plan ("Okay, Thursday at four then.") is called discussion; 3 of the 4 agreement probes ("Sure.", "Sounds good.", "Fine by me." after a proposal) are called discussion; some requests and self-assignments are missed ("Could you order for seventy instead of sixty this time?", "I'll let the venue team know."); and two turns are wrongly called action items ("Can you remind me where the form is?", "I won't be able to come on the second day").
-- Its sample-meeting minutes have no wrong items: it lists "Noted, let's add that to the next agenda." as a decision and the catering follow-up as an action item, and still misses "Venue is confirmed for the 14th".
+- Single seeds of the tuned run range from 0.73 to 0.87 test accuracy; the ensemble is steadier than any one of them.
+- Scorecard per label (precision / recall), 7 Oct vs tuned: decision 0.62 / 0.59 vs 0.71 / 0.88, action_item 0.76 / 0.65 vs 0.94 / 0.85, discussion 0.82 / 0.87 vs 0.94 / 0.91.
+- **Flagged failures (tuned, shipped model):** decisions stated as facts are still missed ("Venue is confirmed for the 14th", "We have three sponsors confirmed so far"), and so is "Noted, let's add that to the next agenda."; the chair settling a plan ("Okay, Thursday at four then.") is called discussion; 3 of the 4 agreement probes ("Sure.", "Sounds good.", "Fine by me." after a proposal) are called discussion; one request is missed ("Could you order for seventy instead of sixty this time?"); and two turns are wrongly called action items ("Can you remind me where the form is?", "I won't be able to come on the second day").
+- On the sample meeting its minutes match the 7 Oct model's: the catering follow-up as an action item, no decisions, no wrong items. `group_project_3` 16/18 hand labels (keyword rules 12/18), `hackathon_1` 15/18 (11/18).
 - Caveat: the scorecard meetings were written by Claude after seeing the earlier model's weak spots, so they are weaker evidence than meetings written by someone else. Real meetings would settle it.
 
 #### RNN vs LSTM (`compare_rnn.py`)
@@ -433,10 +437,12 @@ Pasan and Rahini asked whether the LSTM actually beats a plain RNN here. `compar
 
 | 5-seed means, test (45 turns) | Accuracy | Macro-F1 | Probes (of 12) |
 |---|---|---|---|
-| LSTM hourglass | 0.82 | 0.80 | 7.6 |
-| RNN hourglass | 0.80 | 0.76 | 9.0 |
+| LSTM hourglass, old settings | 0.82 | 0.80 | 7.6 |
+| RNN hourglass, old settings | 0.80 | 0.76 | 9.0 |
+| LSTM hourglass, tuned settings | 0.80 | 0.77 | 7.8 |
+| RNN hourglass, tuned settings | 0.80 | 0.78 | 8.0 |
 
-Verdict: **no clear difference** (LSTM +0.046 macro-F1, but 1.4 fewer probes). Memory reach, i.e. how much blanking out the turn d turns back moves the current turn's prediction (0 = no effect, 1 = completely): LSTM 0.074 / 0.011 / 0.004 / 0.001 for 1, 2, 3 and 4 turns back; RNN 0.077 / 0.020 / 0.006 / 0.000. Both rely almost entirely on the previous turn, which is all this labelling task needs, so the workshop shouldn't claim our trained LSTM remembers further back than an RNN. The memory difference is shown with `hands_on.py` instead, where the forget gate is set by hand.
+Verdict, both times: **no clear difference** (old settings: LSTM +0.046 macro-F1 but 1.4 fewer probes; tuned: LSTM −0.01 macro-F1, 0.2 fewer probes). These are single-seed means; the shipped ensemble scores higher than any of them. Memory reach, i.e. how much blanking out the turn d turns back moves the current turn's prediction (0 = no effect, 1 = completely), tuned settings: LSTM 0.053 / 0.006 / 0.002 / 0.001 for 1, 2, 3 and 4 turns back; RNN 0.075 / 0.013 / 0.004 / 0.000. Both rely almost entirely on the previous turn, which is all this labelling task needs, so the workshop shouldn't claim our trained LSTM remembers further back than an RNN. The memory difference is shown with `hands_on.py` instead, where the forget gate is set by hand.
 
 ### Component status
 
@@ -553,7 +559,7 @@ Conventions:
 
 | Limitation | Why it's fine for now | What changes later |
 |---|---|---|
-| Training data is small and written by us (577 hand-written turns, all drafted by Claude, + generated practice meetings) | Enough to show training works and beats keyword rules | Blind cross-check, then real meetings: the 13 Oct retrain shows more of our own writing lifts dev and the scorecard but not every held-out measure |
+| Training data is small and written by us (577 hand-written turns, all drafted by Claude, + generated practice meetings) | Enough to show training works and beats keyword rules | Blind cross-check, then real meetings: the tuned 13 Oct model passes every held-out check, but all the data, including the scorecard, is still ours |
 | Our trained LSTM and a plain RNN score about the same here, and both use about one turn of context | The labels mostly depend on the previous turn only | Examples where a turn depends on something several turns back, if we want the trained model to show the LSTM's edge |
 | Transcript is a hard-coded sample | Lets the LSTM track work before the transcriber exists | Swap in Track 1 behind the same `get_transcript()` |
 | No attention gates on the skips (the paper has them) | Plain addition is easier to teach | Optional stretch topic |

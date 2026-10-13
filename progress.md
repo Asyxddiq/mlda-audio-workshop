@@ -6,7 +6,7 @@
 | **Track** | 2: LSTM (with Nomt, who owns meeting minutes) |
 | **Code** | `prototype/lstm_model.py`, `prototype/train_lstm.py`, `prototype/training_data.py`, `prototype/transcript_placeholder.py`, `prototype/hands_on.py`, `prototype/scorecard.py`, `prototype/compare_rnn.py` |
 | **Last updated** | 13 Oct 2026 |
-| **Current phase** | Weekend 3: hands-on, `--text`, scorecard and RNN comparison built 13 Oct; the 13 Oct retrain was not shipped (7 Oct weights stay); blind check, real meetings, a human-audio run and the demo-meeting choice next |
+| **Current phase** | Weekend 3: hands-on, `--text`, scorecard and RNN comparison built 13 Oct; the tuned 13 Oct ensemble is shipped; blind check, real meetings, a human-audio run and the demo-meeting choice next |
 
 Update this file whenever something is finished, decided or blocked. Tick the box, add a line to the [log](#log), and move the node in the [roadmap](#roadmap).
 
@@ -30,9 +30,9 @@ pie showData
 | What the LSTM should learn | Done | Per-turn classifier: action_item / decision / discussion (see [decisions](#decisions)) |
 | Labelling guide + rule | Done | Rule locked 7 Oct, clarified 8 Oct; blind cross-check: Nomt 10/10, Asy pending |
 | Training data | Done (draft) | 40 hand-labelled meetings (577 turns: train 464, dev 68, test 45) + 60 generated practice meetings + a frozen 6-meeting scorecard (105 turns); Nomt checked his half 8 Oct (no label changes); 24 training and 4 dev meetings added 13 Oct, not yet checked by a person |
-| Training | Done | `train_lstm.py` (NumPy, 5-seed ensemble since 13 Oct). Shipped weights: 7 Oct, test accuracy 0.84 vs keyword rules 0.69; probes 9/12 vs 3/12. The 8 Oct retrain was rolled back 11 Oct; the 13 Oct retrain failed its ship rule and was not shipped (see [log](#log)) |
+| Training | Done | `train_lstm.py` (NumPy, 5-seed ensemble, settings tuned on dev 13 Oct). Shipped weights: tuned 13 Oct ensemble, test 0.84 vs keyword rules 0.69, untouched test meetings 0.86, probes 9/12 vs 3/12, scorecard 0.90. The 8 Oct retrain was rolled back 11 Oct; the first 13 Oct retrain failed its ship rule (see [log](#log)) |
 | Participants' hands-on | Done | `hands_on.py`: Part A the RNN step (+ memory off), Part B the LSTM notebook update (+ forget knob); `pipeline.py --text` for their own lines |
-| RNN vs LSTM check | Done | `compare_rnn.py`: no clear difference (rule written beforehand) |
+| RNN vs LSTM check | Done | `compare_rnn.py`: no clear difference, with both the old and the tuned settings (rule written beforehand) |
 | Hand-off to Nomt | Done | `run_pipeline()` loads the trained weights; `label_turns_model()` in `meeting_minutes.py` |
 | Real transcriber swap | In progress | Wired up in `pipeline.py`; works on synthetic speech after the 8 Oct transcriber fix; human recording still to do |
 
@@ -202,6 +202,17 @@ gantt
 - **Flagged failures (13 Oct ensemble):** decisions stated as facts ("Venue is confirmed for the 14th", "We have three sponsors confirmed so far"); the chair settling a plan ("Okay, Thursday at four then."); 3 of 4 agreement probes called discussion; missed requests ("Could you order for seventy instead of sixty this time?", "I'll let the venue team know."); false action items ("Can you remind me where the form is?", "I won't be able to come on the second day"); on the scorecard decision precision is 0.57 (too many turns called decisions). Its demo minutes have no wrong items.
 - **RNN vs LSTM** (`compare_rnn.py`, for Pasan and Rahini): same hourglass with plain RNN layers, both trained on the same data with the same 5 seeds. Rule written before the run: "LSTM better" needs +1 probe and +0.05 macro-F1 on 5-seed means. Test means: LSTM 0.82 / 0.80, probes 7.6; RNN 0.80 / 0.76, probes 9.0. Verdict: **no clear difference** (+0.046 macro-F1 for the LSTM, but 1.4 fewer probes). Memory reach (how much blanking the turn d back moves the current prediction): LSTM 0.074 / 0.011 / 0.004 / 0.001 for 1 to 4 turns back, RNN 0.077 / 0.020 / 0.006 / 0.000. Both use about one turn of context, which is all this task needs.
 
+### Tue 13 Oct 2026 (evening): tuning
+
+- Asy asked to train as many times as needed for the best score before the testing phase. The rule, written before any tuning run: choose settings on **dev only** (68 turns), rank by ensemble dev log-loss with macro-F1 as tie-break, then score the held-out sets **once** and apply the same ship rule as before.
+- Stage 1, one change at a time from the 13 Oct settings, 3 seeds each (ensemble dev log-loss; lower is better): baseline 0.216; learning rate 0.01: 0.196; 32-number embeddings: 0.196; 16 units: 0.215; `<unk>` dropout 0.05: 0.222; 150 generated meetings: 0.220; `<unk>` dropout 0.30: 0.259; weight decay 0.001: 0.259; 12 units: 0.269; keep words seen once: 0.279; no generated meetings: 0.292; learning rate 0.003 for 60 epochs: 0.304.
+- Stage 2, 5 seeds: learning rate 0.01 + 32-number embeddings: 0.175 (dev accuracy 0.96, macro-F1 0.95); adding 16 units: 0.187 (macro-F1 0.91). Five more seeds of the winner, or keeping the best seeds by dev loss, gave the same dev accuracy and macro-F1, so the plain 5 seeds (0 to 4) were kept, the best one by dev loss first in the file.
+- One look at the held-out sets, against the 7 Oct model: test 0.84 / 0.825 (0.84 / 0.82), the two untouched test meetings 0.86 (0.86), probes 9/12 (9/12), sample 7/9 with no wrong items in the minutes (same), dev 0.96 / 0.95 (0.90 / 0.87). **The ship rule passes**, so the tuned ensemble is the new `trained_lstm.npz`. Scorecard, scored once after that: 0.90 / 0.87 (7 Oct 0.78 / 0.72, keyword rules 0.76 / 0.61); decision precision 0.71, recall 0.88.
+- The new defaults in `train_lstm.py` (learning rate 0.01, 32-number embeddings) reproduce the tuned seeds exactly: seed 4's dev loss came out at 0.192775 in both runs.
+- **Flagged failures (shipped model):** decisions stated as facts ("Venue is confirmed for the 14th", "We have three sponsors confirmed so far", "Noted, let's add that to the next agenda."); the chair settling a plan ("Okay, Thursday at four then."); 3 of 4 agreement probes called discussion; a missed request ("Could you order for seventy instead of sixty this time?"); false action items ("Can you remind me where the form is?", "I won't be able to come on the second day").
+- `hands_on.py` Part B with the shipped model (member 0, the best seed by dev loss): 35/45 test turns right at `FORGET_KNOB = 0`, 10/45 at −6, 22/45 at +6. Both extremes still hurt.
+- RNN vs LSTM rerun with the tuned settings: LSTM 0.80 / 0.77, probes 7.8; RNN 0.80 / 0.78, probes 8.0 (5-seed means, single models). Still **no clear difference**. Memory reach: LSTM 0.053 / 0.006 / 0.002 / 0.001, RNN 0.075 / 0.013 / 0.004 / 0.000.
+
 <!-- Add new entries above this line, newest date last. -->
 
 ---
@@ -239,7 +250,8 @@ gantt
 | 13 Oct | A frozen scorecard: 6 meetings written before training, hash-checked, aggregate scores only | Dev saturated on 8 Oct; this is a second held-out look that can't be tuned against turn by turn |
 | 13 Oct | Bigger dev set (5 meetings, 68 turns) | The 8 Oct lesson: one 20-turn dev meeting couldn't tell models apart |
 | 13 Oct | Ensemble support in the code; default `ENSEMBLE = True` for new training runs | Steadier than one seed; old single-model weight files still load |
-| 13 Oct | Keep the 7 Oct weights; don't ship the 13 Oct ensemble | Failed the do-no-harm check written beforehand (untouched test 0.83 vs 0.86, probes 8 vs 9), although better on dev and the scorecard. Revisit with real meetings as a new test set, not by changing the rule after seeing the results |
+| 13 Oct | Keep the 7 Oct weights; don't ship the first 13 Oct ensemble | Failed the do-no-harm check written beforehand (untouched test 0.83 vs 0.86, probes 8 vs 9), although better on dev and the scorecard. **Superseded the same evening** by the tuned ensemble, below |
+| 13 Oct | Tune settings on dev only (12 single changes, then the best combination); ship the tuned 5-seed ensemble | Asy asked for the best score before testing. Held-out sets were scored once, after the choice, and the same ship rule passed: nothing below the 7 Oct model, dev 0.96, scorecard 0.90 |
 | 13 Oct | RNN vs LSTM: "no clear difference" | Rule written before the run; both models use about one turn of context |
 
 ---
@@ -254,7 +266,7 @@ gantt
 - [x] **Cross-turn probe set:** RESOLVED (7 Oct): 12 probes in `training_data.py`, never trained on.
 - [x] **Which 20% do participants complete?** RESOLVED (13 Oct): the RNN step and the LSTM notebook update plus forget knob (`hands_on.py`), then their own lines through `pipeline.py --text`.
 - [ ] **Decisions reported as facts** ("Venue is confirmed") are still the model's weakest spot. 8 Oct: more examples added and retrained; held-out scores dropped and dev now scores 1.00, so it can't pick between models. 11 Oct: rolled back to the 7 Oct weights. 13 Oct: dev enlarged to 5 meetings and 24 more training meetings added; still missed, and that retrain wasn't shipped. Next: examples from real meetings, or accept it as the *Try and test* failure case.
-- [ ] **Ship the 13 Oct ensemble anyway?** It failed the rule written beforehand but scores higher on dev and the scorecard. A small set of real team meetings, labelled and used as a fresh test, would settle it fairly.
+- [x] **Ship a 13 Oct ensemble?** RESOLVED (13 Oct evening): the first one failed the rule; the tuned one passed it and is shipped. Real team meetings, labelled and used as a fresh test, are still the best check of how it does outside our own writing.
 
 ---
 
@@ -286,10 +298,10 @@ sequenceDiagram
 
 ## Next up
 
-1. **Asy:** blind-label §blind_check_for_asy.md§ (10 of Nomt's turns, kept outside the repo), compare with the key, tighten the guide where you disagree. (Nomt's 10: done 8 Oct, 10/10 agree.)
-2. **Team:** collect 5 to 10 short real meetings (CCA, project or club, with permission), label them with the guide, and keep them as a fresh test set. That settles the 7 Oct vs 13 Oct model question fairly, and gives the decision examples the model still lacks.
-3. **Nomt:** review the 13 Oct changes, especially the ensemble path in §label_turns_model()§, §pipeline.py --text§ and §hands_on.py§.
-4. Run §python prototype/pipeline.py meeting.wav§ on a **human** recording (the 8 Oct test used synthetic speech).
-5. **Pasan:** review the 8 Oct one-line change in §transcriber.py§ (§word_timestamps=True§). Still open: more than two speakers, overlapping speech, replies under 0.8 s. Pasan and Rahini: the RNN vs LSTM result is in the 13 Oct log.
-6. Dry-run §hands_on.py§ on free Colab with someone outside the LSTM track, and write the debug-time cheat sheet.
-7. Choose the live demo meeting: the sample meeting (7 Oct model 7/9, keyword rules 8/9, no decisions found) or §group_project_3§ via §pipeline.py --meeting§ (model 16/18, keyword rules 12/18).
+1. **Asy:** blind-label `blind_check_for_asy.md` (10 of Nomt's turns, kept outside the repo), compare with the key, tighten the guide where you disagree. (Nomt's 10: done 8 Oct, 10/10 agree.)
+2. **Team:** collect 5 to 10 short real meetings (CCA, project or club, with permission), label them with the guide, and keep them as a fresh test set. That shows how the shipped model does on writing that isn't ours, and gives the decision examples it still lacks.
+3. **Nomt:** review the 13 Oct changes, especially the ensemble path in `label_turns_model()`, `pipeline.py --text` and `hands_on.py`.
+4. **Asy:** human recording (the 8 Oct test used synthetic speech). Record yourself and a friend reading the sample meeting's 9 lines (about a minute, a short pause between speakers), then `pip install openai-whisper` and run `python prototype/pipeline.py --compare meeting.m4a`. Check the turns split into 9 with alternating speakers and the labels match the text run. This closes the "Real transcriber swap" row.
+5. **Pasan:** review the 8 Oct one-line change in `transcriber.py` (`word_timestamps=True`). Still open: more than two speakers, overlapping speech, replies under 0.8 s. Pasan and Rahini: the RNN vs LSTM result is in the 13 Oct log.
+6. Dry-run `hands_on.py` on free Colab with someone outside the LSTM track, and write the debug-time cheat sheet.
+7. Choose the live demo meeting: the sample meeting (7 Oct model 7/9, keyword rules 8/9, no decisions found) or `group_project_3` via `pipeline.py --meeting` (model 16/18, keyword rules 12/18).
