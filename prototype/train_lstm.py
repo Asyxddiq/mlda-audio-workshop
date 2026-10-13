@@ -15,7 +15,7 @@ The SAME network lstm_model.py runs, plus two small pieces:
     turn's last token (8 numbers) -> head (8 -> 3 scores) -> softmax ->
     discussion / decision / action_item
 
-All of it is trained together: the embeddings (16 numbers per word), every
+All of it is trained together: the embeddings (32 numbers per word), every
 gate of all 5 LSTM layers, and the head. Because the weights are stored in
 exactly the shapes lstm_model.py already uses, there's nothing to port:
 lstm_model.py just loads them.
@@ -53,6 +53,10 @@ Training choices, and why
   False keeps only the seed with the lowest dev loss, as before.) The test
   meetings and the probe set are only looked at after training, and every
   seed's test score is printed so a lucky seed can't hide.
+- Settings tuned 13 Oct on the dev meetings only (12 one-at-a-time
+  changes, then the best combination; see progress.md): learning rate
+  0.01 (was 0.005) and 32-number embeddings (was 16). Test, probes and the
+  scorecard were scored once, after the choice.
 
 What this does NOT claim
 ------------------------
@@ -74,13 +78,13 @@ from training_data import GENERATED, MEETINGS, PROBES
 
 LABELS = ["discussion", "decision", "action_item"]
 UNK_TOKEN = "<unk>"
-EMBEDDING_DIM = 16
+EMBEDDING_DIM = 32     # 13 Oct: was 16 (tuned on dev)
 BASE_UNITS = 8
 WEIGHTS_FILE = "trained_lstm.npz"
 
 EPOCHS = 40
 PATIENCE = 15          # stop if dev loss hasn't improved for this many epochs
-LEARNING_RATE = 0.005
+LEARNING_RATE = 0.01   # 13 Oct: was 0.005 (tuned on dev)
 LR_DECAY = 0.95       # learning rate is multiplied by this after every epoch
 WEIGHT_DECAY = 1e-4
 UNK_DROPOUT = 0.15     # 13 Oct: was 0.25
