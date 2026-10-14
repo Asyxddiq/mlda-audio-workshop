@@ -478,6 +478,7 @@ Current state: transcript **RealTranscriber** (Whisper, falling back to the plac
 | Install the one dependency | `pip install -r requirements.txt` |
 | Run the whole chain | `python prototype/pipeline.py` |
 | Run it on real audio | `python prototype/pipeline.py meeting.wav` (needs `pip install openai-whisper` and ffmpeg) |
+| Run all checks before a push or the workshop | `python prototype/run_tests.py` (about 25 s, no training, no internet; `--audio FILE` adds an audio run) |
 | Compare keyword rules with the trained LSTM | `python prototype/pipeline.py --compare` (shows both labels for every turn; also works with `meeting.wav`) |
 | Run a hand-labelled meeting | `python prototype/pipeline.py --meeting hackathon_1 --compare` (any meeting name in `training_data.py`; adds the hand labels to the comparison) |
 | Run the LSTM stage only | `python prototype/lstm_model.py` |

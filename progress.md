@@ -5,7 +5,7 @@
 | **Owner** | Asy |
 | **Track** | 2: LSTM (with Nomt, who owns meeting minutes) |
 | **Code** | `prototype/lstm_model.py`, `prototype/train_lstm.py`, `prototype/training_data.py`, `prototype/transcript_placeholder.py`, `prototype/hands_on.py`, `prototype/scorecard.py`, `prototype/compare_rnn.py` |
-| **Last updated** | 13 Oct 2026 |
+| **Last updated** | 14 Oct 2026 |
 | **Current phase** | Weekend 3: hands-on, `--text`, scorecard and RNN comparison built 13 Oct; the tuned 13 Oct ensemble is shipped; blind check, real meetings, a human-audio run and the demo-meeting choice next |
 
 Update this file whenever something is finished, decided or blocked. Tick the box, add a line to the [log](#log), and move the node in the [roadmap](#roadmap).
@@ -213,6 +213,11 @@ gantt
 - `hands_on.py` Part B with the shipped model (member 0, the best seed by dev loss): 35/45 test turns right at `FORGET_KNOB = 0`, 10/45 at −6, 22/45 at +6. Both extremes still hurt.
 - RNN vs LSTM rerun with the tuned settings: LSTM 0.80 / 0.77, probes 7.8; RNN 0.80 / 0.78, probes 8.0 (5-seed means, single models). Still **no clear difference**. Memory reach: LSTM 0.053 / 0.006 / 0.002 / 0.001, RNN 0.075 / 0.013 / 0.004 / 0.000.
 
+### Wed 14 Oct 2026
+
+- Added `prototype/run_tests.py`: one command (`python prototype/run_tests.py`, about 25 s, standard library + numpy, no training, no internet) that checks the imports; the shipped weights (5-model ensemble, labels); that the shipped numbers reproduce (dev 0.96 / 0.948, test 0.84 / 0.825, the 36 other test turns 0.86 / 0.853, sample meeting 7/9, probes 9/12); the demo minutes (no wrong items); the `--text` example (7/7); `hands_on.py` with and without `--solution`; the training-data leak checks; the scorecard; smoke runs of the other scripts; and that the run leaves the repo unchanged. `--audio FILE` adds a pipeline run on a recording when Whisper and ffmpeg are installed. It does not run `train_lstm.py` or `compare_rnn.py`. With the 7 Oct weights swapped in, the weights, KPI and hands-on checks fail with a hint to restore the shipped file.
+- Fixed `scorecard.py` refusing to run on Windows checkouts: git's default line-ending conversion gave `scorecard_data.py` CRLF endings, which changed its hash although the file was unchanged. The hash now ignores line endings; the frozen value is the same.
+
 <!-- Add new entries above this line, newest date last. -->
 
 ---
@@ -305,3 +310,4 @@ sequenceDiagram
 5. **Pasan:** review the 8 Oct one-line change in `transcriber.py` (`word_timestamps=True`). Still open: more than two speakers, overlapping speech, replies under 0.8 s. Pasan and Rahini: the RNN vs LSTM result is in the 13 Oct log.
 6. Dry-run `hands_on.py` on free Colab with someone outside the LSTM track, and write the debug-time cheat sheet.
 7. Choose the live demo meeting: the sample meeting (7 Oct model 7/9, keyword rules 8/9, no decisions found) or `group_project_3` via `pipeline.py --meeting` (model 16/18, keyword rules 12/18).
+8. **Everyone:** run `python prototype/run_tests.py` before every push, and on the presenter laptop the day before the workshop.
