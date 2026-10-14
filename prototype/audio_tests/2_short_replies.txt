@@ -1,0 +1,8 @@
+# Audio test 2: one-word replies (2 people, a 1-2 second pause between speakers)
+# The same kind of short reply means a task, a decision or nothing, depending on the line before.
+act  Sam: Can you print the agenda for tomorrow?
+act  Lee: Sure.
+dis  Sam: How about we start at ten instead of nine?
+dec  Lee: Sounds good.
+dis  Sam: The projector in room two is broken.
+dis  Lee: Okay.
