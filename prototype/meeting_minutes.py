@@ -49,7 +49,7 @@ _REQUEST_KEYWORDS = ["can you", "could you", "please"]
 _DEADLINE = re.compile(
     r"\b(?:by|before)\s+((?:next\s+)?(?:monday|tuesday|wednesday|thursday|friday|saturday|sunday)"
     r"|tomorrow|tonight|next week|(?:the\s+)?end of (?:the\s+)?(?:day|week|month)"
-    r"|the\s+\d{1,2}(?:st|nd|rd|th))\b"
+    r"|the\s+\d{1,2}(?:st|nd|rd|th)|the next meeting)\b"
     r"|\b(today|tomorrow|tonight|this (?:week|weekend|afternoon|evening))\b",
     re.IGNORECASE,
 )
@@ -57,6 +57,19 @@ _DEADLINE = re.compile(
 
 _SELF_ASSIGN = re.compile(r"\b(i'll|i will|i can(?!['’]t)|let me|i'm going to|leave it (?:to|with) me)\b",
                           re.IGNORECASE)
+# "Sorry, I can't, I'm away tomorrow." -- the reply turns the request down.
+_DECLINE = re.compile(r"\b(can['’]t|cannot|can not|won['’]t be able|not able|unable|i['’]m away|"
+                      r"i['’]m swamped|too busy|not sure i can)\b", re.IGNORECASE)
+_COMMITS = re.compile(r"\b(i['’]ll|i will|let me)\b", re.IGNORECASE)
+# "Kai will handle the desk." / "Nadia, can you ..." when Kai or Nadia isn't
+# in the meeting: a capitalised name right before "will" or after-comma asks.
+_NAME_ASKED = re.compile(r"\b([A-Z][a-z]+)(?:,\s+(?:can|could|would|please|you)\b|\s+(?:will|is going to)\b)")
+_NOT_NAMES = {"Someone", "Somebody", "Everyone", "Everybody", "Nobody", "Anyone", "We", "They", "He",
+              "She", "It", "This", "That", "Who", "Okay", "Ok", "Sure", "Then", "So", "And", "But",
+              "Well", "Yes", "Yeah", "No", "Maybe", "Also", "Great", "Thanks", "There", "What", "Which",
+              "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday", "Today",
+              "Tomorrow", "Tonight", "January", "February", "March", "April", "May", "June", "July",
+              "August", "September", "October", "November", "December", "Please", "Now", "Next"}
 _REQUEST_START = re.compile(
     r"^(?:\w+,\s*)?(?:can you|could you|would you(?: be able to)?|please|"
     r"can someone|could someone|someone needs to|who can|you)\s+", re.IGNORECASE)
@@ -86,6 +99,21 @@ def _named_attendee(text: str, attendees: set[str], speaker: str) -> str | None:
     return None
 
 
+def _named_in_text(text: str) -> str | None:
+    """'Kai will handle the registration desk.' -> 'Kai', even if Kai isn't
+    speaking in this meeting (14 Oct fix). Pronouns, days etc. don't count."""
+    for match in _NAME_ASKED.finditer(text):
+        if match.group(1) not in _NOT_NAMES:
+            return match.group(1)
+    return None
+
+
+def _declines(text: str) -> bool:
+    """'Sorry, I can't, I'm away tomorrow.' / 'Not sure I can, I'm away.' ->
+    True; 'I can't today, but I'll do it Monday.' -> False (still a yes)."""
+    return bool(_DECLINE.search(text)) and not _COMMITS.search(text)
+
+
 def add_owners_and_deadlines(turns: list[Turn], categories: list[str]) -> list[dict]:
     """Turn a list of categories into full label dicts (owner, deadline).
 
@@ -97,8 +125,12 @@ def add_owners_and_deadlines(turns: list[Turn], categories: list[str]) -> list[d
       index>, and the person who replied is the owner.
     - Otherwise the owner is: the speaker for "I'll ..."; a named attendee
       for "Kai will ..." or "Kai, can you ..."; for an unanswered request,
-      the next person to speak; else the speaker.
-    - Deadline: "by Friday", "by end of week", "today", ... from the request
+      the next person to speak -- unless they turn it down ("Sorry, I
+      can't"): then whoever says "I'll do it." next, else "unassigned";
+      a name in the text for "Kai will ..." when Kai isn't in the
+      meeting; else the speaker.
+    - Deadline: "by Friday", "by end of week", "today", "before the next
+      meeting", ... from the request
       or its reply.
     """
     attendees = {speaker for speaker, _ in turns}
@@ -121,10 +153,27 @@ def add_owners_and_deadlines(turns: list[Turn], categories: list[str]) -> list[d
             i += 2
             continue
         named = _named_attendee(text, attendees, speaker)
+        reply = turns[nxt] if nxt < len(turns) else None
         if _SELF_ASSIGN.search(text):
             owner = speaker
+        elif (reply and reply[0] != speaker and _declines(reply[1])
+              and (named == reply[0] or (not named and _is_request(text)))):
+            owner = "unassigned"                          # the person asked said no
+            # "Sorry, I'm swamped." -> "I'll do it." from a third person: they own it.
+            after = i + 2
+            if (after < len(turns) and categories[after] == "action_item"
+                    and turns[after][0] not in (speaker, reply[0])
+                    and _SELF_ASSIGN.search(turns[after][1]) and len(turns[after][1].split()) <= 6):
+                owner = turns[after][0]
+                deadline = _deadline(text) or _deadline(turns[after][1])
+                labels[i].update(owner=owner, deadline=deadline)
+                labels[after].update(owner=owner, deadline=deadline, part_of=i)
+                i += 3
+                continue
         elif named:
             owner = named
+        elif _named_in_text(text):
+            owner = _named_in_text(text)
         elif _is_request(text):
             later = turns[nxt][0] if nxt < len(turns) else None
             owner = later if later and later != speaker else "unassigned"
