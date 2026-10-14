@@ -58,7 +58,8 @@ def predict_labels(meetings: list[dict], trained: dict) -> list[str]:
 if __name__ == "__main__":
     here = os.path.dirname(os.path.abspath(__file__))
     with open(os.path.join(here, "scorecard_data.py"), "rb") as f:
-        digest = hashlib.sha256(f.read()).hexdigest()
+        # git on Windows may check the file out with CRLF; the hash ignores line endings
+        digest = hashlib.sha256(f.read().replace(b"\r\n", b"\n")).hexdigest()
     if not digest.startswith(FROZEN_SHA256_PREFIX):
         sys.exit("scorecard_data.py has changed since it was frozen, so its scores would "
                  "no longer be comparable. Restore it from git.")
