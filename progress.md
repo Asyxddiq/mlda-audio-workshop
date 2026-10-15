@@ -5,7 +5,7 @@
 | **Owner** | Asy |
 | **Track** | 2: LSTM (with Nomt, who owns meeting minutes) |
 | **Code** | `prototype/lstm_model.py`, `prototype/train_lstm.py`, `prototype/training_data.py`, `prototype/transcript_placeholder.py`, `prototype/hands_on.py`, `prototype/scorecard.py`, `prototype/compare_rnn.py` |
-| **Last updated** | 14 Oct 2026 |
+| **Last updated** | 15 Oct 2026 |
 | **Current phase** | Weekend 3: hands-on, `--text`, scorecard and RNN comparison built 13 Oct; the tuned 13 Oct ensemble is shipped; blind check, real meetings, a human-audio run and the demo-meeting choice next |
 
 Update this file whenever something is finished, decided or blocked. Tick the box, add a line to the [log](#log), and move the node in the [roadmap](#roadmap).
@@ -34,7 +34,7 @@ pie showData
 | Participants' hands-on | Done | `hands_on.py`: Part A the RNN step (+ memory off), Part B the LSTM notebook update (+ forget knob); `pipeline.py --text` for their own lines |
 | RNN vs LSTM check | Done | `compare_rnn.py`: no clear difference, with both the old and the tuned settings (rule written beforehand) |
 | Hand-off to Nomt | Done | `run_pipeline()` loads the trained weights; `label_turns_model()` in `meeting_minutes.py` |
-| Real transcriber swap | In progress | Wired up in `pipeline.py`; works on synthetic speech after the 8 Oct transcriber fix; human recording still to do |
+| Real transcriber swap | In progress | Wired up in `pipeline.py`; works on synthetic speech after the 8 Oct transcriber fix; 15 Oct: passes on real human speech (LibriSpeech clips) and a one-voice reading of `solo_1` on Claude's side (same Whisper base weights, see log). **Done when** a recording of a team member gives `transcriber: PASS` in `audio_check.py` |
 
 ---
 
@@ -111,7 +111,7 @@ gantt
 - [x] Training data: 11 hand-labelled meetings across group project, lab stand-up, CCA committee, club event, hackathon (211 turns), plus 12 probes and a practice-meeting generator (7 Oct, first draft)
 - [x] Train the hourglass + classifier head on it: `train_lstm.py`, NumPy, weights load straight into `lstm_model.py`, no port needed (7 Oct)
 - [ ] Blind check: Asy and Nomt each label 10 of the other's turns; tighten the guide where they disagree, then rerun `train_lstm.py` (sheets prepared 8 Oct; Nomt's 10: 10/10 agree; Asy's 10 pending)
-- [ ] Swap the placeholder for Track 1's real transcriber and run the full chain once: wired up 7 Oct (`pipeline.py`) and runs on the sample; ran on synthetic text-to-speech audio 8 Oct and works after a transcriber fix (see log); a human recording still to do
+- [ ] Swap the placeholder for Track 1's real transcriber and run the full chain once: wired up 7 Oct (`pipeline.py`) and runs on the sample; ran on synthetic text-to-speech audio 8 Oct and works after a transcriber fix (see log); a human recording still to do. 15 Oct: solo scripts added so one person can do it (`audio_tests/solo_1_sample_meeting.txt`) and checked on Claude's side; tick this when Asy's recording gives `transcriber: PASS`
 
 ### Weekend 3: freeze
 
@@ -218,6 +218,19 @@ gantt
 - Added `prototype/run_tests.py`: one command (`python prototype/run_tests.py`, about 25 s, standard library + numpy, no training, no internet) that checks the imports; the shipped weights (5-model ensemble, labels); that the shipped numbers reproduce (dev 0.96 / 0.948, test 0.84 / 0.825, the 36 other test turns 0.86 / 0.853, sample meeting 7/9, probes 9/12); the demo minutes (no wrong items); the `--text` example (7/7); `hands_on.py` with and without `--solution`; the training-data leak checks; the scorecard; smoke runs of the other scripts; and that the run leaves the repo unchanged. `--audio FILE` adds a pipeline run on a recording when Whisper and ffmpeg are installed. It does not run `train_lstm.py` or `compare_rnn.py`. With the 7 Oct weights swapped in, the weights, KPI and hands-on checks fail with a hint to restore the shipped file.
 - Fixed `scorecard.py` refusing to run on Windows checkouts: git's default line-ending conversion gave `scorecard_data.py` CRLF endings, which changed its hash although the file was unchanged. The hash now ignores line endings; the frozen value is the same.
 
+### Thu 15 Oct 2026
+
+- Meeting tests (pushed 14 Oct, e30953a): `prototype/minutes_tests.py` runs 67 typed meeting cases (actions, decisions, discussion-only traps, the same short reply after different lines, whole meetings), listed with their expected minutes in `prototype/testing script.md`. Trained model 45/67, keyword fallback 28/67; every remaining failure is a label from the model (mostly missed decisions), none is in the minutes code. Test only, never for training or tuning. Same commit: three owner/due-date fixes in `meeting_minutes.py` (a named person who isn't in the meeting; a request turned down goes to "unassigned" or to whoever then says "I'll do it."; "before the next meeting" as a due date), for Nomt to review.
+- Solo audio tests, so one person can do the human-recording check: `audio_tests/solo_1_sample_meeting.txt` (the sample meeting) and `solo_2_bake_sale.txt`. One person reads every line, stopping 2 s between lines, so the 0.8 s pause rule alternates the speakers.
+- `audio_check.py` now gives two verdicts: **transcriber** (turns, speaker pattern, at least 90% of words) and **end to end** (also the same labels and minutes). Minutes items match when owners and due dates are the same and the words are at least 80% the same.
+- Checked on Claude's side. openai-whisper can't be installed there (no PyTorch), so it ran the same Whisper **base** weights exported to ONNX (k2-fsa/sherpa-onnx) with onnxruntime, behind a small stand-in for `import whisper`; `transcriber.py`, the pause rule and `audio_check.py` ran unchanged on top. One difference: segment times came from a silence detector instead of Whisper's word timestamps, so Asy's run with the real package is still the check of that part. Results:
+  - Real human speech (3 LibriSpeech recordings, 2 s apart): transcriber PASS, 3/3 turns, 95% of words.
+  - `solo_1` read by one synthetic voice (flite, slt) with 2 s gaps: PASS on both verdicts, 9/9 turns, 96% of words. Also PASS with 1.5 s and 1.0 s gaps.
+  - `solo_1` with 0.4 s gaps: all 9 lines came back as 1 turn, FAIL. The check catches a reading that is too fast.
+  - `solo_1` with two rougher synthetic voices (awb; rms with added noise): 9/9 turns but 83-85% of words, FAIL ("Yes, I'll email them today." heard as "Yes, I fully mail them today.").
+  - `solo_2`: transcriber PASS with the slt and rms voices, end to end FAIL. Whisper wrote "I will bring" for "I'll bring" and the model labels the "I will" version discussion; with slt, "Two things today" became "do things today" and was labelled an action item. Both are the labeller reacting to small wording changes, worth "I will" examples in the next training round.
+- Status: the "Real transcriber swap" row stays **In progress** until a recording of a real team member passes.
+
 <!-- Add new entries above this line, newest date last. -->
 
 ---
@@ -306,7 +319,7 @@ sequenceDiagram
 1. **Asy:** blind-label `blind_check_for_asy.md` (10 of Nomt's turns, kept outside the repo), compare with the key, tighten the guide where you disagree. (Nomt's 10: done 8 Oct, 10/10 agree.)
 2. **Team:** collect 5 to 10 short real meetings (CCA, project or club, with permission), label them with the guide, and keep them as a fresh test set. That shows how the shipped model does on writing that isn't ours, and gives the decision examples it still lacks.
 3. **Nomt:** review the 13 Oct changes, especially the ensemble path in `label_turns_model()`, `pipeline.py --text` and `hands_on.py`.
-4. **Asy:** human recording (the 8 Oct test used synthetic speech). Record yourself and a friend reading the sample meeting's 9 lines (about a minute, a short pause between speakers), then `pip install openai-whisper` and run `python prototype/pipeline.py --compare meeting.m4a`. Check the turns split into 9 with alternating speakers and the labels match the text run. This closes the "Real transcriber swap" row.
+4. **Asy:** human recording, solo is fine. Read `prototype/audio_tests/solo_1_sample_meeting.txt` alone (stop 2 full seconds between lines, never more than half a second inside a line; about a minute), then `pip install openai-whisper` and run `python prototype/audio_check.py prototype/audio_tests/solo_1_sample_meeting.txt my_solo_1.m4a`. `transcriber: PASS` closes the "Real transcriber swap" row; paste the output into the log. (A recording with a friend and `1_sample_meeting.txt` works the same way.)
 5. **Pasan:** review the 8 Oct one-line change in `transcriber.py` (`word_timestamps=True`). Still open: more than two speakers, overlapping speech, replies under 0.8 s. Pasan and Rahini: the RNN vs LSTM result is in the 13 Oct log.
 6. Dry-run `hands_on.py` on free Colab with someone outside the LSTM track, and write the debug-time cheat sheet.
 7. Choose the live demo meeting: the sample meeting (7 Oct model 7/9, keyword rules 8/9, no decisions found) or `group_project_3` via `pipeline.py --meeting` (model 16/18, keyword rules 12/18).
