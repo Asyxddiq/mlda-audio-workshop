@@ -5,7 +5,8 @@ Audio test: does what you SAID come out the same as what you TYPED? (Track 1 che
     python prototype/audio_check.py prototype/audio_tests/1_sample_meeting.txt --heard heard.txt
 
 Read one of the scripts in prototype/audio_tests/ aloud (two people taking
-turns), record it, and give this script the recording. It runs the audio
+turns, or one person reading every line for the solo_* scripts), record it,
+and give this script the recording. It runs the audio
 through the real chain (Whisper -> pause-based speakers -> LSTM -> minutes)
 and the typed script through the same LSTM and minutes, then compares them:
 
@@ -14,17 +15,26 @@ and the typed script through the same LSTM and minutes, then compares them:
   3. Words     how many of the script's words were heard (case and
                punctuation ignored, apart from ? and !), turn by turn
   4. Labels    same label per turn from the audio as from the typed script
-  5. Minutes   the same decisions and action items
+  5. Minutes   the same decisions and action items (same owners and due
+               dates; each item's words at least 80% the same, so "bake sale"
+               heard as "Bakesale" still counts as the same item)
 
-PASS = same turns, same speaker pattern, at least 90% of the words, the same
-labels and the same minutes. --heard FILE checks a saved "Speaker1: ..."
-transcript instead of audio (no Whisper needed), e.g. one pasted from an
-earlier run.
+Two verdicts at the end:
+  transcriber  PASS = same turns, same speaker pattern, at least 90% of the
+               words. This is the audio -> text part (Whisper + the pause rule).
+  end to end   PASS = that, plus the same labels and the same minutes. A
+               transcriber PASS with an end-to-end FAIL means the words came
+               through but the labeller reacted to a small wording change.
+Exit code 0 only when end to end passes.
+
+--heard FILE checks a saved "Speaker1: ..." transcript instead of audio (no
+Whisper needed), e.g. one pasted from an earlier run.
 
 Needs Whisper and ffmpeg for audio (see pipeline.py, "Real audio").
 """
 
 import os
+import re
 import sys
 
 from lstm_model import run_pipeline, split_words
@@ -70,8 +80,36 @@ def _labels_and_minutes(turns):
     return [l["category"] for l in labels], generate_minutes(turns, labels)
 
 
-def _minutes_items(minutes: str) -> list[str]:
-    return [line for line in minutes.splitlines() if line.startswith("- ")]
+ITEM_WORDS_NEEDED = 0.80
+_ACTION = re.compile(r"^- \[ \] (.*) -- (\S+)(?: \(due (.*)\))?$")
+
+
+def _minutes_items(minutes: str) -> tuple[list[str], list[tuple[str, str, str | None]]]:
+    """(decisions, actions as (task, owner, due)) from the Markdown minutes."""
+    decisions, actions, section = [], [], None
+    for line in minutes.splitlines():
+        if line.startswith("## "):
+            section = line[3:]
+        elif line.startswith("- ") and line != "- (none)":
+            match = _ACTION.match(line)
+            if section == "Action Items" and match:
+                actions.append(match.groups())
+            elif section == "Decisions":
+                decisions.append(line[2:])
+    return decisions, actions
+
+
+def same_minutes(said_minutes: str, heard_minutes: str) -> bool:
+    """Same decisions and action items: same count, same owners and due dates,
+    and each item's words at least 80% the same ("bake sale" heard as
+    "Bakesale" is still the same item; a missing or extra item is not)."""
+    (d1, a1), (d2, a2) = _minutes_items(said_minutes), _minutes_items(heard_minutes)
+    if len(d1) != len(d2) or len(a1) != len(a2):
+        return False
+    return (all(word_accuracy(x, y) >= ITEM_WORDS_NEEDED for x, y in zip(d1, d2))
+            and all(o1 == o2 and (due1 or "").lower() == (due2 or "").lower()
+                    and word_accuracy(t1, t2) >= ITEM_WORDS_NEEDED
+                    for (t1, o1, due1), (t2, o2, due2) in zip(a1, a2)))
 
 
 def check(script_path: str, heard_transcript: str) -> bool:
@@ -89,7 +127,7 @@ def check(script_path: str, heard_transcript: str) -> bool:
     same_speakers = same_count and [s for s, _ in said] == [s for s, _ in heard]
     overall = word_accuracy(" ".join(t for _, t in said), " ".join(t for _, t in heard))
     same_labels = same_count and said_labels == heard_labels
-    same_minutes = _minutes_items(said_minutes) == _minutes_items(heard_minutes)
+    minutes_match = same_minutes(said_minutes, heard_minutes)
 
     print(f"Script: {os.path.basename(script_path)}\n")
     if same_count:
@@ -116,19 +154,29 @@ def check(script_path: str, heard_transcript: str) -> bool:
         ("Labels", same_labels, "same label on every turn" if same_labels else
          ("differ on " + ", ".join(str(n) for n, (a, b) in enumerate(zip(said_labels, heard_labels), 1) if a != b)
           if same_count else "can't compare turn by turn")),
-        ("Minutes", same_minutes, "same decisions and action items" if same_minutes else "differ (below)"),
+        ("Minutes", minutes_match, "same decisions and action items" if minutes_match else "differ (below)"),
     ]
     for name, ok, note in rows:
         print(f"  {name:<9} {'OK  ' if ok else 'FAIL'}  {note}")
     if gold and same_count:
         right = sum(g == h for g, h in zip(gold, heard_labels))
         print(f"  (hand labels in the script: the audio run matches {right}/{len(gold)})")
-    if not same_minutes:
+    if not minutes_match:
         show = lambda m: "    " + "\n    ".join(l for l in m.splitlines() if l.startswith(("## ", "- ")))
         print("\n  Minutes from the typed script:\n" + show(said_minutes))
         print("  Minutes from the audio:\n" + show(heard_minutes))
+    heard_ok = all(ok for _, ok, _ in rows[:3])
     passed = all(ok for _, ok, _ in rows)
-    print(f"\n{'PASS' if passed else 'FAIL'}: audio {'matches' if passed else 'does not match'} the typed script")
+    print(f"\n{'PASS' if heard_ok else 'FAIL'}  transcriber: "
+          + ("the audio became the same turns, speakers and words as the script" if heard_ok else
+             "the audio did not become the script's turns, speakers and words (Turns / Speakers / Words above)"))
+    print(f"{'PASS' if passed else 'FAIL'}  end to end:  "
+          + ("same labels and minutes as the typed script" if passed else
+             "labels or minutes differ from the typed script" if heard_ok else
+             "can't pass until the transcriber line passes"))
+    if heard_ok and not passed:
+        print("      (the words came through, so this is the labeller reacting to small wording changes,\n"
+              "       e.g. \"I will\" for \"I'll\" -- worth noting for the model, not a recording problem)")
     return passed
 
 
