@@ -1,0 +1,17 @@
+# Solo audio test 2: a short club meeting with a one-word reply, read by ONE person
+#
+# Same rules as solo_1: skip the label and the name, stop for 2 full seconds
+# between lines, no stop longer than half a second inside a line. Line 6 is just
+# "Sure." -- still leave the 2-second gap before AND after it, or it gets
+# glued onto the line next to it.
+#
+#   python prototype/audio_check.py prototype/audio_tests/solo_2_bake_sale.txt my_solo_2.m4a
+dis  Hana: Okay, let's start. Two things today, the bake sale and the poster.
+dis  Omar: The canteen said we can use the front tables on Friday.
+dec  Hana: Great, then we'll hold the bake sale on Friday morning.
+act  Omar: I'll bring the cash box and the price cards.
+act  Hana: Can you also ask Dev for the folding table by Thursday?
+act  Omar: Sure.
+dis  Hana: Last thing, the poster still has the old date on it.
+act  Omar: Let me fix the date tonight.
+dis  Hana: Perfect, thanks. That's everything for today.
