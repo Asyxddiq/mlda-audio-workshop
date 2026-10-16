@@ -1,0 +1,6 @@
+# Audio test 4: person A stops to think for 2 seconds in the MIDDLE of turn 1, where the "..." is.
+# Known limit: a long pause inside one person's turn may be read as a new speaker.
+dis  Mei: For the budget, we spent about three hundred... on the welcome party.
+dis  Ken: That's more than last year.
+act  Mei: Ken, could you check the receipts this week?
+act  Ken: Will do.

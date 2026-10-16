@@ -1,0 +1,11 @@
+# Audio test 1: the sample meeting (2 people, a 1-2 second pause between speakers)
+# Person A reads Alex, person B reads Priya. Leave the label words (dis/dec/act) out loud.
+dis  Alex: Let's kick off. First item is the Q3 budget review.
+dis  Priya: I've sent the numbers over, we're currently 8% under budget.
+dis  Alex: Good, let's keep monitoring that. Next, the workshop venue.
+dec  Priya: Venue is confirmed for the 14th, catering still pending.
+act  Alex: Can you follow up with catering by Friday?
+act  Priya: Yes, I'll email them today.
+dis  Alex: Great, last item, feedback from the last session.
+dis  Priya: Mostly positive, a few people wanted more hands-on time.
+dec  Alex: Noted, let's add that to the next agenda. Meeting adjourned.
