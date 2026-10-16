@@ -1,0 +1,38 @@
+Solo audio test -- Claude-guided-fakemic-slt, 16 Oct 2026 13:09
+Script:    testing/scripts/solo_1_sample_meeting.txt
+Recording: Claude-guided-fakemic-slt_solo_1_sample_meeting_2026-10-16_1308.wav (microphone, guided)
+Whisper:   model 'base', NOT the openai-whisper package: Claude-side stand-in: the same Whisper weights run with onnxruntime (sherpa-onnx ONNX export), silence-based segment times.; Python 3.13.16 on Linux
+
+Heard (what Whisper and the pause rule produced):
+  Speaker1: Let's kick off. First item is the Q3 budget review.
+  Speaker2: I've sent the numbers over, where currently 8% under budget.
+  Speaker1: Good, let's keep monitoring that next. The workshop and you.
+  Speaker2: Venue is confirmed for the 14th, catering still pending.
+  Speaker1: Can you follow up with catering by Friday?
+  Speaker2: Yes, I'll email them today.
+  Speaker1: Great, last item, feedback from the last session.
+  Speaker2: Mostly positive, a few people wanted more hands on time.
+  Speaker1: noted. Let's add that to the next agenda, meeting adjourned.
+
+Script: solo_1_sample_meeting.txt
+
+   #  said                                         heard                                        words  label said / heard
+   1  1: Let's kick off. First item is the Q3 budg 1: Let's kick off. First item is the Q3 budg  100%  discussion / discussion
+   2  2: I've sent the numbers over, we're current 2: I've sent the numbers over, where current   90%  discussion / discussion
+   3  1: Good, let's keep monitoring that. Next, t 1: Good, let's keep monitoring that next. Th   78%  discussion / discussion
+   4  2: Venue is confirmed for the 14th, catering 2: Venue is confirmed for the 14th, catering  100%  discussion / discussion
+   5  1: Can you follow up with catering by Friday 1: Can you follow up with catering by Friday  100%  action_item / action_item
+   6  2: Yes, I'll email them today.               2: Yes, I'll email them today.                100%  action_item / action_item
+   7  1: Great, last item, feedback from the last  1: Great, last item, feedback from the last   100%  discussion / discussion
+   8  2: Mostly positive, a few people wanted more 2: Mostly positive, a few people wanted more  100%  discussion / discussion
+   9  1: Noted, let's add that to the next agenda. 1: noted. Let's add that to the next agenda,  100%  discussion / discussion
+
+  Turns     OK    said 9, heard 9: same
+  Speakers  OK    same back-and-forth
+  Words     OK    96% of the script's words heard (need 90%)
+  Labels    OK    same label on every turn
+  Minutes   OK    same decisions and action items
+  (hand labels in the script: the audio run matches 7/9)
+
+PASS  transcriber: the audio became the same turns, speakers and words as the script
+PASS  end to end:  same labels and minutes as the typed script

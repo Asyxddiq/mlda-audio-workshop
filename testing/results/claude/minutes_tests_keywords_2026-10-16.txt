@@ -1,0 +1,121 @@
+minutes_tests.py --keywords (keyword fallback). Run by Claude in its cloud workspace, 16 Oct 2026, on main as of 8ea5296 (plus the new testing/ folder).
+
+Meeting tests, keyword fallback: 67 cases
+
+  PASS  A01  request + yes
+  PASS  A02  request + bare 'Okay'
+  FAIL  A03  offer with a due date
+          missing action: 'write to the sponsor' -- Ben
+  FAIL  A04  assigned to someone not in the meeting
+          missing action: 'registration desk' -- Kai
+  FAIL  A05  conditional offer
+          missing action: 'redo the poster' -- Ben
+  PASS  A06  request turned down
+  PASS  A07  'Will do.' + 'before the next meeting'
+  FAIL  A08  'Who can ...?' + 'I can.'
+          missing action: 'collect the sign-in sheets' -- Omar
+  FAIL  A09  'Let me ...'
+          missing action: 'booking calendar' -- Omar
+  FAIL  A10  'Someone has to ...' + 'Leave it with me.'
+          missing action: 'ring the coach company' -- Omar
+  FAIL  A11  direct order, no 'please'
+          missing action: 'opening speech' -- Arjun
+  PASS  A12  two tasks to two people
+  FAIL  A13  due date given in the reply
+          action 'feedback summary': got owner Dev, due None (expected Dev, due Monday)
+  FAIL  A14  'X is going to ...'
+          missing action: 'welcome note' -- Nadia
+  FAIL  A15  'Could someone ...?' + 'I'll do it.'
+          missing action: 'reserve the library discussion room' -- Dev
+  FAIL  A16  'I'm going to ...' + tonight
+          missing action: 'post the recording' -- Dev
+  FAIL  A17  'are you able to' + this week
+          missing action: 'email the caterer' -- Omar
+  PASS  A18  'can't today, but I'll ...' is still a yes
+  FAIL  A19  turned down, then someone else takes it
+          action 'print': got owner unassigned, due None (expected Lina, due None)
+  PASS  A20  'chase' + 'Sure.'
+  FAIL  B01  proposal + 'Sounds good.'
+          missing decision: 'move the meeting to Friday'
+  FAIL  B02  chair decides after a comparison
+          missing decision: 'big hall'
+  PASS  B03  decision stated as a fact
+  PASS  B04  approval reported
+  PASS  B05  proposal + objection = no decision
+  FAIL  B06  proposal + 'Yeah, let's do that.'
+          missing decision: 'green design'
+  PASS  B07  two people agree = still one decision
+  FAIL  B08  chair's 'let's' on its own
+          missing decision: 'Thursdays'
+  FAIL  B09  'we're going with'
+          missing decision: 'pizza'
+  FAIL  B10  'that's settled'
+          missing decision: 'trip is on the 21st'
+  FAIL  B11  proposal, objection, chair settles
+          missing decision: 'no photographer'
+  FAIL  B12  booking came through
+          missing decision: 'sports hall'
+  FAIL  B13  agreement + echo ('Same here.')
+          missing decision: 'kick off at nine'
+  FAIL  B14  'We'll hold ... in ...'
+          missing decision: 'bake sale in the canteen'
+  PASS  B15  proposal ignored, topic changes
+  FAIL  B16  negative decision
+          missing decision: 'not doing the raffle'
+  FAIL  B17  show of hands
+          missing decision: 'Saturday'
+  FAIL  B18  'Can we ...?' is a proposal, not a task
+          missing decision: 'Monday'
+  PASS  C01  information + 'Okay.'
+  PASS  C02  status update on a finished task
+  FAIL  C03  a question for right now
+          extra action: 'Tell me where the sign-up form went' -- Mei
+  FAIL  C04  'follow up' in a negative sentence
+          extra action: "I'm not going to follow up on it, it's sorted already." -- Ben
+  PASS  C05  procedural 'let's'
+  FAIL  C06  'decided' in 'haven't decided'
+          extra decision: "We still haven't decided the theme."
+  FAIL  C07  'confirmed' in 'hasn't confirmed'
+          extra decision: "The sponsor still hasn't confirmed anything."
+  FAIL  C08  'Could you repeat that?'
+          extra action: 'Repeat that' -- Lina
+  FAIL  C09  'Please, go ahead.'
+          extra action: 'Please, go ahead.' -- unassigned
+  FAIL  C10  'confirmed now?' + 'Not yet.'
+          extra decision: 'Is the venue confirmed now?'
+  PASS  C11  an opinion
+  PASS  C12  closing
+  PASS  C13  a 'what if' wish
+  FAIL  C14  a decision from last year
+          extra decision: "Last year we agreed on a cap and it didn't really work."
+  PASS  C15  'I'll' in a figure of speech
+  PASS  C16  question about a done task
+  PASS  D01  'Sure.' after a request = action
+  FAIL  D02  'Sure.' after a proposal = decision
+          missing decision: 'meet at the cafe'
+  PASS  D03  'Okay.' after information = nothing
+  PASS  D04  'Got it.' after a request = action
+  PASS  D05  'Got it.' after information = nothing
+  FAIL  D06  'Sounds good.' after a proposal = decision
+          missing decision: 'split into two teams'
+  PASS  D07  'Sounds good.' after information = nothing
+  PASS  D08  'Okay.' after a request = action
+  FAIL  D09  'Okay.' after a proposal = decision
+          missing decision: 'finish at five'
+  PASS  E01  the sample meeting (transcript_placeholder.py)
+  FAIL  E02  club welcome party
+          missing decision: 'booked the function room'
+          missing decision: 'noodles'
+          missing action: 'make the poster' -- Tom
+  PASS  E03  project demo prep
+  FAIL  E04  budget meeting with a no
+          missing decision: 'keep half for the trip'
+          action 'quotes for the jerseys': got owner unassigned, due next week (expected Omar, due next week)
+
+  A  Action items                                7/20
+  B  Decisions                                   5/18
+  C  Discussion only (nothing in the minutes)    8/16
+  D  Same reply, different meaning               6/9
+  E  Whole meetings                              2/4
+
+  Total 28/67 passed

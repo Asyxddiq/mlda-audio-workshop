@@ -1,0 +1,18 @@
+run_tests.py (Nomt's one-command check). Run by Claude in its cloud workspace, 16 Oct 2026, on main as of 8ea5296 (plus the new testing/ folder).
+The --audio run uses Claude's Whisper stand-in (same base weights via onnxruntime) on the synthetic solo_1 recording.
+
+Training scripts (train_lstm.py, compare_rnn.py) are intentionally not run: they take 12-20 minutes and train_lstm.py overwrites the shipped weights.
+
+PASS  a. imports                  11 modules import  (0.1s)
+PASS  b. weights                  5 members, labels discussion / decision / action_item  (0.0s)
+PASS  c. shipped KPIs reproduce   dev 0.96/0.948, test 0.84/0.825, 36-turn test 0.86/0.853, sample 7/9, probes 9/12  (1.9s)
+PASS  d. demo minutes             no decisions, one action item (catering by Friday, Priya)  (0.1s)
+PASS  e. --text example           runs, model matches the hand labels 7/7  (0.1s)
+PASS  f. hands-on                 solution: both parts OK, 35/45 at knob 0; unfilled version says 'not written yet'  (0.3s)
+PASS  g. training data            leak checks pass  (0.4s)
+PASS  h. scorecard                frozen scorecard runs (hash ignores line endings)  (0.6s)
+PASS  i. smoke runs               5 scripts exit 0  (0.7s)
+PASS  j. audio (optional)         pipeline ran on solo1_slt.wav  (25.7s)
+PASS  k. repo unchanged           git status and git diff identical before and after  (0.0s)
+
+11 passed, 0 failed, 0 skipped in 29.9 s
