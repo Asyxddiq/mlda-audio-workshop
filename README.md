@@ -434,6 +434,7 @@ Verdict, both times: **no clear difference** (old settings: LSTM +0.046 macro-F1
 | Run the whole chain | `python prototype/pipeline.py` |
 | Run it on real audio | `python prototype/pipeline.py meeting.wav` (needs `pip install openai-whisper` and ffmpeg) |
 | Run all checks before a push or the workshop | `python prototype/run_tests.py` (about 25 s, no training, no internet; `--audio FILE` adds an audio run) |
+| Just try it: talk like a meeting and see the result | `python testing/try_it.py` (or `--text` to type instead) |
 | Test one stage at a time | `python testing/phases.py` (all four phases, automatic) or `python testing/phases.py --manual --name YOU` (by hand: you give each phase its input) |
 | Meeting tests, clean-up tests, audio tests | `python prototype/minutes_tests.py`, `python prototype/normalise_tests.py`, `python testing/solo_test.py --name YOU`: all explained in [testing/testing.md](testing/testing.md) |
 | Compare keyword rules with the trained LSTM | `python prototype/pipeline.py --compare` (shows both labels for every turn; also works with `meeting.wav`) |

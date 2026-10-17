@@ -48,6 +48,7 @@ Recordings (`.wav`, `.m4a`, `.mp3`) stay on your computer: `testing/.gitignore` 
 |---|---|
 | `testing.md` | This page: how to run each test, and all the results |
 | [`model_update_16oct/`](model_update_16oct/model_update.md) | The 16 Oct model update: the rule, what shipped, what was tried, every score |
+| [`try_it.py`](try_it.py) | The quickest test: talk (or type) like a meeting, no script, and see the transcript, each turn's label and the minutes |
 | [`phases.py`](phases.py) | The chain one phase at a time (audio to text, RNN, LSTM, meeting minutes), a PASS or FAIL for each |
 | [`solo_test.py`](solo_test.py) | The individual test: records one person (or checks a recording), runs the audio check, saves the result |
 | [`scripts/`](scripts/) | The 9 scripts to read aloud: `solo_1`, `solo_2`, `solo_3` (one person) and `1`-`6` (two or three people) |
