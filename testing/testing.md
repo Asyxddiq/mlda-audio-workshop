@@ -48,6 +48,7 @@ Recordings (`.wav`, `.m4a`, `.mp3`) stay on your computer: `testing/.gitignore` 
 |---|---|
 | `testing.md` | This page: how to run each test, and all the results |
 | [`model_update_16oct/`](model_update_16oct/model_update.md) | The 16 Oct model update: the rule, what shipped, what was tried, every score |
+| [`phases.py`](phases.py) | The chain one phase at a time (audio to text, RNN, LSTM, meeting minutes), a PASS or FAIL for each |
 | [`solo_test.py`](solo_test.py) | The individual test: records one person (or checks a recording), runs the audio check, saves the result |
 | [`scripts/`](scripts/) | The 9 scripts to read aloud: `solo_1`, `solo_2`, `solo_3` (one person) and `1`-`6` (two or three people) |
 | [`testing script.md`](testing%20script.md) | The 67 meeting tests with the minutes each one should produce |
@@ -66,6 +67,7 @@ The Python checkers that load the model stay in `prototype/`, next to the code t
 | 2 | Meeting tests | 67 typed meetings: do the minutes have the right decisions, action items, owners and due dates? | `python prototype/minutes_tests.py` (add `--keywords` for the fallback) | numpy only |
 | 3 | Solo audio test | One person's recording: right turns, speakers and words (transcriber), and the same labels and minutes as the typed script (end to end) | `python testing/solo_test.py --name YOU` | Whisper, ffmpeg, a microphone or a recording |
 | 4 | Pair audio tests | The same check with two or three people reading `scripts/1`-`6` (fast replies, a pause mid-turn, three speakers, a noisy room) | `python prototype/audio_check.py testing/scripts/1_sample_meeting.txt rec.m4a` | Whisper, ffmpeg, two people |
+| 0 | Phase by phase | Each stage on its own: 1 audio to text (Whisper + pause rule), 2 the RNN teaching demo, 3 the trained LSTM's labels, 4 the minutes. Says what each result does not prove | `python testing/phases.py` (all four, no audio, about 15 s), `python testing/phases.py 3` (one), `python testing/phases.py 1 --audio rec.m4a` (phase 1 on a recording) | numpy only; Whisper + ffmpeg for `--audio` |
 | 5 | Checker self-test | `audio_check.py` passes when the transcript is exactly the script | `python prototype/audio_check.py SCRIPT.txt --heard TRANSCRIPT.txt` (a saved "Speaker1: ..." transcript instead of audio) | numpy only |
 | 6 | Text clean-up | "I will" and "I'll", "let us" and "let's", "OK" and "okay" ... are read the same by the model, and names and possessives are left alone | `python prototype/normalise_tests.py` (also checks j in test 1) | numpy only |
 | 7 | Holdout meetings | 17 fresh meetings (271 turns) the model was never trained on, written 16 Oct: labels right | part of test 1 (check k); data in `prototype/holdout_data.py` | numpy only |
