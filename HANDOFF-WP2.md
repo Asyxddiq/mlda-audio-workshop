@@ -263,3 +263,149 @@ New (untracked):
 - Nothing else in WP2's deliverable list (N1-N5, N10,
   `plan/WORK_PACKAGES.md`) is outstanding. Sections 4 and 5 deliberately
   untouched (WP3/WP4).
+
+---
+
+## Round 2 (review verdict: CHANGES on `a8c7316`, no blockers)
+
+Reviewer's findings: `git show claude/review-workshop-gaps-53e548:reviews/WP2.md`.
+Orchestrator's decisions on each finding, applied below, all independently
+verified. Nothing committed -- same protocol as before.
+
+| # | Finding | Fix applied | Verified |
+|---|---|---|---|
+| 1 (should-fix) | N2's answer key said "your run may differ slightly" and quoted only `base.en` numbers, but on `small.en` (the notebook's own Colab/GPU default) the second-voice clip TIED the ideal clip at 100% -- not a tie-breaking ranking, and not "slightly" | Swept the second-voice mix factor (0.25-1.0) across `base.en`/`small.en`/`medium.en`; `0.45` is the only factor tried where ideal is the UNIQUE top on all three sizes and the order (ideal > second voice > hiss > poor mic) holds on all three. Applied it in `make_noisy_clips.py` (with the sweep result in a comment), regenerated the 4 clips, rewrote cell 23 as a markdown table of all three sizes' real numbers plus the stable-order claim, no "slightly" | Re-measured the regenerated clips on all three sizes directly against the written WAV files (not in-memory) -- matched the sweep exactly (below) |
+| 2 (should-fix) | Cell 5 said "the clip Whisper just read" (that was `sample_meeting.wav`, cell 4) while cell 6 plots `sample_short.wav`; cell 9 said "the picture above" but cell 10's MFCC ran on `sample_meeting.wav`, a different file | Cell 10 now uses `sample_short.wav`, matching cell 6 -- "the picture above" in cell 9 is now literally true. Reworded cell 5 to "a short clip: three sentences from the meeting" instead of claiming it's the clip Whisper just transcribed | Re-ran cell 10: `16 seconds of audio -> 1562 frames x 13 numbers` (was `60 seconds -> 5967 frames`, confirming it now reads the short clip) |
+| 3 (should-fix) | Contents table still said "RNNs: reading audio as a sequence", contradicting section 3's own (correct) words-based content | Changed to "RNNs: reading words as a sequence" | Read back, matches |
+| 4 (nit) | Part A's toy RNN prints "~58% kept per step" (its own random toy weights) while the retention graph uses 0.49 (the untrained LSTM's own gates) -- no link to long-range dependencies | Added one sentence distinguishing the two numbers, and one sentence linking the fading idea to long-range dependencies (an early line the last line needs) | Read back |
+| 5 (nit) | No symbol-form equation (`h = tanh(...)`), and no demonstration of actually stepping word by word | Added the symbol form next to the word form in section 3's intro; extended the tokenizer cell (numpy only, `hands_on.py` untouched) to step a toy RNN over the 9 words, printing the memory (rounded, first 4 numbers) after each one | Re-ran: prints the memory vector after each of the 9 words (below) |
+| 6 (nit) | `RuntimeWarning: divide by zero ... log10` printed into the spectrogram cell's output | Wrapped `ax2.specgram(...)` in `with np.errstate(divide="ignore")` | Re-ran the full notebook -- no warning in cell 6's output (checked the executed notebook's output list directly, not just visually) |
+| 7 (nit) | `make_noisy_clips.py`'s docstring said the numbers are "what the facilitator reads out after the room votes" -- they're measured live, not read out | Reworded to say they're measured live and move with the Whisper model size | Read back |
+
+A real bug found and fixed while re-verifying (same class as WP2 round 1's,
+not caught by my JSON-level check that time): the new stepping-RNN code in
+the tokenizer cell had the same stray-literal-newline mistake (a `print()`
+call whose string argument contained an actual embedded newline character
+instead of staying as two source lines or `\n`). My earlier check only
+verified no *single array entry* contained an embedded `\n` -- it missed
+that splitting one bad entry into two technically-clean-looking entries
+still leaves invalid Python when the two lines are read together mid
+string literal. Fixed properly this time (split into two separate `print()`
+calls) and re-verified with `compile()` on every code cell's full source,
+not just a per-line regex, which is a strictly stronger check:
+
+```
+$ python -c "
+import json
+nb = json.load(open('notebook/audio_workshop.ipynb', encoding='utf-8'))
+for i, c in enumerate(nb['cells']):
+    if c['cell_type'] == 'code':
+        compile(''.join(c['source']), f'cell{i}', 'exec')
+print('all code cells compile cleanly')
+"
+all code cells compile cleanly
+```
+
+### N2 re-measurement (finding 1)
+
+Sweep (in-memory clips, before picking a factor):
+```
+factor 0.45:
+  base.en    ideal=100% hiss=52% poor_mic=35% second_voice=61%   order: ideal, second_voice, hiss, poor_mic
+  small.en   ideal=100% hiss=83% poor_mic=22% second_voice=87%   order: ideal, second_voice, hiss, poor_mic
+  medium.en  ideal=100% hiss=83% poor_mic=35% second_voice=91%   order: ideal, second_voice, hiss, poor_mic
+```
+(Factors below ~0.45 tie or nearly tie ideal on `small.en`; factors above
+~0.5 change the order itself, hiss overtaking the second voice.)
+
+Re-measured on the actual regenerated WAV files (not in-memory), after
+`python notebook/make_noisy_clips.py`:
+```
+base.en    ideal=100% hiss=52% poor_mic=35% second_voice=61%   order: ['ideal', 'second_voice', 'hiss', 'poor_mic']
+small.en   ideal=100% hiss=83% poor_mic=22% second_voice=87%   order: ['ideal', 'second_voice', 'hiss', 'poor_mic']
+medium.en  ideal=100% hiss=83% poor_mic=35% second_voice=91%   order: ['ideal', 'second_voice', 'hiss', 'poor_mic']
+```
+Exact match to the sweep. `git status` after regenerating is clean except
+for the intended WAV change, confirming the committed clips are exactly
+what the script produces.
+
+### Full end-to-end run, empty folder with only the (rebuilt) zip
+
+```
+$ python notebook/make_bundle.py
+wrote .../notebook/workshop_files.zip (3.8 MB, 21 files)
+
+$ <nbclient run from a folder holding only the fresh zip and the notebook>
+[ 2]    0.2s  [ 4]   17.9s  [ 6]    2.6s  [ 8]    0.0s  [10]    0.1s  [12]   20.6s
+[14]    6.3s  [16]    3.2s  [18]    3.8s  [20]    0.0s  [22]    0.4s  [24]   14.8s
+[26]    0.1s  [28]    0.1s  [31]    0.5s  [33]    0.0s  [35]    0.0s  [38]    0.6s  [40]    0.4s
+
+=== OK in 79.4s ===
+```
+All 42 cells ran without error. Outputs checked directly from the executed
+notebook (not just watched live):
+- Cell 10 (moved MFCC, now on `sample_short.wav`): `16 seconds of audio -> 1562 frames x 13 numbers`.
+- Cell 24 (Kahoot answer key, `base.en` on this run): `1. ideal 100% | ... 2. background hiss 52% | ... 3. poor microphone 35% | ... 4. a second voice underneath 61% | ...` -- matches the table in cell 23 exactly.
+- Cell 26 (tokenizer + stepping RNN):
+  ```
+  words  : ['can', 'you', 'follow', 'up', 'with', 'catering', 'by', 'friday', '?']
+  numbers: [2, 8, 4, 6, 7, 3, 1, 5, 0]  (each word -> its own number, via a vocabulary)
+
+  Stepping the RNN one word at a time:
+    after 'can'      memory = [ 0.1  -0.73 -0.3  -0.92]
+    after 'you'      memory = [ 0.14  0.78  0.65 -0.6 ]
+    after 'follow'   memory = [ 0.7   0.72  0.91 -0.84]
+    after 'up'       memory = [-0.95 -0.84 -0.72  0.9 ]
+    after 'with'     memory = [-0.05 -0.59 -0.83 -0.33]
+    after 'catering' memory = [ 0.02  0.51 -0.98 -0.99]
+    after 'by'       memory = [ 0.96  0.99  0.69 -0.97]
+    after 'friday'   memory = [-0.34  0.85 -0.31  0.37]
+    after '?'        memory = [ 0.69  0.52 -0.18 -0.09]
+  ```
+- Cell 31 (retention graph): unchanged, `0.49^47 = 0.0000%   0.95^47 = 9.0%`.
+- Cell 6 (spectrogram): checked the executed notebook's output list directly -- no `RuntimeWarning` stream output on this cell (was present before finding 6's fix).
+
+### `run_tests.py` and frozen-file check
+
+```
+$ python prototype/run_tests.py
+PASS  a. imports                  11 modules import  (0.5s)
+PASS  b. weights                  5 members, labels discussion / decision / action_item  (0.1s)
+PASS  c. shipped KPIs reproduce   dev 0.96/0.948, test 0.84/0.825, 36-turn test 0.86/0.853, sample 7/9, probes 9/12  (4.7s)
+PASS  d. demo minutes             no decisions, one action item (catering by Friday, Priya)  (0.2s)
+PASS  e. --text example           runs, model matches the hand labels 7/7  (0.4s)
+PASS  f. hands-on                 solution: both parts OK, 35/45 at knob 0; unfilled version says 'not written yet'  (1.1s)
+PASS  g. training data            leak checks pass  (2.2s)
+PASS  h. scorecard                frozen scorecard runs (hash ignores line endings)  (1.0s)
+PASS  i. smoke runs               5 scripts exit 0  (2.4s)
+PASS  j. text clean-up            text clean-up: 31/31 clean-up checks pass  (0.4s)
+PASS  k. holdout meetings         holdout 1 0.879/0.806, holdout 2 0.852/0.762 (accuracy / macro-F1)  (3.6s)
+SKIP  l. audio (optional)         no --audio FILE given  (0.0s)
+PASS  m. repo unchanged           git status and git diff identical before and after  (0.1s)
+
+12 passed, 0 failed, 1 skipped in 16.8 s
+```
+
+```
+$ git diff --stat main -- prototype/trained_lstm.npz training_data.py scorecard_data.py \
+    holdout_data.py minutes_tests.py normalise_tests.py lstm_model.py train_lstm.py \
+    meeting_minutes.py transcriber.py hands_on_reference.py testing/ prototype/hands_on.py
+(no output -- nothing frozen was touched)
+```
+
+### Files changed this round
+
+```
+ notebook/audio/noisy_4_second_voice.wav  | regenerated (factor 0.25 -> 0.45)
+ notebook/audio_workshop.ipynb            | cells 5, 6, 10, 23, 25, 26, 30 reworded/extended
+ notebook/make_noisy_clips.py             | mix factor + docstring
+```
+`notebook/audio/noisy_1_ideal.wav`, `noisy_2_hiss.wav`, `noisy_3_poor_mic.wav`
+are byte-identical to round 1 (only the second-voice mix factor changed;
+re-running `make_noisy_clips.py` doesn't touch the others).
+
+### Not re-verified
+
+Same GPU/Colab limitation as round 1 and WP1 -- the `small.en`/`medium.en`
+numbers above are CPU runs of those model sizes, not a real Colab GPU
+session.

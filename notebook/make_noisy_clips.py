@@ -19,8 +19,10 @@ Writes four small WAV files to `notebook/audio/`:
                                  the orchestrator asked for
 
 The notebook's own N2 cell plays all four, measures `word_accuracy` for
-each with Whisper, and shows the result as an answer key: these numbers are
-what the facilitator reads out after the room votes, not a prediction.
+each with Whisper, and shows the result as an answer key: these numbers
+are measured live when the notebook runs, not pre-computed and read out --
+and they move with the Whisper model size (see the notebook's own note on
+this).
 
 Re-run this after changing anything above; rebuild `workshop_files.zip`
 with `make_bundle.py` afterwards.
@@ -62,13 +64,21 @@ def build() -> list[str]:
     if len(poor_mic) < len(clean):     # pad back to the same length if truncated by the repeat
         poor_mic = np.pad(poor_mic, (0, len(clean) - len(poor_mic)))
 
-    # A second voice talking underneath, quietly: a same-length snippet of the
-    # (different) sample meeting, mixed in at low volume -- a more realistic
-    # "noisy room" than synthetic hiss, since it's real speech competing with
-    # real speech, not an easily-filtered hum.
+    # A second voice talking underneath: a same-length snippet of the
+    # (different) sample meeting, mixed in -- a more realistic "noisy room"
+    # than synthetic hiss, since it's real speech competing with real
+    # speech, not an easily-filtered hum.
+    #
+    # Mix factor 0.45: chosen by sweeping 0.25-1.0 and measuring word_accuracy
+    # on base.en, small.en and medium.en (the three sizes the notebook can
+    # pick -- see HANDOFF-WP2.md Round 2). Below ~0.4 the clip ties the ideal
+    # one at 100% on small.en (the model Colab picks on a GPU); above ~0.5 the
+    # ranking itself changes (hiss overtakes it). 0.45 is the only factor
+    # tried where "ideal" is the unique top AND the order (ideal > second
+    # voice > hiss > poor mic) holds on all three sizes.
     meeting = _read_wav(os.path.join(AUDIO, "sample_meeting.wav"))
     snippet = meeting[: len(clean)] if len(meeting) >= len(clean) else np.pad(meeting, (0, len(clean) - len(meeting)))
-    second_voice = (clean + 0.25 * snippet).astype("float32")
+    second_voice = (clean + 0.45 * snippet).astype("float32")
 
     out = [
         ("noisy_1_ideal.wav", ideal),
