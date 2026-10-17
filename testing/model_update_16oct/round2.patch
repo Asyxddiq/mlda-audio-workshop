@@ -1,0 +1,640 @@
+--- a/prototype/training_data.py
++++ b/prototype/training_data.py
+@@ -787,6 +787,258 @@
+ dec  Alex: Noted, let's add that to the next agenda. Meeting adjourned.
+ """
+ 
++# ---------------------------------------------------------------------------
++# 16 Oct: twelve more training meetings (Asy + Claude)
++# ---------------------------------------------------------------------------
++# Why: a retest on fresh wording showed the model missed decisions that are
++# phrased in ways the first meetings never used ("... it is", "going with",
++# "we are not paying for", a vote and "Carried"), and it labelled some plain
++# statements as action items just because they contain a word like "order" or
++# "can do". These meetings add many more ways to settle something, many more
++# proposals that get a bare "Okay." or "Sure." back, and plain statements and
++# questions that look like tasks but are not. Same labelling rules as above.
++# Written without copying any held-out sentence (the leak check below also
++# covers the 16 Oct holdout and the 67 meeting tests).
++
++TUTORING_CIRCLE = """
++dis  Hui: Hi everyone, thanks for coming. We have the exam season schedule to sort out.
++dis  Jacob: How many tutors do we have this month?
++dis  Hui: Eleven, but three of them are away in the second week.
++dis  Jacob: What if we run sessions only on Tuesdays and Thursdays?
++dec  Leah: Yes, that is easier to cover.
++dec  Hui: Alright, Tuesdays and Thursdays it is, starting next week.
++dis  Leah: The signup form still asks for a phone number, which people dislike.
++dis  Jacob: We could drop that field.
++dec  Hui: Drop it, we do not need the number anyway.
++act  Leah: I will edit the form tonight.
++dis  Jacob: The whiteboards in room four are full of old notes.
++act  Hui: Jacob, can you wipe them before Tuesday?
++act  Jacob: Sure thing.
++dis  Leah: Should we give out certificates when the term finishes?
++dis  Hui: I am not sure the budget allows it.
++dis  Jacob: They cost almost nothing if we print them ourselves.
++dec  Hui: Fine, we will do certificates then.
++dis  Leah: Great, that is all from me.
++"""
++
++VOLUNTEER_SHIFT = """
++dis  Imran: Right, the food bank rota for next month. We are short on Saturday mornings.
++dis  Chloe: Last month only four people showed up.
++dis  Imran: And we need at least six.
++dis  Dan: Why don't we split Saturdays into two shorter shifts?
++dec  Chloe: Yes please, that would help.
++dec  Imran: Okay, two shorter shifts, that is the plan.
++act  Chloe: I'll ask the school clubs for extra volunteers this week.
++dis  Imran: Thanks. The freezer is making a strange noise again.
++dis  Dan: It did that last winter too.
++act  Imran: Dan, please log it with the facilities team before Friday.
++act  Dan: Okay, will do.
++dis  Imran: Next, deliveries. The supermarket can drop off on Mondays or Wednesdays.
++dis  Dan: Mondays are quieter for us.
++dec  Chloe: Mondays then.
++dis  Imran: Right. One last thing, the thank you cards. Should we write them by hand?
++dec  Dan: Yes, by hand, it feels more personal.
++dis  Imran: Lovely. See you all Saturday.
++"""
++
++SCIENCE_FAIR_STAFF = """
++dis  Olivia: Okay team, the science fair is in three weeks and we still have gaps.
++dis  Pavel: Registration closed with 28 projects.
++dis  Olivia: That is more than last year. Do we have enough tables?
++dis  Pavel: We have 20 tables in the hall, so we are eight short.
++dis  Rina: What about using the corridor outside for the smaller posters?
++dec  Olivia: Perfect, posters go in the corridor.
++dis  Pavel: Judges are the next problem. Only three have confirmed.
++act  Rina: I'll ask three of my old teachers tonight.
++dis  Olivia: Great. And the prize budget?
++dis  Pavel: We have 300 dollars for prizes.
++dis  Rina: Should we give cash or vouchers?
++dec  Olivia: Vouchers, cash causes arguments.
++act  Pavel: Rina, could you order the trophies from the same shop as last year?
++act  Rina: Yes, I can place the order tomorrow.
++dis  Olivia: Good. We should finish by four since the hall closes at five.
++dec  Pavel: Then the closing ceremony starts at 4:15, that is fixed.
++dis  Olivia: Thanks everyone, good meeting.
++"""
++
++SPORTS_DAY = """
++dis  Keith: Sports day planning. First thing, the date clashes with the swimming gala.
++dis  Anita: Can we move ours to the following Friday?
++dec  Keith: Yes, the following Friday.
++act  Anita: I'll update the calendar and let the teachers know.
++dis  Keith: Now the events. Do we keep the sack race?
++dis  Mo: The sacks are torn.
++dis  Anita: We could replace it with an egg and spoon race.
++dec  Keith: Egg and spoon replaces the sack race, done.
++dis  Mo: What about the relay? Last year it ran way over time.
++dis  Anita: Maybe we cut it to three legs instead of four.
++dec  Keith: Three legs, we will announce it at the start.
++dis  Mo: The water stations need someone in charge.
++act  Keith: Mo, you take the water stations on the day.
++act  Mo: No problem.
++dis  Anita: Parents are asking whether they can come.
++dis  Keith: I think we should keep it students only this year.
++dec  Anita: Agreed, students only.
++dis  Keith: Great. We are done.
++"""
++
++BOOK_CLUB = """
++dis  Meera: Welcome, everyone. Let us decide what we read next.
++dis  Sven: I nominate the short story collection.
++dis  Lola: I would prefer a novel, we had stories last time.
++dis  Meera: How about the one about the lighthouse keeper?
++dec  Sven: Yes, the lighthouse one is fine by me.
++dec  Lola: OK, I am in.
++dec  Meera: Then it is settled, the lighthouse novel is our next book.
++dis  Sven: When should we meet to discuss it?
++dis  Meera: Three weeks should be enough to finish it.
++dec  Lola: Three weeks then, same room.
++dis  Sven: Someone needs to remind everyone in the group chat.
++act  Meera: Lola, can you post a reminder one week before?
++act  Lola: Of course, I will.
++dis  Sven: The cafe wants us to buy a drink each if we use the room.
++dis  Meera: That is fair.
++dis  Lola: Last time the drinks were overpriced though.
++dis  Meera: True. Anyway, thanks all.
++"""
++
++MAKERSPACE = """
++dis  Yusuf: Quick one today, the 3D printers. Two are down.
++dis  Beatrice: The nozzle on number two is clogged and number three has a bad belt.
++dis  Yusuf: Do we repair both or just replace number three?
++dis  Beatrice: A new belt is cheap, but the nozzle is a lost cause.
++dis  Chidi: Then we should repair the belt and buy a new nozzle.
++dec  Yusuf: Right, belt repair plus new nozzle, that is what we are doing.
++act  Chidi: I will order the parts today.
++dis  Beatrice: The laser cutter is booked solid next week.
++dis  Yusuf: Can we put a two hour limit per person?
++dec  Beatrice: Two hours max, starting Monday.
++dis  Chidi: How do we enforce that?
++act  Yusuf: Beatrice, please add a sign-up sheet by the door.
++act  Beatrice: Okay, I'll print one.
++dis  Chidi: Also, the ventilation fan is very loud.
++dis  Yusuf: It is old, but we have no money to replace it.
++dis  Chidi: Yeah, I noticed. Maybe next semester.
++dis  Yusuf: Okay, that's all for today.
++"""
++
++CAFETERIA_COMMITTEE = """
++dis  Dolores: Let us review the survey results on the canteen.
++dis  Everett: Most complaints were about the queue at lunch.
++dis  Dolores: What if we open a second serving counter?
++dis  Everett: That needs two more staff members.
++dis  Fatima: The catering company said they could spare two people on weekdays.
++dec  Dolores: Good, then we open the second counter on weekdays.
++dis  Everett: Prices came up too. People hate the 6 dollar combo.
++dis  Fatima: We could lower it to 5.
++dis  Dolores: That would cut into the margin.
++dec  Everett: Let us keep the price as it is and add a cheaper side option.
++act  Fatima: Dolores, could you ask the caterer to draft the new menu?
++act  Dolores: Yes, I will send them a message today.
++dis  Everett: One more, the vegetarian options are limited.
++dis  Fatima: The caterer can do more if we ask.
++act  Dolores: Everett, please put that in the request too.
++act  Everett: Sure, I will include it.
++dis  Dolores: Thanks everyone, that is all.
++"""
++
++ART_EXHIBITION = """
++dis  Greta: The exhibition opens in ten days, so let us check where we stand.
++dis  Hamza: All the paintings are framed except the large ones.
++dis  Greta: What is holding up the large ones?
++dis  Hamza: The frame shop is closed until Monday.
++dis  Isla: We could hang them without frames and add a label explaining it.
++dec  Greta: No, we wait for the frames.
++dis  Hamza: Then the large ones go up on Tuesday.
++dis  Isla: And opening night, are we serving drinks?
++dis  Greta: The school said no alcohol, so juice only.
++dec  Isla: Okay, juice and water only.
++act  Greta: Hamza, can you collect the juice from the supermarket on Friday?
++act  Hamza: Sure, I'll take the van.
++dis  Isla: Visitors will need a map.
++act  Greta: Good point. Hamza, please sketch one tonight.
++act  Hamza: Yes, I'll bring it round in the morning.
++dis  Isla: The lighting in the east corner is poor.
++dec  Greta: We will move the sculptures there under the spotlight and leave the paintings in the west.
++dis  Hamza: Perfect, thanks all.
++"""
++
++DORM_TRIP = """
++dis  Nate: Right, the trip. We have to choose between the lake and the old town.
++dis  Opal: The lake is cheaper, but it might rain.
++dis  Nate: The old town has the museum, which is indoors.
++dis  Pia: How about the old town on Saturday, and the lake only if the weather is good on Sunday?
++dec  Nate: That works for me, we go with that plan.
++dec  Opal: Yes please, flexible is better.
++dis  Pia: The coach holds 40 and we have 46 sign ups.
++dis  Nate: Six people too many then.
++dis  Opal: Could we hire a second minibus for the extras?
++dec  Nate: Yes, a second minibus, that solves it.
++act  Pia: I will call the coach company this afternoon.
++dis  Opal: Lunch is not included, by the way.
++dec  Nate: We are not paying for lunch, everyone brings their own.
++dis  Opal: That is everything from me.
++"""
++
++ALUMNI_PANEL = """
++dis  Rafael: Item one, the alumni panel in November. We have four confirmed speakers.
++dis  Sunita: Do we need a moderator?
++dis  Rafael: Yes, and I think a student would be best.
++act  Tess: I'll ask Wen, she hosted the freshman quiz.
++act  Rafael: Please do, thanks.
++dis  Sunita: Next, the venue. The auditorium seats 300, but the seminar room is cosier.
++dis  Tess: We expect around 80 people.
++dis  Rafael: Shall we use the seminar room then?
++dec  Sunita: Seminar room, definitely.
++dis  Tess: All in favour of the seminar room?
++dec  Rafael: Aye.
++dec  Sunita: Aye.
++dec  Tess: Carried, the panel is in the seminar room.
++dis  Rafael: Refreshments next. Budget is 150 dollars.
++dis  Sunita: Tea and biscuits would cover that.
++dec  Tess: Tea and biscuits, we are done with that.
++act  Rafael: Sunita, can you get quotes from two suppliers by next Wednesday?
++act  Sunita: Yes, I'll do that.
++dis  Tess: Thanks, all. Meeting adjourned.
++"""
++
++QUICK_EXCHANGES = """
++dis  Arman: Okay, lightning round, we have ten minutes.
++dis  Bella: Why not meet at the library instead of the cafe next time?
++dec  Carl: Okay.
++dis  Arman: Could we finish at half past four tomorrow?
++dec  Bella: Sounds good.
++dis  Carl: The shuttle runs every twenty minutes.
++dis  Arman: Okay.
++dis  Bella: I was thinking we split the volunteers into two teams.
++dec  Carl: Sure.
++dis  Arman: The projector in hall B is out of order right now.
++dis  Bella: Got it.
++dis  Carl: Do you want to start with the budget?
++dec  Arman: Sure, the budget first.
++dis  Bella: The vending machine ate my coins again.
++dis  Carl: Yeah, okay.
++dis  Arman: Right, that's all.
++"""
++
++NOTHING_SETTLED = """
++dis  Wendy: Morning. Can you all see the slides?
++dis  Xavier: Yes, clear.
++dis  Wendy: Great. So last week we agreed on nothing, basically.
++dis  Yolanda: Can you remind me what the open points were?
++dis  Wendy: The venue, the speakers and the budget. None of them is confirmed.
++dis  Xavier: Did you manage to talk to the venue manager?
++dis  Wendy: I did, he said he would get back to us by Friday.
++dis  Yolanda: So we are still waiting on everything.
++dis  Xavier: Pretty much. I won't chase anyone until Friday.
++dis  Wendy: That seems reasonable.
++dis  Yolanda: Is the budget at least approved?
++dis  Wendy: Not yet, the committee meets next week.
++dis  Xavier: Then there is nothing to decide today.
++dis  Yolanda: Right. Can you believe how slow this process is?
++dis  Wendy: Honestly, yes. Okay, thanks for coming.
++"""
++
+ MEETINGS = [
+     {"name": "group_project_1", "split": "train", "turns": _parse(GROUP_PROJECT_1)},
+     {"name": "group_project_2", "split": "train", "turns": _parse(GROUP_PROJECT_2)},
+@@ -822,6 +1074,19 @@
+     {"name": "exchange_info_1",   "split": "train", "turns": _parse(EXCHANGE_INFO_1)},
+     {"name": "astronomy_club_1",  "split": "train", "turns": _parse(ASTRONOMY_CLUB_1)},
+     {"name": "yearbook_1",        "split": "train", "turns": _parse(YEARBOOK_1)},
++    # 16 Oct (train)
++    {"name": "tutoring_circle", "split": "train", "turns": _parse(TUTORING_CIRCLE)},
++    {"name": "volunteer_shift", "split": "train", "turns": _parse(VOLUNTEER_SHIFT)},
++    {"name": "science_fair_staff", "split": "train", "turns": _parse(SCIENCE_FAIR_STAFF)},
++    {"name": "sports_day", "split": "train", "turns": _parse(SPORTS_DAY)},
++    {"name": "book_club", "split": "train", "turns": _parse(BOOK_CLUB)},
++    {"name": "makerspace", "split": "train", "turns": _parse(MAKERSPACE)},
++    {"name": "cafeteria_committee", "split": "train", "turns": _parse(CAFETERIA_COMMITTEE)},
++    {"name": "art_exhibition", "split": "train", "turns": _parse(ART_EXHIBITION)},
++    {"name": "dorm_trip", "split": "train", "turns": _parse(DORM_TRIP)},
++    {"name": "alumni_panel", "split": "train", "turns": _parse(ALUMNI_PANEL)},
++    {"name": "quick_exchanges", "split": "train", "turns": _parse(QUICK_EXCHANGES)},
++    {"name": "nothing_settled", "split": "train", "turns": _parse(NOTHING_SETTLED)},
+     {"name": "club_event_2",    "split": "dev",   "turns": _parse(CLUB_EVENT_2)},
+     # 13 Oct (dev only)
+     {"name": "music_club_1",    "split": "dev",   "turns": _parse(MUSIC_CLUB_1)},
+@@ -901,12 +1166,49 @@
+              "give out vouchers instead of medals"]
+ PROPOSE = ["How about we {p}?", "Shall we {p}?", "I suggest we {p}.", "Maybe we should {p}.",
+            "Should we {p}?", "What if we {p}?", "I think we should {p}.",
+-           "Why don't we {p}?", "Can we {p}?"]
++           "Why don't we {p}?", "Can we {p}?",
++           # 16 Oct: more ways to put a proposal
++           "Why not {p}?", "Could we {p}?", "I was thinking we could {p}.",
++           "Any objection if we {p}?", "Would it work if we {p}?", "Do you want to {p}?",
++           "My suggestion is that we {p}.", "Is it alright if we {p}?"]
+ AGREES = ["Sure.", "Okay.", "Agreed.", "Sounds good.", "Yeah, let's do that.", "Fine by me.",
+           "Makes sense.", "Works for me.", "Good idea.", "Yes, let's go with that.",
+-          "That works.", "Good call.", "Why not.", "Okay, let's do it.", "Yeah, okay."]
++          "That works.", "Good call.", "Why not.", "Okay, let's do it.", "Yeah, okay.",
++          # 16 Oct
++          "Yes please.", "Let's do that then.", "Perfect, go ahead.", "I'm in favour.", "Deal.",
++          "Yes, do it.", "Go for it.", "Sounds like a plan.", "That settles it.",
++          "Great, we'll do that.", "Yeah, I like that.", "All good with me.",
++          "No objection from me.", "Aye.", "Okay, let's go for that."]
+ CHAIR_DECIDES = ["Okay, let's {p} then.", "Alright, we'll {p}.", "So we {p}, that's settled.",
+-                 "Okay, final answer, we {p}."]
++                 "Okay, final answer, we {p}.",
++                 # 16 Oct
++                 "Right, we're going to {p}.", "Decision made: we {p}.", "We'll {p}, no more debate.",
++                 "That's the plan, we {p}.", "Done, we {p}.", "Alright then, we {p}, moving on.",
++                 "The group has decided to {p}.", "We've agreed to {p}.", "It's decided, we {p}."]
++
++# 16 Oct: settling a CHOICE ("we're going with ..."), refusing something, and sentences that
++# sound like a choice but are not settled. {c} = the choice, {C} = same with a capital.
++CHOICES = ["option B", "the second quote", "the early slot", "the red version", "plan B",
++           "the smaller hall", "Wednesday", "Friday evening", "the cheaper supplier",
++           "the longer route", "the old schedule", "the new template", "the morning session",
++           "the quiet room", "the first design", "the online format", "the bigger poster",
++           "the weekday evening", "the paper tickets", "the blue banner"]
++CHOICE_DECISIONS = ["We're going with {c}.", "Going with {c}.", "{C} it is.", "We'll go with {c}.",
++                    "Okay, {c} then.", "{C}, final decision.", "We're sticking with {c}.",
++                    "Final call: {c}.", "{C} wins.", "Decision: {c}.", "Let's lock in {c}.",
++                    "So it's {c}, all agreed."]
++CHOICE_QUESTIONS = ["Should we go with {c}?", "What about {c}?", "Maybe {c}?", "How about {c}?",
++                    "Are we happy with {c}?", "Do we want {c}?"]
++TENTATIVE = ["We could go with {c}.", "I'm leaning towards {c}.", "Last year we went with {c}.",
++             "{C} might be better.", "I'd prefer {c}.", "{C} is one option.",
++             "What do people think about {c}?", "I'm not sure about {c}."]
++NEG_PROPOSALS = ["extend the deadline", "hire an outside caterer", "print the programmes in colour",
++                 "open registration to other schools", "rent a second hall", "include a fifth session",
++                 "charge an entry fee", "shift the venue off campus", "order extra t-shirts",
++                 "invite a second speaker"]
++NEG_DECISIONS = ["We're not going to {p}.", "We won't {p}, that's decided.", "We've decided not to {p}.",
++                 "Okay, so we're not going to {p}, final.", "Let's drop the idea to {p}, we won't.",
++                 "No, we're not going to {p}."]
+ 
+ INFO = ["The room is free all afternoon.", "We have about {n} sign ups so far.",
+         "The printer on level three is working again.", "Last year's event had {n} people.",
+@@ -915,7 +1217,16 @@
+         "Two people dropped out yesterday.", "The new laptops arrived this morning.",
+         "The library is closed on Sunday.", "Our post got {n} likes.",
+         "The weather looks fine for Saturday.", "The sponsor replied but hasn't given an answer yet.",
+-        "The canteen near the hall is under renovation.", "I tried the new app, it's a bit slow."]
++        "The canteen near the hall is under renovation.", "I tried the new app, it's a bit slow.",
++        # 16 Oct: plain statements with words that also appear in tasks (order, can do, send, book, check)
++        "The vending machine is out of order again.", "The shuttle bus can seat forty people.",
++        "The caterer can do halal options too.", "Order forms close on Friday.",
++        "The printer ran out of toner this morning.", "The old banner is stored in the cupboard.",
++        "We can use the stage until six.", "Tickets are selling slowly this week.",
++        "The sign-up sheet is on the notice board.", "There's a leak in the corridor near the lab.",
++        "Booking opens next Monday.", "The speaker's flight lands at noon.",
++        "Parking is free after five.", "The mic needs new batteries.", "Check-in starts at eight.",
++        "The courier will deliver the boxes on Thursday."]
+ ACKS = ["Okay.", "Got it.", "Sounds good.", "Nice.", "Good to know.", "Ah, okay.", "Alright.",
+         "Thanks.", "Oh, that's good.", "Hmm, okay.", "Cool.", "Sure.", "Yeah, okay."]
+ 
+@@ -945,7 +1256,7 @@
+           "The trip date", "The bus booking"]
+ ORGS = ["The student union", "The dean's office", "The library", "The sports centre", "The AV team",
+         "The caterer", "Facilities"]
+-WHENS = ["Saturday", "the 21st", "next Tuesday", "week twelve", "the afternoon slot", "the 3rd"]
++WHENS = ["Saturday", "next Tuesday", "week twelve", "the afternoon slot", "the first weekend", "the final week"]
+ PENDINGS = ["but we're waiting on the speakers", "though the menu is open",
+             "but the poster needs another pass"]
+ STATUS_DONE = ["I sent the invoice to the treasurer yesterday.", "We printed the name cards this morning.",
+@@ -965,7 +1276,16 @@
+              ("Where are we meeting next time?", "Same room as today."),
+              ("Is the projector in that room working?", "It was last week."),
+              ("Was the budget approved in the end?", "Not yet, still waiting."),
+-             ("Is the venue confirmed yet?", "No, they haven't replied.")]
++             ("Is the venue confirmed yet?", "No, they haven't replied."),
++             # 16 Oct: questions that start like requests but are only questions
++             ("Can you tell me which room the club uses?", "It's on the second floor."),
++             ("Do you know who has the keys?", "I think the caretaker does."),
++             ("Did you manage to speak to the dean?", "Yes, I spoke to her yesterday."),
++             ("Have you sent the invoice yet?", "Yes, it went out this morning."),
++             ("Could you explain how the voting works?", "Sure, each person gets one vote."),
++             ("Can you hear me at the back?", "Yes, loud and clear."),
++             ("Could you speak up a bit?", "Sorry, is this better?"),
++             ("Would you know if the hall is free on Friday?", "I believe so.")]
+ TRAPS = ["Can you believe it's already week ten?", "I won't follow up on that, it's sorted.",
+          "We haven't decided on the theme yet.", "Please, go ahead.",
+          "Could you repeat that? I missed it.", "I'm not sure that was agreed last time.",
+@@ -976,17 +1296,143 @@
+            "Great, let's end here."]
+ 
+ 
++# ---------------------------------------------------------------------------
++# 16 Oct, round 2: many more DIFFERENT things to propose, ask for and report.
++# Round 1 showed the model had learned the 16 proposals / 24 tasks / 20 choices
++# themselves rather than the pattern ("How about we ..." + "Sounds good." = a
++# decision; "Can you ..." + "Sure." = an action item). Same templates as above,
++# far more content, so the only way to get them right is to learn the pattern.
++# ---------------------------------------------------------------------------
++
++NAMES += ["Zoe", "Omar", "Lee", "Hana", "Nina", "Paul", "Ines", "Yuki", "Rita", "Ola", "Jin", "Sofia"]
++
++PROPOSALS += [
++    "push the deadline back a week", "start the session with short introductions", "hold the vote by email",
++    "cap the group size at ten", "bring in an outside speaker", "rotate who leads each meeting",
++    "book the larger lab", "record the session for people who miss it", "send reminders two days before",
++    "set up a shared calendar", "ask each member to bring a guest", "split the budget evenly between teams",
++    "print fewer posters this time", "use the school hall instead of the gym", "keep entry free for students",
++    "open the doors half an hour earlier", "make the quiz teams of three",
++    "ask the sponsor for a bigger donation", "reduce the number of speakers", "give every volunteer a badge",
++    "post the schedule on the notice board", "meet before lectures instead of after",
++    "pick the winner by public vote", "run the workshop in two parts", "switch to a different venue",
++    "cut the opening speech short", "serve snacks during the break", "assign a buddy to each newcomer",
++    "put the sign-up link in the newsletter", "test the sound system the day before",
++    "swap the order of the two talks", "invite last year's winners", "lower the ticket price",
++    "keep a waiting list for late sign-ups", "ask the printers for a discount", "stagger the start times",
++    "go over the rules at the start", "create a group chat for the committee",
++    "alternate the venue each month", "choose the theme next week", "use first names only on the name tags",
++    "limit speeches to three minutes", "seat the newcomers near the front", "ask a teacher to judge the final",
++    "extend the booth hours until six", "borrow chairs from the neighbouring hall", "film a short promo video",
++    "hand out feedback forms at the exit", "share the photos in a group album",
++    "close registration on Friday night", "send a thank-you note to the sponsors",
++    "plan a backup in case it rains", "carpool from the main gate", "set a spending cap for each team",
++    "do the cleaning in shifts", "put up signs at every entrance", "pay the deposit this week",
++    "give a student discount", "hire a bus for the trip", "take a group photo at the end",
++    "give the winners a small trophy", "hold elections at the start of term",
++    "pair the juniors with the seniors", "include a fifteen minute break", "start the demos at ten",
++    "write the rules on a handout", "keep the old format for one more year",
++    "ask the alumni to donate prizes", "shorten the programme by an hour", "put the quiet area upstairs",
++    "cover the cost with the membership fees", "share the minutes within a day",
++    "use the shared drive for all files", "make attendance compulsory", "post updates on the club page",
++    "reserve the front rows for guests", "plan the route in advance", "get the volunteers to arrive early",
++    "lock the registration list on Monday", "buy the supplies in bulk", "ask the neighbours for permission",
++    "try the new software for a month", "bring our own cups to cut waste",
++    "split the team into groups of four", "hold a short rehearsal beforehand",
++    "rotate the speaking order each time"]
++
++TASKS += [
++    "book the projector for Thursday", "pick up the certificates", "update the sign-up sheet",
++    "print the programme booklets", "message the speakers about timings", "label the equipment boxes",
++    "share the event on social media", "draft the thank-you email", "check the microphone batteries",
++    "collect the signed forms", "take photos during the event", "set up the chairs before the session",
++    "bring the extension cords", "confirm the headcount with the caterer", "write the agenda for next week",
++    "proofread the newsletter", "send the calendar invite", "back up the shared drive",
++    "return the borrowed laptops", "tidy the storeroom", "buy the stationery", "sort out the carpool plan",
++    "photocopy the handouts", "test the registration link", "arrange the room layout",
++    "fetch the keys from the office", "write up the survey results", "make a list of the guest speakers",
++    "arrange transport for the equipment", "schedule the rehearsal", "create the slides for the opening",
++    "collect the money for the tickets", "pick up the trophies", "sort the donations into boxes",
++    "email the volunteers the rota", "print the tickets", "order the lanyards",
++    "ask the caretaker to unlock the hall", "set up the livestream", "put signs up at the entrance",
++    "download the speaker's slides", "inform the security desk", "clear the old notices from the board",
++    "prepare the welcome packs", "update the contact details", "make the playlist for the break",
++    "complete the booking form", "send out the feedback survey", "reserve a table for the committee",
++    "walk the route and check it", "write the safety notice", "count the chairs in the hall"]
++
++INFO += [
++    "The projector bulb was replaced last week.", "Most of the volunteers are first years.",
++    "The hall has room for about {n} people.", "The speaker prefers morning slots.",
++    "The print shop closes early on Fridays.", "Our last survey had a decent response rate.",
++    "The gym is being used for exams that week.", "Rain is forecast for the weekend.",
++    "The training room has no windows.", "Phone signal is poor in the basement.",
++    "The lecturer is away for a fortnight.", "The bus stop is two minutes from the gate.",
++    "The new members' forms are in the folder.", "Half of the team is on exchange this term.",
++    "The laptop trolley is on the third floor.", "The old posters are still on the wall.",
++    "The cafe closes at four on weekdays.", "Several people asked about parking.",
++    "The email bounced back from the old address.", "The coach company needs a week's notice.",
++    "It's the busiest time of the semester.", "The guest list has grown since Monday.",
++    "The stage is smaller than I expected.", "The microphones are charged and ready.",
++    "Their office replied, but only with a form.", "Both rooms have projectors.",
++    "The feedback so far has been positive.", "Attendance dropped in the second half of last term.",
++    "The sponsor wants their logo on the shirts.", "The lift can only carry six people at a time.",
++    "A few chairs in the back row are broken.", "The tickets sold out faster than last year.",
++    "I walked past the venue and it looks smaller in person.", "The kettle in the staff room is broken.",
++    "The quiz went over time again last month.", "Our table is near the entrance, so it's loud.",
++    "The courier left a note saying they came by.", "The deposit is non-refundable.",
++    "The map on the website is out of date.", "People keep leaving the doors open."]
++
++CHOICES += [
++    "the Friday slot", "the glass trophies", "the earlier train", "the second venue", "the student discount",
++    "the new logo", "the short version", "the evening session", "the printed programme", "the east entrance",
++    "the vegetarian menu", "the larger room", "the first option", "the cheaper hotel", "the lighter schedule",
++    "the afternoon workshop", "the group photo", "the outdoor stage", "the simpler format", "the Tuesday meeting"]
++
++QUESTIONS += [
++    ("Is the hall free on Saturday?", "I checked, it is."),
++    ("What time does the bus leave?", "Quarter past eight."),
++    ("Who is bringing the laptop?", "I think it's already in the room."),
++    ("How many tickets are left?", "About {n}."),
++    ("Do we know the speaker's name yet?", "Not yet, they're still deciding."),
++    ("Which room did they give us?", "Room two on the first floor."),
++    ("Is the poster printed yet?", "Not yet, the shop is busy."),
++    ("When does registration open?", "Next Monday, I believe."),
++    ("Is anyone free on Thursday?", "I am, after two."),
++    ("Did the courier come?", "Yes, the boxes are in the office.")]
++
++TRAPS += [
++    "Please, take your time.", "Could you hold on a second?", "I can't believe how quickly term is flying.",
++    "Can you see my screen?", "We agreed last year and it still went badly.",
++    "I'm not sure who approved that.", "Please excuse the noise outside.", "Can I ask a quick question?",
++    "I'll be honest, I'm a bit lost.", "Nobody has confirmed anything yet.",
++    "It hasn't been approved yet, so don't count on it.", "Thanks for waiting, everyone."]
++
++NEG_PROPOSALS += ["double the entry fee", "cancel the second day", "skip the vote", "invite the press",
++                  "sell food at the event", "outsource the printing", "hold a second round",
++                  "let outsiders vote", "build a new website", "buy new uniforms"]
++
++THINGS += ["The guest speaker", "The transport", "The sound system", "The opening hours", "The ticket price"]
++ORGS += ["The principal's office", "The IT desk", "The student council"]
++
++OBJECTIONS += ["I'd prefer to wait on that.", "I don't think we have the budget.",
++               "That might clash with exams.", "Let's see what the others think first."]
++DECLINES += ["I'm tied up all week, sorry.", "Can someone else take this one?"]
++ACCEPTS += ["Right, I'll sort it.", "I'll get on it.", "Consider it done.", "Yes, no worries.", "Fine, I'll do it."]
++
++
+ def generate_meetings(n_meetings: int, seed: int = 0) -> list[dict]:
+     """Short practice meetings (6-14 turns) built from the phrase lists."""
+     import random
+     rng = random.Random(seed)
+ 
+-    def fill(template: str, name: str) -> str:
++    def fill(template: str, name: str, choice: str | None = None, p: str | None = None) -> str:
+         thing = rng.choice(THINGS)
++        choice = choice or rng.choice(CHOICES)
+         return template.format(task=rng.choice(TASKS), deadline=rng.choice(DEADLINES),
+-                               name=name, p=rng.choice(PROPOSALS), n=rng.choice([12, 30, 45, 80, 120]),
++                               name=name, p=p or rng.choice(PROPOSALS), n=rng.choice([12, 30, 45, 80, 120]),
+                                thing=thing, thing_l=thing[0].lower() + thing[1:], org=rng.choice(ORGS),
+-                               when=rng.choice(WHENS), pending=rng.choice(PENDINGS))
++                               when=rng.choice(WHENS), pending=rng.choice(PENDINGS),
++                               c=choice, C=choice[0].upper() + choice[1:])
+ 
+     meetings = []
+     for m in range(n_meetings):
+@@ -1006,9 +1452,11 @@
+         for _ in range(rng.randint(3, 6)):
+             kind = rng.choices(["request", "propose", "info", "self", "third", "final",
+                                 "question", "trap", "chair", "objection", "decline",
+-                                "settled", "status", "notyet", "noted"],
++                                "settled", "status", "notyet", "noted",
++                                "choice", "choiceq", "tentative", "negdec"],
+                                weights=[4, 3, 4, 1.5, 1, 1, 1.5, 1.5, 1, 1, 0.7,
+-                                        2, 2, 1, 0.8])[0]
++                                        2, 2, 1, 0.8,
++                                        2, 2, 1.5, 1])[0]
+             asker = someone_else(turns[-1][0])
+             if kind == "request":
+                 target = someone_else(asker)
+@@ -1052,6 +1500,22 @@
+             elif kind == "noted":                # closing a point by settling what happens next
+                 say(asker, fill(rng.choice(INFO), ""), "discussion")
+                 say(chair, rng.choice(NOTED), "decision")
++            elif kind == "choice":               # 16 Oct: settling a choice outright
++                say(asker, fill(rng.choice(CHOICE_DECISIONS), ""), "decision")
++                if rng.random() < 0.4:
++                    say(someone_else(asker), rng.choice(ACKS), "discussion")
++            elif kind == "choiceq":              # 16 Oct: a proposed choice, then agreement
++                c = rng.choice(CHOICES)
++                say(asker, fill(rng.choice(CHOICE_QUESTIONS), "", choice=c), "discussion")
++                say(someone_else(asker), rng.choice(AGREES), "decision")
++            elif kind == "tentative":            # 16 Oct: sounds like a choice, is not settled
++                say(asker, fill(rng.choice(TENTATIVE), ""), "discussion")
++                if rng.random() < 0.5:
++                    say(someone_else(asker), rng.choice(ACKS), "discussion")
++            elif kind == "negdec":               # 16 Oct: a proposal turned down for good
++                p = rng.choice(NEG_PROPOSALS)
++                say(asker, fill(rng.choice(PROPOSE), "", p=p), "discussion")
++                say(someone_else(asker), fill(rng.choice(NEG_DECISIONS), "", p=p), "decision")
+             else:  # the chair settles a proposal without asking
+                 say(chair, fill(rng.choice(CHAIR_DECIDES), ""), "decision")
+         say(chair, rng.choice(CLOSERS), "discussion")
+@@ -1081,8 +1545,7 @@
+     # (2,000 sample meetings cover its phrase lists). Short replies like
+     # "Sure." are meant to repeat, and are too short to have 5 words anyway.
+     # 16 Oct: compared the way the model reads text (lstm_model.model_words: "I will" = "I'll",
+-    # "OK" = "okay"), so a rewording that the clean-up would undo still counts as a copy.
+-    # ? and ! are left out here, as before.
++    # numbers = <num>), so a rewording that the clean-up would undo still counts as a copy.
+     from lstm_model import model_words
+ 
+     def five_grams(text):
+@@ -1099,7 +1562,7 @@
+     held_out += [t for m in SCORECARD for _s, t, _l in m["turns"]]
+     from holdout_data import HOLDOUT, HOLDOUT2     # 16 Oct: the holdout meetings are held out too
+     held_out += [t for m in HOLDOUT + HOLDOUT2 for _s, t, _l in m["turns"]]
+-    try:                                           # ... and so are the 67 meeting tests (minutes_tests.py)
++    try:                                     # ... and so are the 67 meeting tests (minutes_tests.py)
+         from minutes_tests import CASES
+         held_out += [line.split(":", 1)[1].strip() for _id, _what, lines, _exp in CASES for line in lines]
+     except ImportError:
+--- a/prototype/lstm_model.py
++++ b/prototype/lstm_model.py
+@@ -241,13 +241,19 @@
+     return re.findall(r"[a-z0-9']+|[?!]", text.lower())
+ 
+ 
+-# Whisper writes "I will", "let us", "do not", "OK"; people (and our training meetings)
+-# mostly say "I'll", "let's", "don't", "okay". Same meaning, different words, and a model
+-# trained on one spelling is half-lost on the other (16 Oct: "I will bring..." was read as
+-# plain discussion, "I'll bring..." as an action item). So before the model reads any text,
+-# both spellings are turned into the same one. Applied in training AND live.
++NUMBER_TOKEN = "<num>"
++_NUMBER_WORDS = {"two", "three", "four", "five", "six", "seven", "eight", "nine", "ten", "eleven",
++                 "twelve", "thirteen", "fourteen", "fifteen", "sixteen", "seventeen", "eighteen",
++                 "nineteen", "twenty", "thirty", "forty", "fifty", "sixty", "seventy", "eighty",
++                 "ninety", "hundred", "thousand"}
++
++# Whisper writes "I will", "let us", "do not", "OK", "4 p.m."; people (and our training
++# meetings) mostly say "I'll", "let's", "don't", "okay". Same meaning, different words,
++# and a model trained on one spelling is lost on the other. So before the model reads
++# any text, both spellings are turned into the same one. Applied in training AND live.
+ _CLEAN_UP = [
+     (r"\b(?:um+|uh+|uhm+|erm+|ehm+)\b", " "),                       # filler sounds
++    (r"\b([ap])\.m\.?", r"\1m"),                                    # 4 p.m. -> 4 pm
+     (r"\bo\.?k\.?\b", "okay"), (r"\ball right\b", "alright"),
+     (r"\bgonna\b", "going to"), (r"\bwanna\b", "want to"), (r"\blemme\b", "let me"),
+     (r"\bcannot\b", "can't"), (r"\bcan not\b", "can't"), (r"\bwill not\b", "won't"),
+@@ -264,7 +270,7 @@
+ def normalise(text: str) -> str:
+     """Lowercase and unify spelling, so the model sees one form of each phrase.
+ 
+-        "OK, I will send it at 4."      ->  "okay, i'll send it at 4."
++        "OK, I will send it at 4 p.m."  ->  "okay, i'll send it at 4 pm."
+         "Let us not.  We do not know."  ->  "let's not.  we don't know."
+     """
+     text = text.lower().replace("’", "'").replace("‘", "'").replace("`", "'")
+@@ -274,8 +280,19 @@
+ 
+ 
+ def model_words(text: str) -> list[str]:
+-    """What the model reads: split_words() after normalise()."""
+-    return re.findall(r"[a-z0-9']+|[?!]", normalise(text))
++    """What the model reads: split_words() after normalise(), with every number
++    (digits or a word like "twelve") shown as one <num> token, because the
++    exact figure never changes whether a turn is a decision or a request."""
++    words: list[str] = []
++    for word in re.findall(r"[a-z0-9']+|[?!]", normalise(text)):
++        if word in _NUMBER_WORDS or re.fullmatch(r"\d+(?:st|nd|rd|th|am|pm)?", word):
++            if words and words[-1] == NUMBER_TOKEN:
++                continue                                        # "twenty five", "4 30" -> one token
++            word = NUMBER_TOKEN
++        elif word in ("am", "pm") and words and words[-1] == NUMBER_TOKEN:
++            continue                                            # "4 pm" -> <num>
++        words.append(word)
++    return words
+ 
+ 
+ def tokenize_transcript(turns: list[tuple[str, str]]) -> tuple[list[str], list[int]]:

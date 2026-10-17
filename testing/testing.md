@@ -5,7 +5,7 @@ Everything for the testing phase in one place: what to run, the scripts to read 
 | | |
 |---|---|
 | **Started** | 16 Oct 2026 |
-| **Status** | Claude's side done (16 Oct). Manual runs: none yet. |
+| **Status** | Claude's side done (16 Oct), including the model update (see [Model update](#model-update-16-oct)). Manual runs: none yet. |
 | **Closes "Real transcriber swap"** | one manual solo or pair recording with `transcriber: PASS` |
 
 ---
@@ -45,6 +45,7 @@ Recordings (`.wav`, `.m4a`, `.mp3`) stay on your computer: `testing/.gitignore` 
 | Path | What it is |
 |---|---|
 | `testing.md` | This page: how to run each test, and all the results |
+| [`model_update_16oct/`](model_update_16oct/model_update.md) | The 16 Oct model update: the rule, what shipped, what was tried, every score |
 | [`solo_test.py`](solo_test.py) | The individual test: records one person (or checks a recording), runs the audio check, saves the result |
 | [`scripts/`](scripts/) | The 8 scripts to read aloud: `solo_1`, `solo_2` (one person) and `1`-`6` (two or three people) |
 | [`testing script.md`](testing%20script.md) | The 67 meeting tests with the minutes each one should produce |
@@ -64,6 +65,8 @@ The Python checkers that load the model stay in `prototype/`, next to the code t
 | 3 | Solo audio test | One person's recording: right turns, speakers and words (transcriber), and the same labels and minutes as the typed script (end to end) | `python testing/solo_test.py --name YOU` | Whisper, ffmpeg, a microphone or a recording |
 | 4 | Pair audio tests | The same check with two or three people reading `scripts/1`-`6` (fast replies, a pause mid-turn, three speakers, a noisy room) | `python prototype/audio_check.py testing/scripts/1_sample_meeting.txt rec.m4a` | Whisper, ffmpeg, two people |
 | 5 | Checker self-test | `audio_check.py` passes when the transcript is exactly the script | `python prototype/audio_check.py SCRIPT.txt --heard TRANSCRIPT.txt` (a saved "Speaker1: ..." transcript instead of audio) | numpy only |
+| 6 | Text clean-up | "I will" and "I'll", "let us" and "let's", "OK" and "okay" ... are read the same by the model, and names and possessives are left alone | `python prototype/normalise_tests.py` (also checks j in test 1) | numpy only |
+| 7 | Holdout meetings | 17 fresh meetings (271 turns) the model was never trained on, written 16 Oct: labels right | part of test 1 (check k); data in `prototype/holdout_data.py` | numpy only |
 
 The audio check gives two verdicts:
 - **transcriber**: same number of turns, same back-and-forth, at least 90% of the words. This is the audio-to-text part.
@@ -75,7 +78,7 @@ The audio check gives two verdicts:
 
 | Test | Claude's side (16 Oct) | Manual (team) |
 |---|---|---|
-| 1. Repo check | **11/11 pass**, including the optional audio run | not run yet |
+| 1. Repo check | **13/13 pass** with the optional audio run (12 pass and 1 skipped without it) | not run yet |
 | 2. Meeting tests | **45/67** trained model, 28/67 keyword fallback | not run yet |
 | 3. Solo audio, a real person reading | can't be done here (no person to record) | **not run yet**: this is the one that closes "Real transcriber swap" |
 | 3. Solo audio, synthetic voice, guided mode | **PASS / PASS** (`solo_1`, simulated microphone) | n/a |
@@ -83,6 +86,8 @@ The audio check gives two verdicts:
 | Real human speech (LibriSpeech) | **transcriber PASS**, 95% of words | n/a |
 | 4. Pair audio tests | can't be done here | not run yet |
 | 5. Checker self-test | **8/8 pass** | not run yet |
+| 6. Text clean-up | **31/31 pass** | n/a |
+| 7. Holdout meetings | **holdout 1: 131/149 (0.879 / 0.806); holdout 2: 104/122 (0.852 / 0.762)** | n/a |
 
 ---
 
@@ -113,8 +118,21 @@ Claude works in a cloud workspace without a microphone, and `openai-whisper` can
 | `rms` | solo_2 | PASS | FAIL | 97% of words, but "I'll bring" came out as "I will bring", which the model labels discussion | [file](results/claude/Claude-synthetic-rms_solo_2_bake_sale_2026-10-16_1307.txt) |
 | `awb` + noise | solo_2 | FAIL | FAIL | 83% of words (the two "[BLANK_AUDIO]" marks come from Claude's stand-in) | [file](results/claude/Claude-synthetic-awb-noise_solo_2_bake_sale_2026-10-16_1307.txt) |
 
+**Re-run with the text clean-up in place (16 Oct, afternoon):** same recordings, same stand-in Whisper.
+
+| Run | Script | transcriber | end to end | Change | Result file |
+|---|---|---|---|---|---|
+| Guided mode, simulated mic, `slt` | solo_1 | PASS | PASS | same | [file](results/claude/Claude-cleanup-guided-fakemic-slt_solo_1_sample_meeting_2026-10-16_1418.txt) |
+| `slt`, 2 / 1.5 / 1.0 s gaps | solo_1 | PASS | PASS | same | [2 s](results/claude/Claude-cleanup-slt_solo_1_sample_meeting_2026-10-16_1412.txt) |
+| `slt`, 0.4 s gaps | solo_1 | FAIL | FAIL | same (one merged turn) | [file](results/claude/Claude-cleanup-slt-0.4s-gaps_solo_1_sample_meeting_2026-10-16_1413.txt) |
+| `awb`, `rms` + noise | solo_1 | FAIL | FAIL | same (88% / 85% of words) | [awb](results/claude/Claude-cleanup-awb_solo_1_sample_meeting_2026-10-16_1414.txt) |
+| `slt` | solo_2 | PASS | FAIL | same ("Two things today" heard as "do things today") | [file](results/claude/Claude-cleanup-slt_solo_2_bake_sale_2026-10-16_1415.txt) |
+| `rms` | solo_2 | PASS | **PASS** | **was FAIL**: "I will bring" is now read as an action item | [file](results/claude/Claude-cleanup-rms_solo_2_bake_sale_2026-10-16_1415.txt) |
+| `awb` + noise | solo_2 | FAIL | FAIL | same (83% of words) | [file](results/claude/Claude-cleanup-awb-noise_solo_2_bake_sale_2026-10-16_1416.txt) |
+
 Other results from Claude's side:
-- Repo check: [run_tests_2026-10-16.txt](results/claude/run_tests_2026-10-16.txt): 11 passed, 0 failed, 0 skipped (the audio check ran on the `slt` solo_1 recording).
+- Repo check: [run_tests_2026-10-16.txt](results/claude/run_tests_2026-10-16.txt) (morning, 11 checks) and [run_tests_with_cleanup_2026-10-16.txt](results/claude/run_tests_with_cleanup_2026-10-16.txt) (afternoon, 13 checks, 13 passed, the audio check ran on the `slt` solo_1 recording).
+- Clean-up tests: [normalise_tests_2026-10-16.txt](results/claude/normalise_tests_2026-10-16.txt), 31/31.
 - Meeting tests: [trained model](results/claude/minutes_tests_model_2026-10-16.txt) (45/67), and [keyword fallback](results/claude/minutes_tests_keywords_2026-10-16.txt) (28/67).
 - Checker self-test: [checker_selftest_2026-10-16.txt](results/claude/checker_selftest_2026-10-16.txt), 8/8.
 
@@ -134,7 +152,22 @@ When the first row shows `transcriber: PASS` for a real person, tick "Real trans
 
 ## What the tests found so far
 
-- **The model is the weak part, not the transcriber.** In every synthetic run where the words came through, any end-to-end failure was the labeller reacting to a small wording change: "I will" for "I'll", or one misheard word ("Two things today" as "do things today"). Add such variants in the next training round (not these exact lines: the tests must stay unseen).
-- **Decisions are missed most** in the meeting tests: 9/18 in group B, mostly short ones like "we're going with pizza" or "Saturday it is".
+- **The model is the weak part, not the transcriber.** In every synthetic run where the words came through, any end-to-end failure was the labeller reacting to a small wording change: "I will" for "I'll", or one misheard word ("Two things today" as "do things today"). The "I will" kind is now fixed by the text clean-up (16 Oct); the misheard-word kind is not fixable in the model.
+- **Decisions are missed most** in the meeting tests: 9/18 in group B, mostly short ones like "we're going with pizza" or "Saturday it is". Two retrains with new decision examples did not fix this without breaking something else (see [Model update](#model-update-16-oct)); real labelled meetings are the next step.
 - **Pause rule limits** (from `transcriber.py`): a reply that starts less than 0.8 s after the last word merges into the turn before; a long pause inside a line splits it; a third speaker isn't told apart. The pair tests 3, 4 and 5 are there to measure these.
 - **Claude's side can't test** the real `openai-whisper` package (its word timestamps), a real microphone, or a real person's voice. The manual runs cover those.
+
+---
+
+## Model update (16 Oct)
+
+Asked: add a text clean-up and more decision examples. Result: **the clean-up is shipped on the unchanged 13 Oct weights; the two retrains were not**, because they failed the rule written before training. In short:
+
+| | 13 Oct | Shipped (clean-up) | Retrain, round 2 (not shipped) |
+|---|---|---|---|
+| Dev / test meetings / probes / sample | 65 / 38 / 9 / 7 | same | 67 / 34 / 8 / 6 |
+| 67 meeting tests | 45 | 45 | 50 |
+| Holdout 1 / holdout 2 (turns right) | 125 / 104 | 131 / 104 | 129 / 105 |
+| Demo minutes list no wrong items | yes | yes | **no** |
+
+Details, the rule, every score and the patch to reproduce the retrains: [`model_update_16oct/`](model_update_16oct/model_update.md).
