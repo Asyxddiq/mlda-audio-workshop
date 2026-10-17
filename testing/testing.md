@@ -161,13 +161,4 @@ When the first row shows `transcriber: PASS` for a real person, tick "Real trans
 
 ## Model update (16 Oct)
 
-Asked: add a text clean-up and more decision examples. Result: **the clean-up is shipped on the unchanged 13 Oct weights; the two retrains were not**, because they failed the rule written before training. In short:
-
-| | 13 Oct | Shipped (clean-up) | Retrain, round 2 (not shipped) |
-|---|---|---|---|
-| Dev / test meetings / probes / sample | 65 / 38 / 9 / 7 | same | 67 / 34 / 8 / 6 |
-| 67 meeting tests | 45 | 45 | 50 |
-| Holdout 1 / holdout 2 (turns right) | 125 / 104 | 131 / 104 | 129 / 105 |
-| Demo minutes list no wrong items | yes | yes | **no** |
-
-Details, the rule, every score and the patch to reproduce the retrains: [`model_update_16oct/`](model_update_16oct/model_update.md).
+Asked: add a text clean-up and more decision examples. **The clean-up is shipped on the unchanged 13 Oct weights; the two retrains were not**, because they failed the rule written before training (worse on the team's test meetings, and a wrong decision in the demo minutes). The clean-up changes no earlier result above except the `solo_2` / `rms` run, which now passes. The rule, every score and the patch to reproduce the retrains: [`model_update_16oct/`](model_update_16oct/model_update.md).

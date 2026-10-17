@@ -4,23 +4,17 @@
 |---|---|
 | **Owner** | Asy |
 | **Track** | 2: LSTM (with Nomt, who owns meeting minutes) |
-| **Code** | `prototype/lstm_model.py`, `prototype/train_lstm.py`, `prototype/training_data.py`, `prototype/transcript_placeholder.py`, `prototype/hands_on.py`, `prototype/scorecard.py`, `prototype/compare_rnn.py` |
-| **Last updated** | 15 Oct 2026 |
-| **Current phase** | Weekend 3: hands-on, `--text`, scorecard and RNN comparison built 13 Oct; the tuned 13 Oct ensemble is shipped; blind check, real meetings, a human-audio run and the demo-meeting choice next |
+| **Code** | `prototype/lstm_model.py`, `prototype/train_lstm.py`, `prototype/training_data.py`, `prototype/holdout_data.py`, `prototype/transcript_placeholder.py`, `prototype/hands_on.py`, `prototype/scorecard.py`, `prototype/compare_rnn.py` |
+| **Last updated** | 17 Oct 2026 |
+| **Current phase** | Testing ([testing/testing.md](testing/testing.md)): Claude's side done 16 Oct; the 13 Oct ensemble plus the 16 Oct text clean-up is shipped. Next: blind check, a team member's recording, real meetings, the demo-meeting choice |
+
+Current results and how the pipeline works are in the [README](README.md); test results are in [testing/testing.md](testing/testing.md). This file is the history: what was done, decided and is next.
 
 Update this file whenever something is finished, decided or blocked. Tick the box, add a line to the [log](#log), and move the node in the [roadmap](#roadmap).
 
 ---
 
 ## At a glance
-
-```mermaid
-pie showData
-    title LSTM track tasks (18)
-    "Done" : 14
-    "In progress" : 2
-    "To do" : 2
-```
 
 | Area | Status | Note |
 |---|---|---|
@@ -29,12 +23,12 @@ pie showData
 | Hourglass architecture | Done | 8 / 16 / 32 / 16 / 8, adapted from Li et al. (2024) |
 | What the LSTM should learn | Done | Per-turn classifier: action_item / decision / discussion (see [decisions](#decisions)) |
 | Labelling guide + rule | Done | Rule locked 7 Oct, clarified 8 Oct; blind cross-check: Nomt 10/10, Asy pending |
-| Training data | Done (draft) | 40 hand-labelled meetings (577 turns: train 464, dev 68, test 45) + 60 generated practice meetings + a frozen 6-meeting scorecard (105 turns); Nomt checked his half 8 Oct (no label changes); 24 training and 4 dev meetings added 13 Oct, not yet checked by a person |
-| Training | Done | `train_lstm.py` (NumPy, 5-seed ensemble, settings tuned on dev 13 Oct). Shipped weights: tuned 13 Oct ensemble, test 0.84 vs keyword rules 0.69, untouched test meetings 0.86, probes 9/12 vs 3/12, scorecard 0.90. The 8 Oct retrain was rolled back 11 Oct; the first 13 Oct retrain failed its ship rule (see [log](#log)) |
+| Training data | Done (draft) | 40 hand-labelled meetings (577 turns: train 464, dev 68, test 45) + 60 generated practice meetings + a frozen 6-meeting scorecard (105 turns) + 17 holdout meetings (271 turns, 16 Oct); Nomt checked his half 8 Oct (no label changes); the 13 Oct additions are not yet checked by a person |
+| Training | Done | Shipped: the tuned 13 Oct ensemble with the 16 Oct text clean-up in front. Numbers in the [README](README.md#current-results); the retrains that were rolled back or not shipped (8 Oct, first 13 Oct, two on 16 Oct) are in the [log](#log) |
 | Participants' hands-on | Done | `hands_on.py`: Part A the RNN step (+ memory off), Part B the LSTM notebook update (+ forget knob); `pipeline.py --text` for their own lines |
 | RNN vs LSTM check | Done | `compare_rnn.py`: no clear difference, with both the old and the tuned settings (rule written beforehand) |
 | Hand-off to Nomt | Done | `run_pipeline()` loads the trained weights; `label_turns_model()` in `meeting_minutes.py` |
-| Real transcriber swap | In progress | Wired up in `pipeline.py`; works on synthetic speech after the 8 Oct transcriber fix; 15 Oct: passes on real human speech (LibriSpeech clips) and a one-voice reading of `solo_1` on Claude's side (same Whisper base weights, see log). **Done when** a recording of a team member gives `transcriber: PASS` in `audio_check.py` |
+| Real transcriber swap | In progress | Wired up in `pipeline.py`; passes on synthetic speech and LibriSpeech clips on Claude's side ([testing](testing/testing.md)). **Done when** a team member's recording gives `transcriber: PASS` (`python testing/solo_test.py --name YOU`) |
 
 ---
 
@@ -65,31 +59,6 @@ Green: done · Blue: in progress · Dashed: to do
 
 ---
 
-## Timeline
-
-Weekend dates are assumed (26 Sep, 3 Oct, 10 Oct). Change them here if the team's plan differs.
-
-```mermaid
-gantt
-    title Asy: LSTM track
-    dateFormat YYYY-MM-DD
-    axisFormat %d %b
-    section Weekend 1
-    Repo, placeholder, LSTM v1 and v2   :done,   w1a, 2026-09-25, 1d
-    Hourglass + explainers + docs       :done,   w1b, 2026-09-26, 1d
-    Decide what the LSTM predicts       :done,   w1c, 2026-09-27, 1d
-    section Weekend 2
-    Hand-off format agreed with Nomt    :done,   w2b, 2026-10-03, 1d
-    Chain connected + training          :done,   w2a, 2026-10-07, 1d
-    Real-audio run + label check        :active, w2c, 2026-10-08, 3d
-    section Weekend 3
-    Decide 80/20 split                  :        w3a, 2026-10-10, 1d
-    Starter code + dry run              :        w3b, 2026-10-10, 2d
-    MVP frozen                          :milestone, w3m, 2026-10-11, 0d
-```
-
----
-
 ## Checklist
 
 ### Weekend 1: build the pieces
@@ -111,7 +80,7 @@ gantt
 - [x] Training data: 11 hand-labelled meetings across group project, lab stand-up, CCA committee, club event, hackathon (211 turns), plus 12 probes and a practice-meeting generator (7 Oct, first draft)
 - [x] Train the hourglass + classifier head on it: `train_lstm.py`, NumPy, weights load straight into `lstm_model.py`, no port needed (7 Oct)
 - [ ] Blind check: Asy and Nomt each label 10 of the other's turns; tighten the guide where they disagree, then rerun `train_lstm.py` (sheets prepared 8 Oct; Nomt's 10: 10/10 agree; Asy's 10 pending)
-- [ ] Swap the placeholder for Track 1's real transcriber and run the full chain once: wired up 7 Oct (`pipeline.py`) and runs on the sample; ran on synthetic text-to-speech audio 8 Oct and works after a transcriber fix (see log); a human recording still to do. 15 Oct: solo scripts added so one person can do it (`audio_tests/solo_1_sample_meeting.txt`) and checked on Claude's side; tick this when Asy's recording gives `transcriber: PASS`
+- [ ] Swap the placeholder for Track 1's real transcriber and run the full chain once: wired up 7 Oct (`pipeline.py`), works on synthetic and LibriSpeech audio (see log); tick this when a team member's recording gives `transcriber: PASS`
 
 ### Weekend 3: freeze
 
@@ -220,16 +189,20 @@ gantt
 
 ### Thu 15 Oct 2026
 
-- Meeting tests (pushed 14 Oct, e30953a): `prototype/minutes_tests.py` runs 67 typed meeting cases (actions, decisions, discussion-only traps, the same short reply after different lines, whole meetings), listed with their expected minutes in `prototype/testing script.md`. Trained model 45/67, keyword fallback 28/67; every remaining failure is a label from the model (mostly missed decisions), none is in the minutes code. Test only, never for training or tuning. Same commit: three owner/due-date fixes in `meeting_minutes.py` (a named person who isn't in the meeting; a request turned down goes to "unassigned" or to whoever then says "I'll do it."; "before the next meeting" as a due date), for Nomt to review.
+- Meeting tests (pushed 14 Oct, e30953a): `prototype/minutes_tests.py` runs 67 typed meeting cases (actions, decisions, discussion-only traps, the same short reply after different lines, whole meetings), listed with their expected minutes in `testing/testing script.md`. Trained model 45/67, keyword fallback 28/67; every remaining failure is a label from the model (mostly missed decisions), none is in the minutes code. Test only, never for training or tuning. Same commit: three owner/due-date fixes in `meeting_minutes.py` (a named person who isn't in the meeting; a request turned down goes to "unassigned" or to whoever then says "I'll do it."; "before the next meeting" as a due date), for Nomt to review.
 - Solo audio tests, so one person can do the human-recording check: `audio_tests/solo_1_sample_meeting.txt` (the sample meeting) and `solo_2_bake_sale.txt`. One person reads every line, stopping 2 s between lines, so the 0.8 s pause rule alternates the speakers.
 - `audio_check.py` now gives two verdicts: **transcriber** (turns, speaker pattern, at least 90% of words) and **end to end** (also the same labels and minutes). Minutes items match when owners and due dates are the same and the words are at least 80% the same.
-- Checked on Claude's side. openai-whisper can't be installed there (no PyTorch), so it ran the same Whisper **base** weights exported to ONNX (k2-fsa/sherpa-onnx) with onnxruntime, behind a small stand-in for `import whisper`; `transcriber.py`, the pause rule and `audio_check.py` ran unchanged on top. One difference: segment times came from a silence detector instead of Whisper's word timestamps, so Asy's run with the real package is still the check of that part. Results:
-  - Real human speech (3 LibriSpeech recordings, 2 s apart): transcriber PASS, 3/3 turns, 95% of words.
-  - `solo_1` read by one synthetic voice (flite, slt) with 2 s gaps: PASS on both verdicts, 9/9 turns, 96% of words. Also PASS with 1.5 s and 1.0 s gaps.
-  - `solo_1` with 0.4 s gaps: all 9 lines came back as 1 turn, FAIL. The check catches a reading that is too fast.
-  - `solo_1` with two rougher synthetic voices (awb; rms with added noise): 9/9 turns but 83-85% of words, FAIL ("Yes, I'll email them today." heard as "Yes, I fully mail them today.").
-  - `solo_2`: transcriber PASS with the slt and rms voices, end to end FAIL. Whisper wrote "I will bring" for "I'll bring" and the model labels the "I will" version discussion; with slt, "Two things today" became "do things today" and was labelled an action item. Both are the labeller reacting to small wording changes, worth "I will" examples in the next training round.
+- Checked on Claude's side with the same Whisper **base** weights run through ONNX (openai-whisper can't be installed there) and synthetic voices; setup and every run are in [testing/testing.md](testing/testing.md#claudes-side). Real human speech (LibriSpeech) and a clear one-voice `solo_1` pass; 0.4 s gaps and rough voices fail, as they should. On `solo_2` the words came through but the labeller reacted to small wording changes ("I will bring" for "I'll bring").
 - Status: the "Real transcriber swap" row stays **In progress** until a recording of a real team member passes.
+
+### Fri 16 Oct 2026
+
+- **Testing phase** set up in `testing/` ([testing.md](testing/testing.md)): `solo_test.py` records one person line by line (or checks a phone recording) and saves the result; the reading scripts are copied to `testing/scripts/`. Claude's side: repo check 13/13, meeting tests 45/67, clean-up tests 31/31, audio as above. Manual runs: none yet.
+- **Model update** ([write-up](testing/model_update_16oct/model_update.md), [rule written before training](testing/model_update_16oct/ship_rule.md)). Asked for: a text clean-up and more decision examples.
+  - Shipped: `normalise()` in `lstm_model.py`, which reads "I will" as "I'll", "let us" as "let's", "OK" as "okay" and drops fillers, in front of the unchanged 13 Oct weights. It changes no dev or test turn, so every earlier number is the same; holdout 1 goes from 125 to 131 of 149 turns, and the `solo_2` "I will bring" run now passes end to end.
+  - Not shipped: two retrains with new decision data. Round 2 passed 50 of the 67 meeting tests (was 45) but fell on the team's test meetings (34 of 45, was 38) and listed a wrong decision in the demo minutes. `round2.patch` reproduces them.
+  - New held-out data: `holdout_data.py`, 17 meetings in two sets; the second was written after round 1 failed so round 2 could be judged on unseen meetings. The leak check now covers the holdouts and the meeting tests.
+  - Takeaway: more of our own writing moves our own tests and hurts the team's; decisions need real meetings.
 
 <!-- Add new entries above this line, newest date last. -->
 
@@ -271,6 +244,7 @@ gantt
 | 13 Oct | Keep the 7 Oct weights; don't ship the first 13 Oct ensemble | Failed the do-no-harm check written beforehand (untouched test 0.83 vs 0.86, probes 8 vs 9), although better on dev and the scorecard. **Superseded the same evening** by the tuned ensemble, below |
 | 13 Oct | Tune settings on dev only (12 single changes, then the best combination); ship the tuned 5-seed ensemble | Asy asked for the best score before testing. Held-out sets were scored once, after the choice, and the same ship rule passed: nothing below the 7 Oct model, dev 0.96, scorecard 0.90 |
 | 13 Oct | RNN vs LSTM: "no clear difference" | Rule written before the run; both models use about one turn of context |
+| 16 Oct | Ship the text clean-up on the 13 Oct weights; don't ship either retrain | The retrains failed the rule written before training (test meetings and demo minutes got worse); the clean-up changes no measured turn and fixes "I will" style transcripts |
 
 ---
 
@@ -283,7 +257,7 @@ gantt
 - [x] **Action-item labelling rule:** RESOLVED (7 Oct): both the request and the reply, merged in the minutes.
 - [x] **Cross-turn probe set:** RESOLVED (7 Oct): 12 probes in `training_data.py`, never trained on.
 - [x] **Which 20% do participants complete?** RESOLVED (13 Oct): the RNN step and the LSTM notebook update plus forget knob (`hands_on.py`), then their own lines through `pipeline.py --text`.
-- [ ] **Decisions reported as facts** ("Venue is confirmed") are still the model's weakest spot. 8 Oct: more examples added and retrained; held-out scores dropped and dev now scores 1.00, so it can't pick between models. 11 Oct: rolled back to the 7 Oct weights. 13 Oct: dev enlarged to 5 meetings and 24 more training meetings added; still missed, and that retrain wasn't shipped. Next: examples from real meetings, or accept it as the *Try and test* failure case.
+- [ ] **Decisions reported as facts** ("Venue is confirmed") are still the model's weakest spot. 8 Oct: more examples added and retrained; held-out scores dropped and dev now scores 1.00, so it can't pick between models. 11 Oct: rolled back to the 7 Oct weights. 13 Oct: dev enlarged to 5 meetings and 24 more training meetings added; still missed, and that retrain wasn't shipped. 16 Oct: two more retrains with wider decision data, neither shipped. Next: examples from real meetings, a small decision-phrase rule layer, or accept it as the *Try and test* failure case.
 - [x] **Ship a 13 Oct ensemble?** RESOLVED (13 Oct evening): the first one failed the rule; the tuned one passed it and is shipped. Real team meetings, labelled and used as a fresh test, are still the best check of how it does outside our own writing.
 
 ---
@@ -319,7 +293,7 @@ sequenceDiagram
 1. **Asy:** blind-label `blind_check_for_asy.md` (10 of Nomt's turns, kept outside the repo), compare with the key, tighten the guide where you disagree. (Nomt's 10: done 8 Oct, 10/10 agree.)
 2. **Team:** collect 5 to 10 short real meetings (CCA, project or club, with permission), label them with the guide, and keep them as a fresh test set. That shows how the shipped model does on writing that isn't ours, and gives the decision examples it still lacks.
 3. **Nomt:** review the 13 Oct changes, especially the ensemble path in `label_turns_model()`, `pipeline.py --text` and `hands_on.py`.
-4. **Asy:** human recording, solo is fine. Read `prototype/audio_tests/solo_1_sample_meeting.txt` alone (stop 2 full seconds between lines, never more than half a second inside a line; about a minute), then `pip install openai-whisper` and run `python prototype/audio_check.py prototype/audio_tests/solo_1_sample_meeting.txt my_solo_1.m4a`. `transcriber: PASS` closes the "Real transcriber swap" row; paste the output into the log. (A recording with a friend and `1_sample_meeting.txt` works the same way.)
+4. **Asy:** human recording, solo is fine: `python testing/solo_test.py --name Asy` (setup in the [testing quick start](testing/testing.md#quick-start-test-it-on-your-own)). `transcriber: PASS` closes the "Real transcriber swap" row; add the result to the manual runs table in `testing/testing.md`.
 5. **Pasan:** review the 8 Oct one-line change in `transcriber.py` (`word_timestamps=True`). Still open: more than two speakers, overlapping speech, replies under 0.8 s. Pasan and Rahini: the RNN vs LSTM result is in the 13 Oct log.
 6. Dry-run `hands_on.py` on free Colab with someone outside the LSTM track, and write the debug-time cheat sheet.
 7. Choose the live demo meeting: the sample meeting (7 Oct model 7/9, keyword rules 8/9, no decisions found) or `group_project_3` via `pipeline.py --meeting` (model 16/18, keyword rules 12/18).

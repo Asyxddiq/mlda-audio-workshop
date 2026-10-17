@@ -106,10 +106,4 @@ seeing results):
 
 # What was shipped instead
 
-Not a retrained model: the **clean-up step applied to the unchanged 13 Oct weights**. This was not one of the
-candidates in the rule above (it came out of round 1's control run), so it is judged by the do-no-harm items
-only, and those hold by construction: the clean-up changes 0 of the 113 dev and test turns, so dev, test,
-probes, sample meeting, the 67 meeting tests and the frozen scorecard (0.90 / 0.87) are identical to before.
-It also lifts holdout 1 (0.839 / 0.716 to 0.879 / 0.806) and leaves holdout 2 as it was (0.852 / 0.768 to
-0.852 / 0.762, one macro-F1 point lower). Holdout 1 contains many long forms on purpose, so its gain says
-what the clean-up does for transcripts that use them, not how often real transcripts do.
+The clean-up step on the unchanged 13 Oct weights. It was not a candidate under the rules above (it came out of round 1's control run), so it was judged by the do-no-harm items only, which hold by construction: it changes 0 of the 113 dev and test turns. Its numbers are in [`model_update.md`](model_update.md#what-was-shipped).

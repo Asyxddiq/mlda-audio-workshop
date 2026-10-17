@@ -26,7 +26,7 @@ the task words appear in its line AND the owner and due date are exact
 (due None = no due date shown). Extra items fail the case.
 
 The full list, with the expected minutes for each case, is in
-"testing script.md" (written from this file: python prototype/minutes_tests.py --markdown).
+"testing/testing script.md" (written from this file: python prototype/minutes_tests.py --markdown).
 
 None of these lines are in training_data.py, scorecard_data.py or the
 generator (checked: no 5 words in a row shared), so they are new to the model.
@@ -430,7 +430,7 @@ def run(ids: list[str], verbose: bool, keywords: bool) -> int:
 
 
 # ---------------------------------------------------------------------------
-# The Markdown list ("testing script.md")
+# The Markdown list ("testing/testing script.md")
 # ---------------------------------------------------------------------------
 
 def markdown() -> str:

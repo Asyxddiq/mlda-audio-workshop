@@ -4,13 +4,13 @@ Backend prototype for the MLDA Academics workshop **Deep Learning in Audio Appli
 
 The pipeline is audio → transcript → LSTM → meeting minutes. It is written as small, readable NumPy code so that beginner-to-intermediate participants can follow every step and run it on free Google Colab.
 
-| Component | Owner | Status (13 Oct 2026) |
+| Component | Owner | Status (16 Oct 2026) |
 |---|---|---|
-| Real audio → transcript (Whisper, pause-based speakers) | Pasan, Rahini | Works on synthetic speech since the 8 Oct fix; human recording still to test. A reply under 0.8 s can still be merged; more than two speakers are not told apart |
+| Real audio → transcript (Whisper, pause-based speakers) | Pasan, Rahini | Passes on synthetic speech and LibriSpeech clips; a team member's recording is still to test (see [testing](testing/testing.md)). A reply under 0.8 s can still be merged; more than two speakers are not told apart |
 | RNN + CTC teaching demo | Pasan, Rahini | Working |
 | 5-layer hourglass LSTM | Asy | Working |
 | Training data: 40 hand-labelled meetings (577 turns) + 60 generated practice meetings, plus a frozen 6-meeting scorecard (105 turns) | Asy (drafted by Claude); Nomt checked his half (4 meetings) 8 Oct | Draft; the 29 meetings added 8 and 13 Oct are not yet checked by a person; Asy's blind check to do |
-| Trained turn classifier (`train_lstm.py`, NumPy) | Asy | Working; ships the **tuned 13 Oct ensemble** (5 seeds, settings tuned on dev). It passed the ship rule written beforehand: test 0.84, the two untouched test meetings 0.86, probes 9/12 (none below the 7 Oct model), 0.90 on the new scorecard (see [results](#step-4-training-the-classifier)) |
+| Trained turn classifier (`train_lstm.py`, NumPy) | Asy | Working; ships the **tuned 13 Oct ensemble** (5 seeds) behind the 16 Oct text clean-up: test 0.84, probes 9/12, scorecard 0.90 (see [results](#step-4-training-the-classifier)). Two 16 Oct retrains failed their ship rule ([model update](testing/model_update_16oct/model_update.md)) |
 | Meeting minutes (trained labels, keyword fallback) | Nomt | Working |
 | Participants' hands-on (`hands_on.py`) | Asy | Ready 13 Oct: Part A writes the RNN step and switches its memory off; Part B writes the LSTM notebook update and turns the forget knob. `--solution` runs the answers |
 | RNN vs LSTM comparison (`compare_rnn.py`) | Asy, for Pasan and Rahini | Done 13 Oct, with both the old and the tuned settings: **no clear difference** on our data by the rule written beforehand; both use about one turn of context |
@@ -136,30 +136,9 @@ flowchart TD
 
 Which 20% participants complete in Part 5, and how the Part 7 backend splits into Part A and Part B, is decided **after** the MVP runs end to end (see [progress.md](progress.md)).
 
-### Three-weekend build plan
+### Build plan
 
-Dates assume the weekends of 26 Sep, 3 Oct and 10 Oct. Adjust them in this file if the team's calendar differs.
-
-```mermaid
-gantt
-    title MVP build, then slides
-    dateFormat YYYY-MM-DD
-    axisFormat %d %b
-    section Weekend 1 - build pieces
-    Placeholder + LSTM + hourglass (Asy)      :done,   a1, 2026-09-25, 3d
-    Audio to transcript (Pasan + Rahini)     :active, t1, 2026-09-26, 2d
-    Minutes pipeline sketched (Nomt)          :        n1, 2026-09-26, 2d
-    Sync on transcript format                 :milestone, m1, 2026-09-27, 0d
-    section Weekend 2 - connect
-    Real transcript into the LSTM             :        c1, 2026-10-03, 2d
-    Decide 80/20 and Part A/B split           :        c2, 2026-10-03, 2d
-    Full chain runs once                      :milestone, m2, 2026-10-04, 0d
-    section Weekend 3 - freeze
-    Participant starter code + debug notes    :        f1, 2026-10-10, 2d
-    MVP frozen                                :milestone, m3, 2026-10-11, 0d
-    section After
-    Slides and learning materials             :        s1, 2026-10-12, 7d
-```
+Three build weekends (26 Sep, 3 Oct, 10 Oct), then slides from 12 Oct. The dated timeline and what is done are in [progress.md](progress.md#checklist).
 
 ### Definition of done before slide planning starts
 
@@ -178,26 +157,39 @@ gantt
 ```text
 mlda-audio-workshop/
 ├── README.md                          you are here
-├── progress.md                        Asy's LSTM-track progress tracker
+├── progress.md                        Asy's LSTM-track progress tracker: log, decisions, next up
 ├── labelling_guide.md                 rules for labelling training turns
 ├── requirements.txt                   numpy
-└── prototype/
-    ├── pipeline.py                    whole chain in one command (start here)
-    ├── transcriber.py                 audio → transcript with Whisper (Track 1)
-    ├── transcript_placeholder.py      sample meeting, used when no audio is given
-    ├── rnn_ctc_demo.py                RNN + CTC teaching demo (Part 5)
-    ├── lstm_model.py                  tokenize, embed, 5-layer hourglass LSTM (Track 2)
-    ├── meeting_minutes.py             label turns, write Markdown minutes (Track 3)
-    ├── training_data.py               hand-labelled meetings, probe set, practice-meeting generator
-    ├── train_lstm.py                  trains the hourglass + classifier head (NumPy backprop)
-    ├── trained_lstm.npz               the trained weights (made by train_lstm.py)
-    ├── hands_on.py                    participants' hands-on: RNN step, LSTM notebook update, forget knob
-    ├── hands_on_reference.py          reference answers for hands_on.py (facilitators)
-    ├── my_meeting_example.txt         example input for pipeline.py --text
-    ├── scorecard_data.py              6 frozen held-out meetings (never trained on or tuned against)
-    ├── scorecard.py                   aggregate scores on the scorecard
-    ├── compare_rnn.py                 the same hourglass with plain RNN layers, vs the LSTM
-    └── train_classifier.py            earlier PyTorch scaffold (Nomt), kept for reference
+├── prototype/
+│   ├── pipeline.py                    whole chain in one command (start here)
+│   ├── transcriber.py                 audio → transcript with Whisper (Track 1)
+│   ├── transcript_placeholder.py      sample meeting, used when no audio is given
+│   ├── rnn_ctc_demo.py                RNN + CTC teaching demo (Part 5)
+│   ├── lstm_model.py                  text clean-up, tokenize, embed, 5-layer hourglass LSTM (Track 2)
+│   ├── meeting_minutes.py             label turns, write Markdown minutes (Track 3)
+│   ├── training_data.py               hand-labelled meetings, probe set, practice-meeting generator, leak check
+│   ├── train_lstm.py                  trains the hourglass + classifier head (NumPy backprop)
+│   ├── trained_lstm.npz               the trained weights (made by train_lstm.py)
+│   ├── hands_on.py                    participants' hands-on: RNN step, LSTM notebook update, forget knob
+│   ├── hands_on_reference.py          reference answers for hands_on.py (facilitators)
+│   ├── my_meeting_example.txt         example input for pipeline.py --text
+│   ├── scorecard_data.py              6 frozen held-out meetings (never trained on or tuned against)
+│   ├── scorecard.py                   aggregate scores on the scorecard
+│   ├── holdout_data.py                17 fresh held-out meetings written 16 Oct (never trained on)
+│   ├── compare_rnn.py                 the same hourglass with plain RNN layers, vs the LSTM
+│   ├── run_tests.py                   all repo checks in one command
+│   ├── minutes_tests.py               67 typed meeting tests with expected minutes
+│   ├── normalise_tests.py             checks for the text clean-up
+│   ├── audio_check.py                 scores a recording of a script: transcriber and end-to-end verdicts
+│   ├── audio_tests/                   older copy of the reading scripts (use testing/scripts/)
+│   └── train_classifier.py            earlier PyTorch scaffold (Nomt), kept for reference
+└── testing/                           the testing phase: start at testing/testing.md
+    ├── testing.md                     how to run each test, and every result
+    ├── solo_test.py                   one-person recording test
+    ├── scripts/                       scripts to read aloud
+    ├── testing script.md              the 67 meeting tests, written from minutes_tests.py
+    ├── model_update_16oct/            the 16 Oct model update: rule, write-up, scores, patch
+    └── results/                       result files (claude/ and manual/)
 ```
 
 ### End-to-end data flow
@@ -391,45 +383,30 @@ flowchart LR
 | Hand-written: group project, hackathon, the sample meeting | 3 | 45 | **test**, scored once |
 | Probe set: bare replies ("Sure.", "Okay.") after a request, a proposal or plain information | 12 | 12 replies | **cross-turn test**, never trained on |
 | Scorecard (`scorecard_data.py`): hall council, tutoring, band, research group, football, charity drive | 6 | 105 | **second look**, frozen 13 Oct before any training; aggregate scores only |
+| Holdout (`holdout_data.py`): two sets written 16 Oct | 17 | 271 | **fresh test** for the 16 Oct update, never trained on |
 
-Results on the held-out data for the 7 Oct weights (shipped until 13 Oct; seed chosen by dev loss before looking at test):
+#### Current results
 
-| Labeller | Test accuracy | Test macro-F1 | Probes correct |
-|---|---|---|---|
-| **Trained hourglass LSTM** | **0.84** | **0.82** | **9 / 12** |
-| Keyword rules | 0.69 | 0.59 | 3 / 12 |
-| Always "discussion" | 0.56 | 0.24 | 3 / 12 |
+The shipped weights are the **tuned 13 Oct ensemble**: 5 seeds, each turn's label probabilities averaged, `<unk>` dropout 0.15, learning rate 0.01, 32-number embeddings, all settings chosen on dev only (`python prototype/train_lstm.py` reproduces it, about 12 minutes). Since 16 Oct a text clean-up runs in front of it ("I will" → "I'll", "let us" → "let's", "OK" → "okay", fillers dropped); it changes no dev or test turn. Every candidate was judged by a ship rule written before training. How earlier models got here (7 Oct, the 8 Oct rollback, the first 13 Oct retrain, the tuning runs) is in the [progress log](progress.md#log); the 16 Oct retrains that failed are in the [model update](testing/model_update_16oct/model_update.md).
 
-- The shipped weights were trained on the 7 Oct version of the data (7 training meetings, 146 turns, plus generated practice meetings). `training_data.py` now also holds the 8 Oct and 13 Oct additions in the table above, which a new `train_lstm.py` run uses.
-- The keyword lists were written while looking at the sample meeting, which flatters them there. On the two test meetings nobody looked at while writing rules (36 turns): model 0.86 accuracy / 0.85 macro-F1, keyword rules 0.64 / 0.50.
-- Across the 5 seeds trained on 7 Oct, test accuracy ranged from 0.69 to 0.84. With this little data the starting weights matter a lot, so all five scores are printed every run.
-- What it gets right that keywords can't: "Sure." after "Kai, you handle the judging rubric" (action item) vs "Makes sense." after "How about we split the prizes?" (decision) vs "Okay." after "The bus was late again" (discussion).
-- What it still misses: decisions reported as facts ("Venue is confirmed for the 14th"), 4 of the 10 test decisions. On the sample meeting it gets 7 of 9 turns right: it finds the action item but neither decision, so the minutes list no decisions. On `group_project_3` (`python prototype/pipeline.py --meeting group_project_3 --compare`) it matches 16 of 18 hand labels, keyword rules 12.
-- The 8 Oct retrain on the extra decision examples passed the improvement rule written beforehand (dev 1.00) but scored lower on held-out data (test 0.76 / 0.74; 0.78 / 0.77 on the two untouched meetings; 6 of 9 on the sample meeting, with two wrong items in its minutes). One new generated pattern matches the dev sentence's shape, so the single 20-turn dev meeting saturated and could no longer tell models apart. It was rolled back on 11 Oct; details in [progress.md](progress.md).
-- A separate review checked the first 211 hand-written labels against the rules and looked for test sentences leaking into training; `python prototype/training_data.py` re-runs the leak check (no probe, test or scorecard sentence shares 5 words in a row with the training data; the scorecard was added to the check 13 Oct).
-
-#### 13 Oct retrains: the tuned ensemble is shipped
-
-Two retrains on about 3x the hand-written data (24 new training meetings, 4 new dev meetings), both kept as an **ensemble** of 5 seeds (each turn's label probabilities averaged), with `<unk>` dropout 0.15. The ship rule was written before training: dev accuracy and macro-F1 both up by 0.03 or more, **and** no held-out measure below the 7 Oct model (test, the two untouched test meetings, probes, sample meeting), test macro-F1 at least 0.82, and no wrong items in the demo minutes.
-
-1. **First retrain** (old settings: learning rate 0.005, 16-number embeddings): passed on dev, failed the held-out check, not shipped.
-2. **Tuned retrain, shipped.** Settings were tuned on dev only. Twelve one-at-a-time changes, 3 seeds each, ranked by dev log-loss: learning rate 0.01 and 32-number embeddings helped, 16 units barely; `<unk>` dropout 0.05 or 0.30, learning rate 0.003, weight decay 0.001, 12 units, keeping words seen once, and 0 or 150 generated meetings did not. The best combination (learning rate 0.01 + 32-number embeddings) was trained with 5 seeds; 10 seeds, or keeping the best seeds by dev loss, did no better on dev accuracy or macro-F1. The held-out sets were scored once, after the choice. `python prototype/train_lstm.py` reproduces it exactly (about 12 minutes).
-
-| KPI | 7 Oct | First 13 Oct retrain | **Tuned 13 Oct (shipped)** | Keyword rules |
+| KPI | 7 Oct model | **Shipped** | Keyword rules | Always "discussion" |
 |---|---|---|---|---|
-| Dev accuracy / macro-F1 (68 turns) | 0.90 / 0.87 | 0.94 / 0.92 | **0.96 / 0.95** | |
-| Test accuracy / macro-F1 (45 turns) | 0.84 / 0.82 | 0.84 / 0.83 | 0.84 / 0.825 | 0.69 / 0.59 |
-| The two untouched test meetings, accuracy (36 turns) | 0.86 | 0.83 | 0.86 | 0.64 |
-| Probes correct (of 12) | 9 | 8 | 9 | 3 |
-| Sample meeting turns correct (of 9) | 7 | 8 | 7 | 8 |
-| Scorecard accuracy / macro-F1 (105 turns; each model scored once, after its ship decision) | 0.78 / 0.72 | 0.84 / 0.79 | **0.90 / 0.87** | 0.76 / 0.61 |
-| Ship rule | | failed | **passed** | |
+| Dev accuracy / macro-F1 (68 turns) | 0.90 / 0.87 | **0.96 / 0.95** | | |
+| Test accuracy / macro-F1 (45 turns) | 0.84 / 0.82 | 0.84 / 0.825 | 0.69 / 0.59 | 0.56 / 0.24 |
+| The two test meetings nobody wrote rules against, accuracy (36 turns) | 0.86 | 0.86 | 0.64 | |
+| Probes correct (of 12) | 9 | 9 | 3 | 3 |
+| Sample meeting turns correct (of 9) | 7 | 7 | 8 | |
+| Scorecard accuracy / macro-F1 (105 turns, scored once) | 0.78 / 0.72 | **0.90 / 0.87** | 0.76 / 0.61 | |
+| Holdout 1 / holdout 2 accuracy (149 / 122 turns) | | 0.879 / 0.852 | | |
+| 67 meeting tests passed ([testing](testing/testing.md)) | | 45 | 28 | |
 
 - Single seeds of the tuned run range from 0.73 to 0.87 test accuracy; the ensemble is steadier than any one of them.
-- Scorecard per label (precision / recall), 7 Oct vs tuned: decision 0.62 / 0.59 vs 0.71 / 0.88, action_item 0.76 / 0.65 vs 0.94 / 0.85, discussion 0.82 / 0.87 vs 0.94 / 0.91.
-- **Flagged failures (tuned, shipped model):** decisions stated as facts are still missed ("Venue is confirmed for the 14th", "We have three sponsors confirmed so far"), and so is "Noted, let's add that to the next agenda."; the chair settling a plan ("Okay, Thursday at four then.") is called discussion; 3 of the 4 agreement probes ("Sure.", "Sounds good.", "Fine by me." after a proposal) are called discussion; one request is missed ("Could you order for seventy instead of sixty this time?"); and two turns are wrongly called action items ("Can you remind me where the form is?", "I won't be able to come on the second day").
-- On the sample meeting its minutes match the 7 Oct model's: the catering follow-up as an action item, no decisions, no wrong items. `group_project_3` 16/18 hand labels (keyword rules 12/18), `hackathon_1` 15/18 (11/18).
-- Caveat: the scorecard meetings were written by Claude after seeing the earlier model's weak spots, so they are weaker evidence than meetings written by someone else. Real meetings would settle it.
+- Scorecard per label (precision / recall), 7 Oct vs shipped: decision 0.62 / 0.59 vs 0.71 / 0.88, action_item 0.76 / 0.65 vs 0.94 / 0.85, discussion 0.82 / 0.87 vs 0.94 / 0.91.
+- What it gets right that keywords can't: "Sure." after "Kai, you handle the judging rubric" (action item) vs "Makes sense." after "How about we split the prizes?" (decision) vs "Okay." after "The bus was late again" (discussion).
+- **Flagged failures:** decisions stated as facts ("Venue is confirmed for the 14th", "We have three sponsors confirmed so far") and "Noted, let's add that to the next agenda."; the chair settling a plan ("Okay, Thursday at four then."); 3 of the 4 agreement probes ("Sure.", "Sounds good.", "Fine by me." after a proposal); one missed request ("Could you order for seventy instead of sixty this time?"); two false action items ("Can you remind me where the form is?", "I won't be able to come on the second day"). Decisions are the weak class everywhere, including the meeting tests (9 of 18 found).
+- On the sample meeting the minutes list the catering follow-up as an action item, no decisions, and no wrong items. `group_project_3` matches 16/18 hand labels (keyword rules 12/18), `hackathon_1` 15/18 (11/18).
+- `python prototype/training_data.py` re-runs the leak check: no probe, test, scorecard, holdout or meeting-test sentence shares 5 words in a row with the training data.
+- Caveat: all the data, including the scorecard and holdouts, was written by us (drafted by Claude). Real meetings would settle it.
 
 #### RNN vs LSTM (`compare_rnn.py`)
 
@@ -444,29 +421,6 @@ Pasan and Rahini asked whether the LSTM actually beats a plain RNN here. `compar
 
 Verdict, both times: **no clear difference** (old settings: LSTM +0.046 macro-F1 but 1.4 fewer probes; tuned: LSTM −0.01 macro-F1, 0.2 fewer probes). These are single-seed means; the shipped ensemble scores higher than any of them. Memory reach, i.e. how much blanking out the turn d turns back moves the current turn's prediction (0 = no effect, 1 = completely), tuned settings: LSTM 0.053 / 0.006 / 0.002 / 0.001 for 1, 2, 3 and 4 turns back; RNN 0.075 / 0.013 / 0.004 / 0.000. Both rely almost entirely on the previous turn, which is all this labelling task needs, so the workshop shouldn't claim our trained LSTM remembers further back than an RNN. The memory difference is shown with `hands_on.py` instead, where the forget gate is set by hand.
 
-### Component status
-
-```mermaid
-stateDiagram-v2
-    direction LR
-    state "Transcript" as T {
-        [*] --> Placeholder
-        Placeholder --> RealTranscriber: Track 1 ready (Weekend 2)
-    }
-    state "LSTM" as L {
-        [*] --> Untrained
-        Untrained --> Trained: train_lstm.py (7 Oct)
-    }
-    state "Minutes" as M {
-        [*] --> NotStarted
-        NotStarted --> Built: Nomt
-    }
-    T --> L: contract 1
-    L --> M: contract 2
-```
-
-Current state: transcript **RealTranscriber** (Whisper, falling back to the placeholder when no audio is given), LSTM **Trained**, minutes **Built** on the trained model's labels (keyword rules if the weights file is missing).
-
 ---
 
 ## Key commands
@@ -479,6 +433,7 @@ Current state: transcript **RealTranscriber** (Whisper, falling back to the plac
 | Run the whole chain | `python prototype/pipeline.py` |
 | Run it on real audio | `python prototype/pipeline.py meeting.wav` (needs `pip install openai-whisper` and ffmpeg) |
 | Run all checks before a push or the workshop | `python prototype/run_tests.py` (about 25 s, no training, no internet; `--audio FILE` adds an audio run) |
+| Meeting tests, clean-up tests, audio tests | `python prototype/minutes_tests.py`, `python prototype/normalise_tests.py`, `python testing/solo_test.py --name YOU`: all explained in [testing/testing.md](testing/testing.md) |
 | Compare keyword rules with the trained LSTM | `python prototype/pipeline.py --compare` (shows both labels for every turn; also works with `meeting.wav`) |
 | Run a hand-labelled meeting | `python prototype/pipeline.py --meeting hackathon_1 --compare` (any meeting name in `training_data.py`; adds the hand labels to the comparison) |
 | Run the LSTM stage only | `python prototype/lstm_model.py` |
@@ -560,14 +515,14 @@ Conventions:
 
 | Limitation | Why it's fine for now | What changes later |
 |---|---|---|
-| Training data is small and written by us (577 hand-written turns, all drafted by Claude, + generated practice meetings) | Enough to show training works and beats keyword rules | Blind cross-check, then real meetings: the tuned 13 Oct model passes every held-out check, but all the data, including the scorecard, is still ours |
+| Training data is small and written by us (577 hand-written turns, all drafted by Claude, + generated practice meetings) | Enough to show training works and beats keyword rules | Blind cross-check, then real meetings: all the data, including the scorecard and holdouts, is still ours |
 | Our trained LSTM and a plain RNN score about the same here, and both use about one turn of context | The labels mostly depend on the previous turn only | Examples where a turn depends on something several turns back, if we want the trained model to show the LSTM's edge |
-| Transcript is a hard-coded sample | Lets the LSTM track work before the transcriber exists | Swap in Track 1 behind the same `get_transcript()` |
+| Speakers are told apart only by pauses (0.8 s) | Simple and teachable; works for two people taking turns | Replies under 0.8 s merge, a third speaker isn't separated; a diarisation model if needed |
 | No attention gates on the skips (the paper has them) | Plain addition is easier to teach | Optional stretch topic |
 | Folding lets a word see up to 3 words ahead | Minutes are written from the full transcript anyway | Only matters for live, word-by-word use |
 | Simple tokenizer: lowercase words, `?` and `!` as tokens, other punctuation dropped | Simple enough to explain in one slide | A library tokenizer, if ever needed |
 | Training is hand-written NumPy backprop, not a framework | No port between frameworks; one dependency; checked against numerical gradients | PyTorch scaffold (`train_classifier.py`) is there if we switch |
-| The trained model misses some decisions (reported confirmations like "Venue is confirmed") | Visible, honest failure case for *Try and test* | More added 8 and 13 Oct, still missed (see results). Next: examples from real meetings |
+| The trained model misses many decisions (reported confirmations like "Venue is confirmed", short ones like "Saturday it is") | Visible, honest failure case for *Try and test* | Retrains with more of our own examples (8, 13 and 16 Oct) did not fix it without breaking something else. Next: real meetings, or a small decision-phrase rule layer |
 
 ---
 

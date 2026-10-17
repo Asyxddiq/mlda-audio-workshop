@@ -6,17 +6,9 @@ training set the same way. One label per turn.
 | | |
 |---|---|
 | **Owners** | Asy, Nomt |
-| **Status** | Rules locked by Asy (7 Oct 2026); blind cross-check: Nomt's half done (10/10), Asy's pending |
+| **Status** | Rules locked by Asy 7 Oct 2026, clarified 8 Oct (echoed replies, ownerless "let's", finished tasks vs settled plans, conditional offers); blind cross-check: Nomt's half done (10/10), Asy's pending |
 | **Feeds** | `prototype/training_data.py` (every labelled meeting), `train_lstm.py`, `meeting_minutes.py` |
-| **Last updated** | 8 Oct 2026 |
-
-> **Locked 7 Oct 2026.** Asy confirmed both proposals: action items are
-> labelled on both the request and the reply, and the cross-turn probe set
-> is in. The first full dataset (`prototype/training_data.py`) follows these
-> rules. Still to do: the blind cross-check in step 3 of the process.
->
-> Clarified 8 Oct (Nomt's check of his half): echoed replies, ownerless
-> "let's", finished tasks vs settled plans. No labels changed.
+| **Last updated** | 17 Oct 2026 |
 
 ---
 
@@ -134,30 +126,16 @@ is scored: 5 after requests (`action_item`), 4 after proposals
 (`decision`), 3 after plain information (`discussion`). The same reply
 words ("Sure.", "Okay.", "Got it.", "Sounds good.") appear under all three
 labels, so memorising "Sure. = action_item" doesn't score well.
-`python prototype/training_data.py` checks that no probe or test sentence
+`python prototype/training_data.py` checks that no held-out sentence
 shares 5 words in a row with the training data.
 
 ---
 
 ## Process
 
-1. ~~Agree this guide (resolve the two proposals with Asy).~~ Done 7 Oct.
-2. Each write your half of the turns (Nomt: CCA committee + club event;
-   Asy: group project + lab stand-up), spreading `action_item` / `decision` /
-   `discussion` realistically, with ~15–20% cross-turn cases.
-   **First draft of all four meeting types written 7 Oct** (by Claude, for
-   Asy): 11 meetings, 211 turns, in `training_data.py`. Nomt to check his
-   half.
-3. Each label 10 of the **other's** turns blind, then compare — mismatches
-   mean this guide needs a clearer rule. Nomt's 10 done 8 Oct: 10/10 agree
-   with the labels (the conditional-offer rule above came out of it). Asy's
-   10 still to do.
-
----
-
-## Consistency note (resolved 7 Oct)
-
-The code now follows the locked rule: `training_data.py`,
-`label_turns_stub()` in `meeting_minutes.py` (turn 6 is `action_item`),
-`train_classifier.py`'s `GOLD_LABELS`, and `generate_minutes()`, which
-merges a request and the reply that accepts it into one action item.
+1. Write turns following the rules above, spreading `action_item` /
+   `decision` / `discussion` realistically, with ~15–20% cross-turn cases.
+2. Each label 10 of the **other's** turns blind, then compare: a mismatch
+   means this guide needs a clearer rule. Nomt's 10: 10/10 agree (8 Oct; the
+   conditional-offer rule came out of it). Asy's 10 still to do.
+3. When labelling real meetings, add any new tricky case to the table above.
