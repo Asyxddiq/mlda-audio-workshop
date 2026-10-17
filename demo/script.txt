@@ -1,26 +1,21 @@
-# Demo meeting for the workshop hook (Agenda item 1, D1-D4): a CCA bake-sale
-# planning meeting, two speakers, strictly alternating turns (needed for the
-# pause-based speaker splitter in transcriber.py -- see ATTEMPTS.md).
-# About 1 minute spoken at a normal pace. Written BEFORE the model was run on
-# it (Rule H, plan/RULES.md); see ATTEMPTS.md for what happened when it was.
+# Demo meeting for the workshop hook (Agenda item 1, D1-D4): a CCA showcase /
+# T-shirt planning meeting, two speakers, strictly alternating turns (needed
+# for the pause-based speaker splitter in transcriber.py).
+# Starting point and answer key from the orchestrator session (PM), after
+# Asy confirmed it on 17 Oct 2026 -- see ATTEMPTS.md for the full history,
+# including the superseded first script (builder attempt 0, commit 6b7424c)
+# and this session's own independent re-verification of every number below.
 #
-# For a live skit: two people read Mei's and Ravi's lines, normal pace, no
-# need to pause oddly -- natural turn-taking already has a gap between
-# speakers. For the recording: testing/scripts/solo_1_sample_meeting.txt
-# shows the stop-2-seconds-between-lines convention if read solo instead.
-dis  Mei: Let's start, first the bake sale this Saturday.
-dis  Ravi: We've got twelve people signed up to help so far.
-dis  Mei: Good. Should we move the stall nearer the main gate?
-dec  Ravi: Sure, that's closer to the crowd anyway.
-act  Mei: Ravi, can you book the hall for Saturday morning?
-act  Ravi: Yes, I'll call them today.
-dis  Ravi: The banner still needs printing.
-act  Mei: Can someone pick up the banner from the printer by Friday?
-act  Ravi: I can grab it after class on Friday.
-dis  Mei: What about the cash box, who's got the float?
-dis  Ravi: I've got fifty dollars in coins already.
-dec  Mei: Okay, the hall's locked in for Saturday, we're set there.
-dis  Ravi: Should we also sell lemonade, or just cookies and cupcakes?
-dec  Mei: Let's just do cookies and cupcakes, keep it simple.
-act  Ravi: Sounds good, I'll put up the sign-up sheet in the common room tonight.
-dis  Mei: Great, that's everything, thanks all.
+# For a live skit: two people read Mei's and Ravi's lines, normal pace.
+# For the recording: testing/scripts/solo_1_sample_meeting.txt shows the
+# stop-2-seconds-between-lines convention if read solo instead.
+dis  Mei: Okay, let's start. Two things today, the showcase and the T-shirts.
+dis  Ravi: The hall is free on the 14th and the 21st.
+dis  Mei: Should we hold the showcase on the 21st?
+dec  Ravi: Sounds good.
+act  Mei: Ravi, can you book the hall by Friday?
+act  Ravi: Sure.
+dis  Mei: Next, the T-shirts. Should we get black T-shirts?
+dec  Ravi: Sounds good, white gets dirty too fast.
+act  Mei: I'll send the order form to everyone tonight.
+dis  Ravi: Great, that's everything for today.

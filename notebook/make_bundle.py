@@ -12,10 +12,13 @@ import zipfile
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 REPO = os.path.dirname(HERE)
-PROTOTYPE = ["audio_check.py", "audio_features.py", "hands_on.py", "hands_on_reference.py", "lstm_model.py",
-             "meeting_minutes.py", "pipeline.py", "rnn_ctc_demo.py", "training_data.py", "transcriber.py",
-             "transcript_placeholder.py", "trained_lstm.npz"]
+PROTOTYPE = ["audio_check.py", "audio_features.py", "demo.py", "hands_on.py", "hands_on_reference.py",
+             "lstm_model.py", "meeting_minutes.py", "pipeline.py", "rnn_ctc_demo.py", "training_data.py",
+             "transcriber.py", "transcript_placeholder.py", "trained_lstm.npz"]
 AUDIO = ["sample_meeting.wav", "sample_short.wav"]
+# The hook demo (D1-D6): the script, its answer key and the two-voice backup
+# WAV, so demo/hook_demo.ipynb and prototype/demo.py work from the zip alone.
+DEMO = ["script.txt", "ANSWER_KEY.md", "backup_meeting.wav"]
 
 out = os.path.join(HERE, "workshop_files.zip")
 with zipfile.ZipFile(out, "w", zipfile.ZIP_DEFLATED) as z:
@@ -23,4 +26,6 @@ with zipfile.ZipFile(out, "w", zipfile.ZIP_DEFLATED) as z:
         z.write(os.path.join(REPO, "prototype", name), f"prototype/{name}")
     for name in AUDIO:
         z.write(os.path.join(HERE, "audio", name), f"audio/{name}")
-print(f"wrote {out} ({os.path.getsize(out) / 1e6:.1f} MB, {len(PROTOTYPE) + len(AUDIO)} files)")
+    for name in DEMO:
+        z.write(os.path.join(REPO, "demo", name), f"demo/{name}")
+print(f"wrote {out} ({os.path.getsize(out) / 1e6:.1f} MB, {len(PROTOTYPE) + len(AUDIO) + len(DEMO)} files)")
