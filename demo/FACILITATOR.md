@@ -38,11 +38,14 @@ known weak spot and are deliberately **not** in this demo -- see
    Ravi), recorded from the browser mic in `demo/hook_demo.ipynb`
    (facilitator notebook, cells 2-3), or play `demo/backup_meeting.wav` if
    nobody can act it out or the live path hasn't been rehearsed.
-   **Pacing:** one sentence per turn; leave a clear ~2-second pause before
-   the other person speaks; don't overlap. (Not "normal pace" -- the
-   transcriber splits speakers on a gap of 1.5 seconds or more, so a
-   natural, quick back-and-forth gets heard as one person and the minutes'
-   owners come out wrong. See `ATTEMPTS.md`'s backup-WAV attempts for why.)
+   **Pacing:** say each turn in one go, with no long pause inside it (two
+   turns in the script have two sentences -- say both without stopping);
+   leave a clear ~2-second pause before the other person speaks; don't
+   overlap. (Not "normal pace" -- the transcriber splits speakers on a gap
+   of 1.5 seconds or more, so a natural, quick back-and-forth gets heard as
+   one person, and a long pause mid-turn gets heard as a speaker change
+   too, and either way the minutes' owners come out wrong. See
+   `ATTEMPTS.md`'s backup-WAV attempts for why.)
 
    **The live-skit path is untested until the team rehearses it** (see the
    checklist above: two people, a phone recording, then
