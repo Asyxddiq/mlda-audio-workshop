@@ -1,4 +1,76 @@
-VERDICT: CHANGES
+VERDICT: PASS
+
+# Round 2: re-review of `3736eaf` (parent `efa5fd0`)
+
+All four round-1 blockers are fixed, and every should-fix and nit was handled as the orchestrator decided. Three nits remain; none blocks a merge. Not verified by me and still unverified by anyone: the live-skit path, the browser-mic recorder, the Colab `medium.en` preload on a T4. `FACILITATOR.md` now says so plainly and points to the backup WAV as the only end-to-end-verified route.
+
+## Finding by finding
+
+| # | Round-1 finding | Round-2 status | How I checked |
+|---|---|---|---|
+| 1 | blocker: backup cell `NameError` | **Fixed** | `run_demo`, `Markdown`, `display` are now imported in the setup cell (`demo/hook_demo.ipynb` cell 2). I ran the real cell 2 then the real cell 8 in a fresh interpreter in a folder holding only the zip (`WHISPER_MODEL=small.en`): no error, minutes printed, no banner, `Markdown(minutes)` builds. The old failure was `NameError: run_demo`. |
+| 2 | blocker: no pause instruction for the live skit | **Fixed** | "Normal pace" is gone from `script.txt`, `FACILITATOR.md` and `hook_demo.ipynb` cell 0. All three now say: leave a clear ~2 s pause, don't overlap, and why (1.5 s split). `FACILITATOR.md` also has a rehearsal checklist (phone recording, then `demo.py <file>`, then compare with the key) and states "the live-skit path is untested until the team rehearses it; the backup WAV is the safe route". That is the honest option I offered. |
+| 3 | blocker: PM attempts not listed | **Fixed** | `demo/ATTEMPTS.md` has a "PM attempts" table PM-1 to PM-4 with the wording tried and the result of each, labelled "reported by the orchestrator, not re-run here". It names the failures too (turn 4 and turn 8 read as `discussion` in some variants). The key's decisions and action items are unchanged since `efa5fd0`; only its header text changed (see finding 4). |
+| 4 | blocker: Rule H ordering overclaim | **Fixed** | `progress.md`, `ANSWER_KEY.md` and `FACILITATOR.md` now say the first script and key (`6b7424c`) preceded any model run, and that the final script was drafted by the PM with model feedback and the key fixed from a plain reading. `FACILITATOR.md` also discloses that both decisions are phrased as agreement to a proposal ("Sounds good", which the model gets right at 0.774 and 0.603 confidence) and that plain-fact decisions such as "Venue is confirmed for the 14th" are deliberately not in the demo. I re-derived both confidences myself: 0.774 (turn 4) and 0.603 (turn 8). `progress.md` is still additive-only against `main` (8 added, 0 deleted). |
+| 5 | should-fix: "t -shirts" | **Fixed** | `FACILITATOR.md` step 5 explains it (speech-to-text stage, not the minutes model), with no post-processing and no rewording. The "same minutes" wording is softened and the 80%-word-similar rule is named. |
+| 6 | should-fix: participants' notebook and `ANSWER_KEY.md` in the zip | **Fixed** | `git diff --stat 0a67bbc 3736eaf -- notebook/audio_workshop.ipynb` prints nothing (byte-identical to the pre-WP1 file). I rebuilt the zip: 17 files, and `unzip -l` shows no `ANSWER_KEY.md`; `demo/` holds only `script.txt` and `backup_meeting.wav`. `demo.py` no longer names the answer key in its output. `FACILITATOR.md` says to hand the zip out only after the hook. |
+| 7 | should-fix: "~1 minute" | **Fixed** | A Timing section: 68 words, about 25-30 s straight through, about 50 s with the nine required pauses; the WAV is 53.5 s. Consistent with my own measurements (68 words, 53.45 s). |
+| 8 | nit: banner and `display(Markdown)` shown twice | **Fixed** | `run_demo(source, banner=True)`; the notebook cells pass `banner=False`. I ran it: no box, minutes returned. The laptop command still prints the banner (confirmed on the backup WAV with `small.en`). |
+| 9 | nit: ffmpeg stderr, mic left on | **Fixed by reading** | `record_skit()` now prints `result.stderr` and raises on a non-zero exit; the JS now stops the mic tracks. Colab-only code, so read, not run. |
+| 10 | nit: stale handoff header | **Fixed** | The header names `efa5fd0` and says Round 2 is uncommitted. |
+| 11 | nit: unicode escapes in the notebook diff | **Gone** | Follows from finding 6. |
+| 12 | nit: no fallback timing | **Fixed** | Reported: `medium.en` 2 m 56 s and `small.en` 1 m 07 s on the backup WAV; `FACILITATOR.md` recommends `small.en` for the laptop fallback. I did not repeat the timing; my own round-1 `medium.en` run took 3 m 37 s with a second Whisper job running, which is consistent. |
+
+## Remaining nits (none blocks the merge)
+
+| # | Severity | ID | File | What | Fix |
+|---|---|---|---|---|---|
+| N1 | nit | D1 | `demo/FACILITATOR.md` (Pacing), `demo/hook_demo.ipynb` cell 0, `demo/script.txt` header | The pacing text says "one sentence per turn", but turns 1 and 7 of the script contain two sentences ("Okay, let's start. Two things today, ..." and "Next, the T-shirts. Should we ..."). An actor who reads that literally might drop a line. What matters is a clear pause between speakers and no long pause (over about 1 s) inside a turn. | Reword to "say each turn in one go, with no long pause inside it". |
+| N2 | nit | S4 | `HANDOFF-WP1.md` "Files changed" and "Requirement IDs covered" sections | The older Round-1 sections still say "nothing committed past 6b7424c" and list the files as untracked, while the header was updated. Also "D3 ... `hook_demo.ipynb` cell 3/4" uses section numbers, not cell indexes. | Tidy when the handoff is next touched. |
+| N3 | nit | D6 | `demo/FACILITATOR.md` | The rehearsal checklist asks for the live skit to be tested but nothing records when that happened. Fine for a checklist; it just needs ticking before the event, and until then the page already says to use the backup WAV. | None needed for the merge. Tick the checklist after the rehearsal. |
+
+## Requirement status after round 2
+
+D1 pass (about 50 s with pauses; live skit pending rehearsal). D2 pass. D3 pass (one command; one-cell button; fallback fixed). D4 pass. D5 pass (unchanged). D6 pass for everything that can run here; the live skit, mic recorder and T4 are untested and disclosed. W1a-W1f pass.
+
+## Commands I ran for round 2
+
+```
+$ bash reviews/check_frozen.sh 3736eaf
+frozen: none changed / outside allowed list: none / progress.md: additive only (added 8, deleted 0)
+RESULT: OK   (exit 0)
+
+$ git diff --stat 0a67bbc 3736eaf -- notebook/audio_workshop.ipynb
+(empty)
+
+$ python notebook/make_bundle.py          (in the detached worktree)
+wrote ... workshop_files.zip (2.6 MB, 17 files)
+$ unzip -l notebook/workshop_files.zip | grep -i "answer\|demo/"
+  demo/script.txt
+  demo/backup_meeting.wav            (no ANSWER_KEY.md)
+
+$ python prototype/run_tests.py
+12 passed, 0 failed, 1 skipped in 62.7 s
+$ python prototype/training_data.py     -> exit 0 (leak check passes)
+
+$ WHISPER_MODEL=small.en python prototype/demo.py demo/backup_meeting.wav
+ Decisions: Hold the showcase on the 21st (agreed) / Get black t -shirts (agreed)
+ Action Items: Book the hall by Friday -- Ravi (due Friday) / I'll send the order form to everyone tonight. -- Mei (due tonight)
+
+# facilitator notebook, zip-only folder, real cells 2 then 8, WHISPER_MODEL=small.en
+Whisper (small.en) preloaded and ready.  ->  minutes printed (same as above), no NameError
+
+# decision confidence, re-derived
+4 ('Ravi', 'Sounds good.')                                   decision 0.774
+8 ('Ravi', 'Sounds good, white gets dirty too fast.')        decision 0.603
+```
+The default text run (`python prototype/demo.py`) was not repeated in round 2: `script.txt` differs from the round-1 commit only in header comments, and `demo.py` only by the `banner` option and comments. I also did not repeat the `medium.en` WAV run or the "Sure." run, since the transcription path, `pipeline.py` and the model are unchanged.
+
+---
+
+# Round 1 (kept for the record): `efa5fd0`
+
+ROUND 1 VERDICT: CHANGES
 
 Reviewed commit `efa5fd000e73396f363242b35656d9189344d3fd` (parent `6b7424c`, base `main` = `0a67bbc`), in a detached worktree. Requirement IDs claimed: D1-D6 plus the orchestrator's WP1 additions (W1a-W1f in `reviews/CHECKLIST.md`).
 Everything below was re-run by me, not taken from `HANDOFF-WP1.md`. Whisper ran on CPU only (no GPU here), so no Colab / T4 timings and no live-mic test.
