@@ -1,0 +1,14 @@
+# D5: the two "Sure." exchanges, read aloud to close the hook (Agenda item 1).
+# Wording is EXACT from "WS 4 Agenda Proposal.pdf" -- do not reword these to
+# make the model pass (Rule H). This is a human exercise: the room says what
+# "Sure." means each time, from the line before it. It is NOT what the app is
+# judged on (D5). We still run the model on it here and report the labels
+# exactly as it gives them (see ATTEMPTS.md / HANDOFF-WP1.md), because Rule H
+# says the labels must be reported, not hidden or reworded.
+#
+# The two exchanges are read back to back, in this order, the way they are
+# read aloud at the event.
+Mei: Can you book the room?
+Ravi: Sure.
+Mei: Shall we move it to Friday?
+Ravi: Sure.
