@@ -212,6 +212,40 @@ def check_scorecard():
     return "frozen scorecard runs (hash ignores line endings)"
 
 
+def check_cleanup():
+    out = expect_ok(["normalise_tests.py"])
+    last = out.strip().splitlines()[-1]
+    done, _, total = last.split(" ")[0].partition("/")
+    if not done or done != total:
+        raise Fail("normalise_tests.py: " + tail(out, 4))
+    return f"text clean-up: {last}"
+
+
+def check_holdout():
+    """16 Oct: two sets of fresh meetings the model was never trained on (holdout_data.py)."""
+    from holdout_data import HOLDOUT, HOLDOUT2
+    from scorecard import score
+    problems, shown = [], []
+    for name, meetings, n_turns, right_expected, acc, f1 in [
+            ("holdout 1", HOLDOUT, 149, 131, 0.879, 0.806),
+            ("holdout 2", HOLDOUT2, 122, 104, 0.852, 0.762)]:
+        gold, pred = [], []
+        for m in meetings:
+            gold += [label for _s, _t, label in m["turns"]]
+            pred += labels_for([(s, t) for s, t, _l in m["turns"]])
+        got = score(gold, pred)
+        right = sum(g == p for g, p in zip(gold, pred))
+        shown.append(f"{name} {got['accuracy']:.3f}/{got['macro_f1']:.3f}")
+        if len(gold) != n_turns:
+            problems.append(f"{name}: {len(gold)} turns, expected {n_turns}")
+        elif abs(got["accuracy"] - acc) > 0.005 or abs(got["macro_f1"] - f1) > 0.005:
+            problems.append(f"{name}: accuracy {got['accuracy']:.3f} / macro-F1 {got['macro_f1']:.3f} "
+                            f"({right}/{len(gold)}), expected {acc} / {f1}")
+    if problems:
+        raise Fail("; ".join(problems) + ". " + WEIGHTS_HINT)
+    return ", ".join(shown) + " (accuracy / macro-F1)"
+
+
 def check_smoke():
     runs = [["lstm_model.py"], ["rnn_ctc_demo.py"], ["transcriber.py"], ["pipeline.py", "--compare"],
             ["pipeline.py", "--meeting", "group_project_3", "--compare"]]
@@ -236,7 +270,7 @@ def check_audio(path):
 
 
 # ---------------------------------------------------------------------------
-# k. The tests must leave the repo exactly as they found it
+# m. The tests must leave the repo exactly as they found it
 # ---------------------------------------------------------------------------
 
 def repo_snapshot():
@@ -284,8 +318,10 @@ def main():
         ("g", "training data", check_training_data),
         ("h", "scorecard", check_scorecard),
         ("i", "smoke runs", check_smoke),
-        ("j", "audio (optional)", lambda: check_audio(args.audio)),
-        ("k", "repo unchanged", lambda: check_repo_unchanged(before)),
+        ("j", "text clean-up", check_cleanup),
+        ("k", "holdout meetings", check_holdout),
+        ("l", "audio (optional)", lambda: check_audio(args.audio)),
+        ("m", "repo unchanged", lambda: check_repo_unchanged(before)),
     ]
 
     counts = {"PASS": 0, "FAIL": 0, "SKIP": 0}
