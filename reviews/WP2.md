@@ -1,4 +1,70 @@
-VERDICT: CHANGES
+VERDICT: PASS
+Round 2: re-review of `86d4b8e` (parent `a8c7316`). All three should-fix items and the nits are resolved; two small nits remain. Round-1 text is kept below.
+
+Re-run by me, on CPU only (no GPU, no Colab). Nothing frozen was touched.
+
+## The three should-fix items
+
+| # | Round-1 finding | Status | How I checked |
+|---|---|---|---|
+| 1 | N2 key: "differ slightly", and on `small.en` the second voice tied the ideal at 100% | **Fixed** | `make_noisy_clips.py` now mixes the second voice at 0.45. I rebuilt the zip and re-ran `python notebook/make_noisy_clips.py`: `git status` is clean, so the committed WAVs are exactly what the script writes (the other three clips are byte-identical to round 1). I then ran the four committed clips through all three sizes with the notebook's own `word_accuracy` and `SAID` text: `base.en` ideal 100 / second voice 61 / hiss 52 / poor mic 35; `small.en` 100 / 87 / 83 / 22; `medium.en` 100 / 91 / 83 / 35. The ideal clip is the unique top on all three, and the order ideal, second voice, hiss, poor mic holds on all three. These are exactly the numbers in the cell 23 table, and exactly what you quoted. "Slightly" is gone: the cell now says the percentages "depend strongly on the Whisper model size". |
+| 2 | N1: cell 5/9 named the wrong clip | **Fixed** | Cell 10 now runs `mfcc` on `sample_short.wav`, the file plotted in cell 6, so "the picture above" in cell 9 is true (my run: `16 seconds of audio -> 1562 frames x 13 numbers`). Cell 5 no longer claims it is the clip Whisper just read ("a short clip: three sentences from the meeting"). |
+| 3 | N3/N10: contents table said "reading audio" | **Fixed** | Cell 0 row 3 now reads "RNNs: reading words as a sequence". |
+
+## The nits
+
+| # | Round-1 nit | Status |
+|---|---|---|
+| 4 | N5: no link to long-range dependencies; 58% vs 0.49 unexplained | **Fixed.** Cell 30 now says Part A's toy RNN keeps about 58% on its random weights (which matches the Part A output) and that the 0.49 is what the untrained LSTM's gates measured (backed by `README.md:329` and `progress.md:111`), and adds a paragraph tying fading to long-range dependencies. |
+| 5 | N3: no symbol form, no stepping | **Fixed.** Cell 25 has `h = tanh(W_x·x + W_h·h_prev + b)` next to the word form. Cell 26 steps a toy RNN over the nine words and prints the memory after each; I got the same nine vectors the builder reports, and the cell labels them "toy random weights ... not the trained model". |
+| 6 | spectrogram divide-by-zero warning | **Fixed.** The `specgram` call is in `np.errstate(divide="ignore")`, and cell 6 ran with no warning text in my run. |
+| 7 | docstring said the facilitator "reads out" the numbers | **Fixed** (reworded to "measured live"). |
+
+The builder also found and fixed a second embedded-newline bug in the new stepping cell. I compiled every code cell of the committed notebook with `compile()`: all compile, and the committed notebook has 0 saved outputs.
+
+## Whole notebook from a zip-only folder
+
+Fresh zip (21 files, 3.8 MB; includes the four clips, `demo/script.txt` and `demo/backup_meeting.wav`, no `ANSWER_KEY.md`), then every cell via `nbclient` in a folder holding only `workshop_files.zip` and `audio_workshop.ipynb`: all 42 cells ran, **no errors, 74 s total on CPU** (the builder reports 79 s). Section 1-2 compute is about 70 s of the 10-minute talk (Whisper load plus meeting transcription 16.7 s, `get_transcript` 19.6 s, the section-2 cells 7.0 + 3.1 + 3.5 s, the answer-key cell 13.5 s); blocks 3-5 add about a second. Fits.
+
+## Remaining nits (none blocks the merge)
+
+| # | Severity | File:line | What | Fix |
+|---|---|---|---|---|
+| R1 | nit | `notebook/audio_workshop.ipynb` cell 23 | The table labels `small.en` as "this notebook's GPU default" but the numbers are CPU runs (the builder says so in the handoff, the cell does not). GPU runs use fp16 and can move a point or two. On `small.en` the margin between second voice (87%) and hiss (83%) is 4 points, and `base.en` is 9 points (61 vs 52), so on a real Colab T4 the second-voice and hiss clips could swap. The cell's "that is the ranking to go with regardless" is stronger than 4 points supports. | Add "(measured on CPU)" to the table heading and soften to "held on all three sizes we tried; the second voice and hiss are close on `small.en`, so check on the day". |
+| R2 | nit | `HANDOFF-WP2.md` | Round-1 sections still quote the old `a8c7316`-era numbers (74% second voice) and the old cell list; the Round 2 section has the new ones. | Tidy when next touched. |
+
+## Commands I ran, with output
+
+```
+$ bash reviews/check_frozen.sh 86d4b8e
+frozen: none changed / outside allowed list: none        RESULT: OK (exit 0)
+files since main: HANDOFF-WP2.md, demo/*, notebook/audio/noisy_*.wav, notebook/audio_workshop.ipynb, notebook/make_bundle.py, notebook/make_noisy_clips.py
+$ git diff --stat a8c7316 86d4b8e
+ HANDOFF-WP2.md | 146 ... noisy_4_second_voice.wav (binary) | audio_workshop.ipynb | 57 +- | make_noisy_clips.py | 24 +-
+
+$ python notebook/make_bundle.py            -> 21 files, 3.8 MB
+$ python notebook/make_noisy_clips.py ; git status --short     -> clean
+
+$ python rank.py <worktree> base.en small.en medium.en       (the notebook's word_accuracy and SAID; committed clips)
+base.en   [ideal 100, hiss 52, poor_mic 35, second_voice 61]   ideal > second_voice > hiss > poor_mic
+small.en  [ideal 100, hiss 83, poor_mic 22, second_voice 87]   ideal > second_voice > hiss > poor_mic
+medium.en [ideal 100, hiss 83, poor_mic 35, second_voice 91]   ideal > second_voice > hiss > poor_mic
+
+$ nbclient run from a folder with only the zip and the notebook (base.en, CPU)
+[4] 16.7 s  [6] 2.5 s  [10] 0.1 s "16 seconds of audio -> 1562 frames x 13 numbers"  [12] 19.6 s  [14] 7.0 s "clean 100%"
+[16] 3.1 s "noise 0.1: 52%"  [18] 3.5 s "poor mic: 35%"  [24] 13.5 s  ideal 100% / hiss 52% / poor mic 35% / second voice 61%
+[26] stepping RNN prints 9 memory vectors  [31] 0.49^47 = 0.0000%   0.95^47 = 9.0%
+TOTAL 74.3 s, no errors (42 cells)
+```
+`prototype/run_tests.py` and the leak check were not re-run this round: `prototype/` and the model are untouched between `a8c7316` and `86d4b8e` (`git diff --stat` shows no `prototype/` file), and I ran both at `a8c7316` (12 passed, 0 failed, 1 skipped; leak check exit 0).
+
+Not verified: Colab, a T4, and the actual audio playback (I did not listen to the regenerated second-voice clip; I checked its transcription accuracy on three model sizes).
+
+---
+
+# Round 1 (kept for the record): `a8c7316`
+
+ROUND 1 VERDICT: CHANGES
 
 Reviewed commit `a8c7316ed399238980c0b1ea420043e27c304069` (parent `3736eaf`), in a detached worktree. IDs claimed: N1, N2, N3, N4 (unchanged), N5, N10, plus the WP1 carry-over wording fix, plus the orchestrator's WP2 additions (W2a-W2f in `reviews/CHECKLIST.md`).
 Everything below was re-run by me, on CPU (no GPU, no Colab).
