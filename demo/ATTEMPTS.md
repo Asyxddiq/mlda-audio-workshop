@@ -36,7 +36,7 @@
    10/10 matches the hand key in text mode (confirmed, matching the
    orchestrator's own claim). Its claimed decision-confidence numbers for
    turns 4 and 8 (0.77, 0.60) were independently reproduced exactly (0.774,
-   0.603 -- `lstm_model.label_probabilities`; see `HANDOFF-WP1.md`).
+   0.603 -- `lstm_model.label_probabilities`; see `plan/handoffs/HANDOFF-WP1.md`).
 6. Building the backup WAV for the new script surfaced two more honest,
    independently-found issues, fixed in this session (not by the
    orchestrator): (a) with `pause_gap=1.5` the original 1.2s inter-turn
@@ -107,7 +107,7 @@ was written from a plain reading of each draft.
 | # | Command | Result |
 |---|---|---|
 | final script, text mode | `python prototype/pipeline.py --compare --text demo/script.txt` | 10/10 matches the hand label. Minutes: 2 decisions, 2 action items, matching `ANSWER_KEY.md` exactly. |
-| decision-confidence check | `python -c "..."` using `lstm_model.label_probabilities` (see `HANDOFF-WP1.md` for the full command) | Turn 4 ("Sounds good.") 0.774 decision; turn 8 ("Sounds good, white gets dirty too fast.") 0.603 decision. Matches the orchestrator's claimed 0.77 / 0.60. Turn 8's margin over `discussion` (0.603 vs 0.387) is thinner than turn 4's, but still decisive; kept as-is rather than trying more wordings, since the orchestrator had already tried several worse ones and this preserves the most natural line. |
+| decision-confidence check | `python -c "..."` using `lstm_model.label_probabilities` (see `plan/handoffs/HANDOFF-WP1.md` for the full command) | Turn 4 ("Sounds good.") 0.774 decision; turn 8 ("Sounds good, white gets dirty too fast.") 0.603 decision. Matches the orchestrator's claimed 0.77 / 0.60. Turn 8's margin over `discussion` (0.603 vs 0.387) is thinner than turn 4's, but still decisive; kept as-is rather than trying more wordings, since the orchestrator had already tried several worse ones and this preserves the most natural line. |
 
 No further rewording was done on this script -- it matched 10/10 on the
 first run here.
@@ -133,9 +133,9 @@ result). This is reported as a finding for the notebook (N7/N9), not fixed.
 | 3 | Merged 6/7 into one two-sentence turn | same | Still split -- ANY internal full stop triggers it, not just a repeated speaker. |
 | 4 | Removed the connective line instead (no turn has two sentences any more) | same | **PASS**, full: 15/15 turns, same speakers, 96% words, same labels, same minutes. |
 | 5 | (script replaced with the showcase/T-shirt script; superseded commit 6b7424c's content no longer applies) | -- | -- |
-| 6 | Showcase script, `pause_gap=1.5` (PM direction), 1.2s inter-turn silence (unchanged from before) | ad hoc script (see `HANDOFF-WP1.md`) using `transcriber.get_transcript(..., pause_gap=1.5)` | FAIL: 1.2s is now *below* 1.5s, so real speaker changes got merged (10 said -> 8 heard). |
+| 6 | Showcase script, `pause_gap=1.5` (PM direction), 1.2s inter-turn silence (unchanged from before) | ad hoc script (see `plan/handoffs/HANDOFF-WP1.md`) using `transcriber.get_transcript(..., pause_gap=1.5)` | FAIL: 1.2s is now *below* 1.5s, so real speaker changes got merged (10 said -> 8 heard). |
 | 7 | Same script, inter-turn silence raised to 2.0s (`demo/make_backup_wav.py`, `SILENCE_S`) | same | **PASS**, `medium.en`: 10/10 turns, speakers, 99% words, same labels, same minutes. |
 | 8 | Same WAV, `WHISPER_MODEL=small.en` (laptop fallback, no GPU/slow internet) | same | **PASS**: 10/10 turns, speakers, 100% words, same labels, same minutes. |
-| 9 | `prototype/demo.py`'s own `run_from_audio()` on the same WAV | `python prototype/demo.py demo/backup_meeting.wav` | Attendees line showed the real names (Mei, Ravi) but the Action Items' owners still showed `Speaker1`/`Speaker2` -- the rename ran after `add_owners_and_deadlines()` had already used the raw names. Fixed by renaming turns before labelling, not after; re-run, see `HANDOFF-WP1.md` for the final output. |
+| 9 | `prototype/demo.py`'s own `run_from_audio()` on the same WAV | `python prototype/demo.py demo/backup_meeting.wav` | Attendees line showed the real names (Mei, Ravi) but the Action Items' owners still showed `Speaker1`/`Speaker2` -- the rename ran after `add_owners_and_deadlines()` had already used the raw names. Fixed by renaming turns before labelling, not after; re-run, see `plan/handoffs/HANDOFF-WP1.md` for the final output. |
 
-See `HANDOFF-WP1.md` for every command's full output.
+See `plan/handoffs/HANDOFF-WP1.md` for every command's full output.

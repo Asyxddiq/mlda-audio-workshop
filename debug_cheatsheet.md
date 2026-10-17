@@ -13,6 +13,8 @@ For **Part 9: Debug time**. Every row is something that really went wrong while 
 | `No module named sounddevice` | Only needed to record from the microphone | `python -m pip install sounddevice`, or record on your phone and give the file instead |
 | Colab: "Upload workshop_files.zip" | The code zip isn't in the Files panel | Drag `workshop_files.zip` into the Files panel (left) and run the cell again. The files vanish when the runtime restarts, so upload again |
 | First run takes a long time | Whisper downloads its model once (139 MB `base.en`, 461 MB `small.en`) | Wait; it's cached afterwards. Needs internet |
+| `NameError` partway through the notebook (`np`, `plt`, `transcript`, `turns`, ...), after running only a few cells | Sections 3-5 reuse things section 1 and 2 set up (`transcript`, `np`, `plt`); skipping ahead breaks them | Run every cell from the top, in order, even the facilitator-run sections -- they only take about a minute |
+| `facilitator_files.zip` uploaded into the participants' notebook, or `workshop_files.zip` into `hook_demo.ipynb` | Two different zips now exist: the participants' is smaller and deliberately leaves out `hands_on_reference.py`, `demo.py` and the demo files, since those give away the Hands-on A/B answers | Each notebook's setup cell names the zip it needs; use that one, not the other |
 
 ## Audio to text
 
@@ -43,6 +45,12 @@ For **Part 9: Debug time**. Every row is something that really went wrong while 
 | `not quite  got [...], expected [...]` | The formula is slightly wrong | Part A: `np.tanh(W_x @ x + W_h @ h_prev + b)`. Part B: `f * c_prev + i * g` (`@` is matrix times vector, `*` is element by element) |
 | Part B's test score collapses | Your line runs inside the trained model, so a wrong line breaks it | Fix the formula until the check says OK |
 | `FORGET_KNOB` at -6 or +6 makes the score worse | The trained model learned its own settings at 0 | Expected: both extremes hurt. Negative erases the notebook, positive never lets it go |
+
+## Building this notebook (team-facing, not a participant issue)
+
+| What you see | Why | Fix |
+|---|---|---|
+| A `SyntaxError: unterminated string/f-string literal` the first time a newly-added cell runs, even though the source looked fine on screen | A hand-written cell's source held a real newline character inside one Python string, instead of two source lines or an escaped `\n` -- hit twice while writing N7 and N9's cells | Before trusting a new cell, `compile()` every code cell's full joined source (not just check each source line for an embedded `\n` -- that check alone missed one case where a bad line had been split into two individually-clean-looking lines) |
 
 ## Before the workshop
 

@@ -12,7 +12,7 @@ Read, in order: plan/SPEC.md, plan/RULES.md, plan/WORK_PACKAGES.md, then the two
 Scope is ONLY the demo and the notebook. No slides, no model changes, no pushing, no merging to main.
 
 Do WP1 now, and only WP1. Follow Rule H exactly: write the script and answer key first and commit the key before you run the model.
-Finish by writing HANDOFF-WP1.md (commit hash, requirement IDs covered, every command you ran with its real output, every script attempt, anything not done), commit, and end your turn.
+Finish by writing plan/handoffs/HANDOFF-WP1.md (commit hash, requirement IDs covered, every command you ran with its real output, every script attempt, anything not done), commit, and end your turn.
 Do not start WP2 until the main session tells you the reviewer's verdict is PASS. When told there are review findings, read them with:
   git show review/workshop-gaps:reviews/WP1.md
 fix in NEW commits, update the handoff, and end your turn again.
@@ -36,6 +36,6 @@ When you get a hash: make a detached worktree of that commit (git worktree add -
 ## Loop (main session)
 
 1. Start builder (WP1) and reviewer (prep) together.
-2. Builder note arrives -> send the reviewer the hash from `HANDOFF-WP1.md`.
+2. Builder note arrives -> send the reviewer the hash from `plan/handoffs/HANDOFF-WP1.md`.
 3. Reviewer note arrives -> if `VERDICT: CHANGES`, send the builder "fix the findings"; if `PASS`, tell the builder to start the next package and tell the user.
 4. After WP4 PASS, report to the user which commit to merge.

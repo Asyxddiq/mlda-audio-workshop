@@ -42,7 +42,7 @@ Deliver:
 
 ## Review loop (per package)
 
-1. Builder commits, writes `HANDOFF-WPn.md` (commit hash, requirement IDs covered, commands run and output, anything not done), then ends its turn.
+1. Builder commits, writes `plan/handoffs/HANDOFF-WPn.md` (commit hash, requirement IDs covered, commands run and output, anything not done), then ends its turn.
 2. The main session tells the reviewer the hash.
 3. Reviewer writes `reviews/WPn.md` and ends its turn.
 4. The main session tells the builder. Builder fixes in new commits and updates the handoff. Repeat until the verdict is PASS.

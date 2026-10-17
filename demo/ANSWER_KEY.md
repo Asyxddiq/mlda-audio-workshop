@@ -10,7 +10,7 @@ final script, never bent to match the model -- if the model ever disagreed
 with an item here, that would be reported as a finding, not fixed by
 changing the key (none of the kept items needed that). This session
 independently re-ran and re-verified every number the PM reported before
-relying on any of it (see `ATTEMPTS.md` / `HANDOFF-WP1.md`). This is what
+relying on any of it (see `ATTEMPTS.md` / `plan/handoffs/HANDOFF-WP1.md`). This is what
 the room should call out when asked "who actually remembers what was
 decided, and who's doing what?" (Agenda item 1).
 

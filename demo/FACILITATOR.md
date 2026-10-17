@@ -9,7 +9,7 @@ and the PM's attempts on the final one.
 
 Both decisions in the demo are phrased as agreement to a proposal
 ("Sounds good") -- this scores 0.77 and 0.60 for `decision` in the
-model's own confidence, independently re-derived in `HANDOFF-WP1.md`.
+model's own confidence, independently re-derived in `plan/handoffs/HANDOFF-WP1.md`.
 Plain-fact decisions ("Venue is confirmed for the 14th") are the model's
 known weak spot and are deliberately **not** in this demo -- see
 `labelling_guide.md` and `plan/SPEC.md`'s tensions list.
@@ -25,7 +25,7 @@ known weak spot and are deliberately **not** in this demo -- see
   `demo/ANSWER_KEY.md`.
 - [ ] If the rehearsal doesn't match the key, use the backup WAV on the
   day instead -- it is the one path that has actually been verified
-  end to end (see `HANDOFF-WP1.md`).
+  end to end (see `plan/handoffs/HANDOFF-WP1.md`).
 - [ ] Run cell 1 of `demo/hook_demo.ipynb` before the session (preloads
   Whisper -- slow the first time).
 - [ ] `python prototype/run_tests.py` says `0 failed`.
@@ -93,7 +93,7 @@ and to-dos):
 way you like (phone, laptop mic) and run
 `python prototype/demo.py your_recording.wav`. `medium.en` on a laptop CPU
 is slow -- timed on the backup WAV (53.5s of audio) with nothing else
-running: `medium.en` 2 min 56 s, `small.en` 1 min 7 s (see `HANDOFF-WP1.md`
+running: `medium.en` 2 min 56 s, `small.en` 1 min 7 s (see `plan/handoffs/HANDOFF-WP1.md`
 for the exact commands). **`medium.en` is well over 60 seconds on a laptop
 CPU, so the laptop fallback should use `small.en`** (`WHISPER_MODEL=small.en
 python prototype/demo.py your_recording.wav`) -- this gets the exact same
@@ -104,7 +104,7 @@ result as `medium.en`, just faster.
 The default text run (`python prototype/demo.py`) and the backup-WAV runs
 (both `medium.en` and `small.en`, `pause_gap=1.5`) all match the answer key
 (10/10 turns, both decisions, both action items, correct owners and
-deadlines -- see `HANDOFF-WP1.md`; "match" there means the standard check's
+deadlines -- see `plan/handoffs/HANDOFF-WP1.md`; "match" there means the standard check's
 80%-word-similar comparison, not byte-identical text, so small wording
 differences like the two in step 5 above are expected and fine). If
 something still looks off on the day:
@@ -136,7 +136,7 @@ Windows, no install needed), 2.0 s of silence between turns -- comfortably
 over the `pause_gap=1.5` the demo uses for real two-person speech (not
 `transcriber.py`'s untested-on-two-people 0.8 s default). Made with
 `demo/make_backup_wav.py`; see that file's docstring for exactly how, and
-`HANDOFF-WP1.md` for the full, honest result of running it through Whisper.
+`plan/handoffs/HANDOFF-WP1.md` for the full, honest result of running it through Whisper.
 This is currently the only path that has been run and verified end to end.
 
 ## The two "Sure." exchanges
@@ -144,5 +144,5 @@ This is currently the only path that has been run and verified end to end.
 These are a **human exercise** (D5 in `plan/SPEC.md`) -- read aloud to the
 room, not run through the app on stage. We did run them through the model
 once, honestly, to see what it does with them (`demo/sure_exchanges.txt`,
-reported in `HANDOFF-WP1.md`): it is not perfect on the second exchange,
+reported in `plan/handoffs/HANDOFF-WP1.md`): it is not perfect on the second exchange,
 which is exactly the point of asking the room instead of the app.
