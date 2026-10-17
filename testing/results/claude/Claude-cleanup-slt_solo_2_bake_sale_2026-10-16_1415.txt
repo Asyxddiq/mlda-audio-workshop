@@ -1,0 +1,56 @@
+Solo audio test -- Claude-cleanup-slt, 16 Oct 2026 14:15
+Script:    testing/scripts/solo_2_bake_sale.txt
+Recording: solo2_slt.wav (own file)
+Whisper:   model 'base', NOT the openai-whisper package: Claude-side stand-in: the same Whisper weights run with onnxruntime (sherpa-onnx ONNX export), silence-based segment times.; Python 3.13.16 on Linux
+
+Heard (what Whisper and the pause rule produced):
+  Speaker1: Okay, let's start do things today, the big sale and the poster.
+  Speaker2: The canteen said we can use the front tables on Friday.
+  Speaker1: Great, then we'll hold the Bakesale on Friday morning.
+  Speaker2: I'll bring the cash box and the price cards.
+  Speaker1: Can you also ask dev for the folding table by Thursday?
+  Speaker2: Sure.
+  Speaker1: Last thing, the poster still has the old date on it.
+  Speaker2: Let me fix the date tonight.
+  Speaker1: Perfect, thanks, that's everything for today.
+
+Script: solo_2_bake_sale.txt
+
+   #  said                                         heard                                        words  label said / heard
+   1  1: Okay, let's start. Two things today, the  1: Okay, let's start do things today, the bi   83%  discussion / action_item  <-
+   2  2: The canteen said we can use the front tab 2: The canteen said we can use the front tab  100%  discussion / discussion
+   3  1: Great, then we'll hold the bake sale on F 1: Great, then we'll hold the Bakesale on Fr   80%  decision / decision
+   4  2: I'll bring the cash box and the price car 2: I'll bring the cash box and the price car  100%  action_item / action_item
+   5  1: Can you also ask Dev for the folding tabl 1: Can you also ask dev for the folding tabl  100%  action_item / action_item
+   6  2: Sure.                                     2: Sure.                                      100%  action_item / action_item
+   7  1: Last thing, the poster still has the old  1: Last thing, the poster still has the old   100%  discussion / discussion
+   8  2: Let me fix the date tonight.              2: Let me fix the date tonight.               100%  action_item / action_item
+   9  1: Perfect, thanks. That's everything for to 1: Perfect, thanks, that's everything for to  100%  discussion / discussion
+
+  Turns     OK    said 9, heard 9: same
+  Speakers  OK    same back-and-forth
+  Words     OK    95% of the script's words heard (need 90%)
+  Labels    FAIL  differ on 1
+  Minutes   FAIL  differ (below)
+  (hand labels in the script: the audio run matches 8/9)
+
+  Minutes from the typed script:
+    ## Decisions
+    - Great, then we'll hold the bake sale on Friday morning.
+    ## Action Items
+    - [ ] I'll bring the cash box and the price cards. -- Speaker2
+    - [ ] Also ask Dev for the folding table by Thursday -- Speaker2 (due Thursday)
+    - [ ] Let me fix the date tonight. -- Speaker2 (due tonight)
+  Minutes from the audio:
+    ## Decisions
+    - Great, then we'll hold the Bakesale on Friday morning.
+    ## Action Items
+    - [ ] Okay, let's start do things today, the big sale and the poster. -- Speaker1 (due today)
+    - [ ] I'll bring the cash box and the price cards. -- Speaker2
+    - [ ] Also ask dev for the folding table by Thursday -- Speaker2 (due Thursday)
+    - [ ] Let me fix the date tonight. -- Speaker2 (due tonight)
+
+PASS  transcriber: the audio became the same turns, speakers and words as the script
+FAIL  end to end:  labels or minutes differ from the typed script
+      (the words came through, so this is the labeller reacting to small wording changes,
+       e.g. "I will" for "I'll" -- worth noting for the model, not a recording problem)
