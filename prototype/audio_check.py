@@ -37,7 +37,7 @@ import os
 import re
 import sys
 
-from lstm_model import run_pipeline, split_words
+from lstm_model import model_words, run_pipeline, split_words
 from meeting_minutes import generate_minutes, label_turns_keywords, label_turns_model
 from pipeline import load_text
 
@@ -65,9 +65,13 @@ def _edit_distance(a: list[str], b: list[str]) -> int:
     return row[-1]
 
 
-def word_accuracy(said: str, heard: str) -> float:
-    """1 - word error rate, floored at 0: 1.00 = every word heard as said."""
-    a, b = split_words(said), split_words(heard)
+def word_accuracy(said: str, heard: str, clean: bool = False) -> float:
+    """1 - word error rate, floored at 0: 1.00 = every word heard as said.
+
+    The transcriber verdict compares the words as written ("I will" for "I'll" is a
+    difference). With clean=True the model's clean-up is applied first, so "I will"
+    and "I'll" are the same: used for the minutes, where the labeller treats them alike."""
+    a, b = (model_words if clean else split_words)(said), (model_words if clean else split_words)(heard)
     if not a:
         return 1.0 if not b else 0.0
     return max(0.0, 1 - _edit_distance(a, b) / len(a))
@@ -106,9 +110,9 @@ def same_minutes(said_minutes: str, heard_minutes: str) -> bool:
     (d1, a1), (d2, a2) = _minutes_items(said_minutes), _minutes_items(heard_minutes)
     if len(d1) != len(d2) or len(a1) != len(a2):
         return False
-    return (all(word_accuracy(x, y) >= ITEM_WORDS_NEEDED for x, y in zip(d1, d2))
+    return (all(word_accuracy(x, y, clean=True) >= ITEM_WORDS_NEEDED for x, y in zip(d1, d2))
             and all(o1 == o2 and (due1 or "").lower() == (due2 or "").lower()
-                    and word_accuracy(t1, t2) >= ITEM_WORDS_NEEDED
+                    and word_accuracy(t1, t2, clean=True) >= ITEM_WORDS_NEEDED
                     for (t1, o1, due1), (t2, o2, due2) in zip(a1, a2)))
 
 
