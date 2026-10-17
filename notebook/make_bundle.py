@@ -1,40 +1,76 @@
 """
-Make workshop_files.zip: the code and audio the participants' notebook needs, in one file.
+Make the two zips this workshop hands out:
 
     python notebook/make_bundle.py
 
-Participants upload this zip (and open audio_workshop.ipynb) in Google Colab; the notebook's first
-cell unpacks it. The repo is private, so this is the way to hand the files out. Rebuild it whenever
-anything in prototype/ changes.
+Writes:
+  - `workshop_files.zip`    -- for participants. Only what
+                               `audio_workshop.ipynb` needs. Uploaded to the
+                               Files panel in Colab; the notebook's first
+                               cell unpacks it.
+  - `facilitator_files.zip` -- for the facilitator running the hook. The
+                               participant zip's contents, plus
+                               `prototype/demo.py`, `demo/script.txt` and
+                               `demo/backup_meeting.wav`, so
+                               `demo/hook_demo.ipynb` works from this zip
+                               alone (see WP3 review, "Answer to your zip
+                               question" -- the facilitator notebook is the
+                               only thing that needs `demo.py`).
+
+Both are gitignored (rebuild, don't commit) -- see `.gitignore`. Rebuild
+whenever anything in `prototype/`, `notebook/audio/` or `demo/` changes.
+
+Deliberately NOT bundled, in either zip:
+  - `prototype/hands_on_reference.py` -- the Part A / Part B answers. No
+    notebook cell imports it (`hands_on.py` only does, inside
+    `if SOLUTION`, which a notebook never sets); shipping it would hand
+    every participant both answers. Facilitators keep it from the repo
+    (`python prototype/hands_on.py --solution`); `run_tests.py` also reads
+    it straight from `prototype/`, not from a zip.
+  - `prototype/rnn_ctc_demo.py` -- not imported by any notebook cell.
+  - `demo/ANSWER_KEY.md` -- the facilitator's reference; see the DEMO
+    comment below for why.
 """
 import os
 import zipfile
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 REPO = os.path.dirname(HERE)
-PROTOTYPE = ["audio_check.py", "audio_features.py", "demo.py", "demo_student_council.txt", "hands_on.py",
-             "hands_on_reference.py", "lstm_model.py", "meeting_minutes.py", "pipeline.py", "rnn_ctc_demo.py",
-             "training_data.py", "transcriber.py", "transcript_placeholder.py", "trained_lstm.npz"]
+
+# Everything audio_workshop.ipynb (participants) actually imports or reads.
+PROTOTYPE = ["audio_check.py", "audio_features.py", "demo_student_council.txt", "hands_on.py",
+             "lstm_model.py", "meeting_minutes.py", "pipeline.py", "training_data.py",
+             "transcriber.py", "transcript_placeholder.py", "trained_lstm.npz"]
 # demo_student_council.txt: N7's held-out meeting (keyword rules vs the trained LSTM,
 # section 4). Never in training_data.py -- see that file's own header comment.
 AUDIO = ["sample_meeting.wav", "sample_short.wav",
         # N2's Kahoot clips (notebook/make_noisy_clips.py) -- rebuild those before this if
         # sample_short.wav or sample_meeting.wav change.
         "noisy_1_ideal.wav", "noisy_2_hiss.wav", "noisy_3_poor_mic.wav", "noisy_4_second_voice.wav"]
-# The hook demo (D1-D6): the script and the two-voice backup WAV, so
-# demo/hook_demo.ipynb and prototype/demo.py work from the zip alone.
-# ANSWER_KEY.md is deliberately NOT bundled: it is the facilitator's
-# reference, handed out from the repo, not in the zip participants get --
-# putting it in the zip would hand the room the answers before D2's "let
-# the room call out the decisions and to-dos" (WP1 review finding 6).
-DEMO = ["script.txt", "backup_meeting.wav"]
 
-out = os.path.join(HERE, "workshop_files.zip")
-with zipfile.ZipFile(out, "w", zipfile.ZIP_DEFLATED) as z:
-    for name in PROTOTYPE:
-        z.write(os.path.join(REPO, "prototype", name), f"prototype/{name}")
-    for name in AUDIO:
-        z.write(os.path.join(HERE, "audio", name), f"audio/{name}")
-    for name in DEMO:
-        z.write(os.path.join(REPO, "demo", name), f"demo/{name}")
-print(f"wrote {out} ({os.path.getsize(out) / 1e6:.1f} MB, {len(PROTOTYPE) + len(AUDIO) + len(DEMO)} files)")
+# Only for the facilitator notebook (demo/hook_demo.ipynb), on top of the above.
+# ANSWER_KEY.md is deliberately NOT bundled, even here: it is read from the
+# repo by the facilitator, not needed by any notebook cell, and leaving it
+# out of every zip means a participant who somehow got a facilitator zip
+# still wouldn't have the answers (WP1 review finding 6).
+FACILITATOR_PROTOTYPE = ["demo.py"]
+FACILITATOR_DEMO = ["script.txt", "backup_meeting.wav"]
+
+
+def _write(out_name: str, prototype: list[str], audio: list[str], demo: list[str]) -> str:
+    out = os.path.join(HERE, out_name)
+    with zipfile.ZipFile(out, "w", zipfile.ZIP_DEFLATED) as z:
+        for name in prototype:
+            z.write(os.path.join(REPO, "prototype", name), f"prototype/{name}")
+        for name in audio:
+            z.write(os.path.join(HERE, "audio", name), f"audio/{name}")
+        for name in demo:
+            z.write(os.path.join(REPO, "demo", name), f"demo/{name}")
+    count = len(prototype) + len(audio) + len(demo)
+    print(f"wrote {out} ({os.path.getsize(out) / 1e6:.1f} MB, {count} files)")
+    return out
+
+
+if __name__ == "__main__":
+    _write("workshop_files.zip", PROTOTYPE, AUDIO, [])
+    _write("facilitator_files.zip", PROTOTYPE + FACILITATOR_PROTOTYPE, AUDIO, FACILITATOR_DEMO)

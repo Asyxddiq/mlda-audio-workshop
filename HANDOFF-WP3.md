@@ -248,3 +248,131 @@ modules: `lstm_model.py`, `meeting_minutes.py`, `pipeline.py`,
   T4.
 - Nothing else in WP3's deliverable list (N6-N8, `plan/WORK_PACKAGES.md`)
   is outstanding. Section 5 deliberately untouched (WP4).
+
+---
+
+## Round 2 (review verdict: CHANGES on `2f2d470`, no blockers)
+
+Reviewer's findings: `git show claude/review-workshop-gaps-53e548:reviews/WP3.md`.
+Orchestrator's decisions, applied below, all independently verified.
+Nothing committed -- same protocol as before.
+
+| # | Finding | Fix applied | Verified |
+|---|---|---|---|
+| 1 (should-fix, honesty) | `demo_student_council.txt`'s 17/18 is the team's **best-case** held-out meeting (`progress.md:218` says so), not a typical result -- presented without that caveat, which reads like the cherry-picking Rule H warns against | Independently re-scored all 17 held-out meetings (`holdout_data.HOLDOUT`/`HOLDOUT2`) with both labellers myself; added a sentence to cell 39 quoting the overall figures (131/149, 104/122 for the LSTM; 111/149, 93/122 for keyword rules) and noting 3 of 17 meetings where keyword rules win | My own count: `keyword rules 111/149 (0.745)`, `93/122 (0.762)`; LSTM matches `run_tests.py` check k's `131/149 (0.879 acc)`, `104/122 (0.852 acc)` exactly; confirmed `student_council`'s 5-turn gap is the largest of all 17, and the 3 keyword-wins are `waiting_room`, `allotment_group`, `culture_night` -- all matching the reviewer's numbers independently |
+| 2 (should-fix) | Cell 38 printed `p(correct) = 0.004` next to a loss computed from the unrounded 0.0037 -- a participant checking with a calculator gets a different loss than shown | Print to 4 decimals (`0.0037`, `0.9957`); added "(the natural log)" to cell 37 | Re-ran: `p(correct) = 0.0037, loss = 5.61` and `p(correct) = 0.9957, loss = 0.00` -- now self-consistent |
+| 3 (should-fix) | Cell 3 told participants they could "skip ahead" through sections 1-2; skipping breaks sections 3-5 (`NameError` on `np`, `plt`, `transcript`, `turns`) | Reworded to "Participants: run these cells too (about a minute on a T4); the later sections reuse their results." No "skip ahead" | Re-read the cell; wording matches the orchestrator's exact text |
+| 4 (nit) | Cell 32's "far fewer steps to survive" read as a property the classifier proves, not just the architecture's design intent | Added "by design -- an architecture idea, not something this trained classifier measures or proves on its own" | Re-read |
+| 5 (nit) | N6 asked for the hourglass "as a picture"; only a table was shown | Added a small bar chart (units per layer) right after the table, in the same cell | Re-ran: table and chart both render, no error |
+| 6 (nit) | Knob sweep left `FORGET_KNOB` at +6 after the loop | Added `hands_on.FORGET_KNOB = 0` after the loop | Re-read |
+| 7 (zip) | Zip shipped unused files, and (per the orchestrator's separate question) `hands_on_reference.py` hands participants both YOUR-TURN answers | Split `make_bundle.py` into `workshop_files.zip` (participants -- dropped `hands_on_reference.py`, `rnn_ctc_demo.py`, `demo.py`, `demo/script.txt`, `demo/backup_meeting.wav`) and `facilitator_files.zip` (participant files + `demo.py` + the two `demo/` files, for `hook_demo.ipynb`). Updated `hook_demo.ipynb`'s setup cell and `FACILITATOR.md` to use `facilitator_files.zip`; added it to `.gitignore` | Both zips built and tested from clean folders (below) |
+
+### Independent re-verification of the held-out numbers (finding 1)
+
+```
+$ python -c "<score label_turns_keywords over holdout_data.HOLDOUT/HOLDOUT2>"
+HOLDOUT: keyword rules 111/149 (0.745)
+HOLDOUT2: keyword rules 93/122 (0.762)
+  waiting_room       kw 15/15  lstm 14/15  <-- keyword beats LSTM
+  allotment_group    kw 13/13  lstm 12/13  <-- keyword beats LSTM
+  culture_night      kw 12/17  lstm 11/17  <-- keyword beats LSTM
+  student_council    kw 12/18  lstm 17/18   (the largest keyword/LSTM gap of all 17 meetings: 5)
+```
+Matches the reviewer's numbers exactly, reproduced independently (not
+copied). The LSTM's 131/149 and 104/122 match `run_tests.py` check k's
+own printed accuracy (0.879, 0.852) exactly.
+
+### Both zips, rebuilt and tested from clean folders
+
+```
+$ python notebook/make_bundle.py
+wrote .../notebook/workshop_files.zip (2.8 MB, 17 files)
+wrote .../notebook/facilitator_files.zip (3.7 MB, 20 files)
+```
+
+**Participants' notebook, folder with only the 17-file `workshop_files.zip`:**
+```
+$ <nbclient run from a folder holding only workshop_files.zip and audio_workshop.ipynb>
+... (all 52 cells)
+=== OK in 95.0s ===
+```
+All 52 cells ran without error. Cell 38's output (now 4 decimals):
+```
+Venue is confirmed for the 14th, catering still pending.
+  gold = decision, p(correct) = 0.0037, loss = 5.61
+
+Yes, I'll email them today.
+  gold = action_item, p(correct) = 0.9957, loss = 0.00
+```
+Cell 33's bar chart rendered (checked the executed notebook's output list
+for an image, not just that the cell ran without error).
+
+**Facilitator notebook, folder with only the 20-file `facilitator_files.zip`**
+(cells 2 and 8 only, per the orchestrator's check -- cells 4 and 6 need a
+real browser/Colab microphone, same limitation as WP1/WP2):
+```
+$ <exec cell 2 then cell 8's source, in one namespace, cwd = that folder>
+--- running cell 2 ---
+ffmpeg: found
+Whisper (medium.en) preloaded and ready.
+[2] 28.8s OK
+--- running cell 8 ---
+Press. One. Button.
+(input: demo/backup_meeting.wav)
+[8] 138.8s OK
+```
+Both ran without error, from `facilitator_files.zip` alone -- confirming
+`demo.py`, `demo/script.txt` and `demo/backup_meeting.wav` all resolve
+correctly from the facilitator-only zip.
+
+### `run_tests.py` and frozen-file check
+
+```
+$ python prototype/run_tests.py
+PASS  a. imports                  11 modules import  (2.2s)
+PASS  b. weights                  5 members, labels discussion / decision / action_item  (0.4s)
+PASS  c. shipped KPIs reproduce   dev 0.96/0.948, test 0.84/0.825, 36-turn test 0.86/0.853, sample 7/9, probes 9/12  (17.9s)
+PASS  d. demo minutes             no decisions, one action item (catering by Friday, Priya)  (0.7s)
+PASS  e. --text example           runs, model matches the hand labels 7/7  (1.2s)
+PASS  f. hands-on                 solution: both parts OK, 35/45 at knob 0; unfilled version says 'not written yet'  (5.2s)
+PASS  g. training data            leak checks pass  (9.2s)
+PASS  h. scorecard                frozen scorecard runs (hash ignores line endings)  (2.9s)
+PASS  i. smoke runs               5 scripts exit 0  (3.0s)
+PASS  j. text clean-up            text clean-up: 31/31 clean-up checks pass  (0.5s)
+PASS  k. holdout meetings         holdout 1 0.879/0.806, holdout 2 0.852/0.762 (accuracy / macro-F1)  (3.8s)
+SKIP  l. audio (optional)         no --audio FILE given  (0.0s)
+PASS  m. repo unchanged           git status and git diff identical before and after  (0.1s)
+
+12 passed, 0 failed, 1 skipped in 47.7 s
+```
+
+```
+$ git diff --stat main -- prototype/trained_lstm.npz training_data.py scorecard_data.py \
+    holdout_data.py minutes_tests.py normalise_tests.py lstm_model.py train_lstm.py \
+    meeting_minutes.py transcriber.py hands_on_reference.py testing/ prototype/hands_on.py
+(no output -- nothing frozen was touched)
+```
+
+### `compile()` check, every code cell, full joined source
+
+```
+$ python -c "
+import json
+nb = json.load(open('notebook/audio_workshop.ipynb', encoding='utf-8'))
+for i, c in enumerate(nb['cells']):
+    if c['cell_type'] == 'code':
+        compile(''.join(c['source']), f'cell{i}', 'exec')
+print('all code cells compile cleanly')
+"
+all code cells compile cleanly
+```
+
+### Files changed this round
+
+```
+ .gitignore                     | +notebook/facilitator_files.zip
+ demo/FACILITATOR.md            | zip name, wording
+ demo/hook_demo.ipynb           | workshop_files.zip -> facilitator_files.zip
+ notebook/audio_workshop.ipynb  | cells 3, 32, 33, 37-39, 46 reworded/extended
+ notebook/make_bundle.py        | split into two zips
+```

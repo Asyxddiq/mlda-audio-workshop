@@ -74,13 +74,15 @@ known weak spot and are deliberately **not** in this demo -- see
 
 ## Running it: Colab (primary) or laptop (fallback)
 
-**Colab, `demo/hook_demo.ipynb`** (facilitator-only -- hand out
-`workshop_files.zip` to participants only *after* the hook, so nobody sees
-`demo/script.txt` -- or the answer key, which is kept out of the zip
-entirely -- before being asked to call out the decisions and to-dos):
+**Colab, `demo/hook_demo.ipynb`** (facilitator-only -- uses its own
+`facilitator_files.zip`, which the facilitator keeps; hand out
+`workshop_files.zip`, the participants' separate zip, only *after* the
+hook, so nobody sees `demo/script.txt` -- or the answer key, which is kept
+out of both zips entirely -- before being asked to call out the decisions
+and to-dos):
 - Cell 1, **before the session starts**: installs Whisper, unzips
-  `workshop_files.zip`, and preloads the `medium.en` model (slow the first
-  time -- do this ahead of time, not live).
+  `facilitator_files.zip`, and preloads the `medium.en` model (slow the
+  first time -- do this ahead of time, not live).
 - Cell 2: records the skit from the browser microphone to `skit.wav`
   (needs mic permission in the browser tab; Colab, so a T4 GPU speeds up
   Whisper).

@@ -9,3 +9,4 @@ Thumbs.db
 
 # built by notebook/make_bundle.py (rebuild it, do not commit it)
 notebook/workshop_files.zip
+notebook/facilitator_files.zip
