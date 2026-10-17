@@ -51,6 +51,8 @@ SCRIPTS = os.path.join(HERE, "scripts")
 RESULTS = os.path.join(HERE, "results", "manual")
 SAMPLE_RATE = 16000
 GAP_SECONDS = 2.0          # silence the script leaves between lines (the pause rule needs > 0.8 s)
+SOLO_PAUSE_GAP = 1.5       # a pause this long means the next line (pair tests keep transcriber.PAUSE_GAP, 0.8 s).
+                           # Measured: pauses inside a line up to 1.1 s, gaps between lines from 2.3 s.
 
 
 def script_path(name: str) -> str:
@@ -159,7 +161,7 @@ def main() -> int:
         record_guided(lines, audio_path)
 
     print(f"\nTranscribing with Whisper '{WHISPER_MODEL}' (the first run downloads the model)...\n")
-    heard = get_transcript(audio_path)
+    heard = get_transcript(audio_path, pause_gap=SOLO_PAUSE_GAP)
 
     report = _Tee()
     with contextlib.redirect_stdout(report):

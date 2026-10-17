@@ -75,10 +75,13 @@ def segments_to_transcript(segments: list[dict],
     return "\n".join(f"Speaker{s + 1}: {t}" for s, t in turns) + "\n"
 
 
-def get_transcript(audio_path: str | None = None) -> str:
+def get_transcript(audio_path: str | None = None, pause_gap: float = PAUSE_GAP) -> str:
+    """pause_gap: seconds of silence that count as a speaker change (default 0.8, for two
+    people talking). A solo reading, with 2 s between lines, can use a longer gap so a
+    pause at a full stop inside a line isn't taken for a new speaker."""
     if audio_path is None:
         return _placeholder()
-    return segments_to_transcript(_transcribe_segments(audio_path))
+    return segments_to_transcript(_transcribe_segments(audio_path), pause_gap=pause_gap)
 
 
 if __name__ == "__main__":
