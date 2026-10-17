@@ -1080,10 +1080,13 @@ if __name__ == "__main__":
     # the training/dev meetings or with anything the generator can produce
     # (2,000 sample meetings cover its phrase lists). Short replies like
     # "Sure." are meant to repeat, and are too short to have 5 words anyway.
-    import re
+    # 16 Oct: compared the way the model reads text (lstm_model.model_words: "I will" = "I'll",
+    # "OK" = "okay"), so a rewording that the clean-up would undo still counts as a copy.
+    # ? and ! are left out here, as before.
+    from lstm_model import model_words
 
     def five_grams(text):
-        words = re.findall(r"[a-z0-9']+", text.lower())
+        words = [w for w in model_words(text) if w not in ("?", "!")]
         return {tuple(words[k:k + 5]) for k in range(len(words) - 4)}
 
     seen = set()
@@ -1094,11 +1097,18 @@ if __name__ == "__main__":
     held_out = [t for p in PROBES for _s, t, _l in p]
     held_out += [t for m in MEETINGS if m["split"] == "test" for _s, t, _l in m["turns"]]
     held_out += [t for m in SCORECARD for _s, t, _l in m["turns"]]
+    from holdout_data import HOLDOUT, HOLDOUT2     # 16 Oct: the holdout meetings are held out too
+    held_out += [t for m in HOLDOUT + HOLDOUT2 for _s, t, _l in m["turns"]]
+    try:                                           # ... and so are the 67 meeting tests (minutes_tests.py)
+        from minutes_tests import CASES
+        held_out += [line.split(":", 1)[1].strip() for _id, _what, lines, _exp in CASES for line in lines]
+    except ImportError:
+        print("  (minutes_tests.py not found: its sentences were not leak-checked)")
     leaks = [(t, sorted(five_grams(t) & seen)) for t in held_out if five_grams(t) & seen]
     for text, grams in leaks:
         print("  LEAK:", text, "<-", [" ".join(g) for g in grams])
     assert not leaks, "probe/test/scorecard sentences overlap the training data"
-    print("no probe, test or scorecard sentence shares 5 words in a row with training data: OK")
+    print("no probe, test, scorecard, holdout or meeting-test sentence shares 5 words in a row with training data: OK")
 
     # Dev picks the epoch and seed (and judges retrains), so it must not
     # overlap the training-only data either.
