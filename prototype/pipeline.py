@@ -136,12 +136,12 @@ def load_text(path: str) -> tuple[str, list[str] | None]:
 
 def unknown_words(turns: list[tuple[str, str]]) -> list[str]:
     """Words the trained model never saw in training: it reads them as <unk>."""
-    from lstm_model import load_trained_model, split_words
+    from lstm_model import load_trained_model, model_words
     trained = load_trained_model()
     if trained is None:
         return []
     known = set(trained["vocab"])
-    return sorted({w for _s, t in turns for w in split_words(t) if w not in known})
+    return sorted({w for _s, t in turns for w in model_words(t) if w not in known})
 
 
 def run(audio_path: str | None = None, verbose: bool = True, compare: bool = False,
