@@ -241,6 +241,43 @@ def split_words(text: str) -> list[str]:
     return re.findall(r"[a-z0-9']+|[?!]", text.lower())
 
 
+# Whisper writes "I will", "let us", "do not", "OK"; people (and our training meetings)
+# mostly say "I'll", "let's", "don't", "okay". Same meaning, different words, and a model
+# trained on one spelling is half-lost on the other (16 Oct: "I will bring..." was read as
+# plain discussion, "I'll bring..." as an action item). So before the model reads any text,
+# both spellings are turned into the same one. Applied in training AND live.
+_CLEAN_UP = [
+    (r"\b(?:um+|uh+|uhm+|erm+|ehm+)\b", " "),                       # filler sounds
+    (r"\bo\.?k\.?\b", "okay"), (r"\ball right\b", "alright"),
+    (r"\bgonna\b", "going to"), (r"\bwanna\b", "want to"), (r"\blemme\b", "let me"),
+    (r"\bcannot\b", "can't"), (r"\bcan not\b", "can't"), (r"\bwill not\b", "won't"),
+    (r"\b(do|does|did|is|are|was|were|has|have|had|would|could|should)\s+not\b", r"\1n't"),
+    (r"\blet us\b", "let's"),
+    (r"\b(i|you|he|she|it|we|they|that|there|who)\s+will\b", r"\1'll"),
+    (r"\b(i|you|he|she|it|we|they|that|there)\s+would\b", r"\1'd"),
+    (r"\bi\s+am\b", "i'm"),
+    (r"\b(you|we|they)\s+are\b", r"\1're"),
+    (r"\b(it|that|there|here|what|who|he|she|where|how)\s+is\b", r"\1's"),
+]
+
+
+def normalise(text: str) -> str:
+    """Lowercase and unify spelling, so the model sees one form of each phrase.
+
+        "OK, I will send it at 4."      ->  "okay, i'll send it at 4."
+        "Let us not.  We do not know."  ->  "let's not.  we don't know."
+    """
+    text = text.lower().replace("’", "'").replace("‘", "'").replace("`", "'")
+    for pattern, replacement in _CLEAN_UP:
+        text = re.sub(pattern, replacement, text)
+    return text
+
+
+def model_words(text: str) -> list[str]:
+    """What the model reads: split_words() after normalise()."""
+    return re.findall(r"[a-z0-9']+|[?!]", normalise(text))
+
+
 def tokenize_transcript(turns: list[tuple[str, str]]) -> tuple[list[str], list[int]]:
     """Flatten (speaker, text) turns into one long list of words, plus the
     position of the LAST token of each turn (used to read off the hidden
@@ -253,7 +290,7 @@ def tokenize_transcript(turns: list[tuple[str, str]]) -> tuple[list[str], list[i
     turn_end_indices: list[int] = []
 
     for i, (_speaker, text) in enumerate(turns):
-        all_tokens.extend(split_words(text))
+        all_tokens.extend(model_words(text))
         if i < len(turns) - 1:
             all_tokens.append(TURN_BOUNDARY_TOKEN)
         turn_end_indices.append(len(all_tokens) - 1)
