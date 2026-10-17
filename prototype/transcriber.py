@@ -21,7 +21,12 @@ from transcript_placeholder import get_transcript as _placeholder
 
 PAUSE_GAP = 0.8      # seconds of silence that counts as a speaker change
 NUM_SPEAKERS = 2     # speakers alternate: 1, 2, 1, 2 ...
-WHISPER_MODEL = "base"
+# English only, on purpose: "small.en" is a Whisper model trained on English alone, so it cannot
+# write another language. LANGUAGE and TASK are set as well so the choice never depends on
+# Whisper guessing (a Malaysian accent was once guessed as Malay) and nothing gets translated.
+WHISPER_MODEL = "small.en"
+LANGUAGE = "en"
+TASK = "transcribe"
 
 _model = None
 
@@ -34,8 +39,13 @@ def _transcribe_segments(audio_path: str) -> list[dict]:
     if _model is None:
         _model = whisper.load_model(WHISPER_MODEL)
     # without word times, segment times ignore silences and the pause rule never fires
-    result = _model.transcribe(audio_path, word_timestamps=True)
-    return result["segments"]
+    result = _model.transcribe(audio_path, word_timestamps=True, language=LANGUAGE, task=TASK)
+    # Whisper often joins several spoken lines into one segment, hiding the pauses between
+    # them (a real recording came back as 3 turns instead of 9). The words keep their own
+    # times, so the pause rule runs on single words instead.
+    words = [{"start": w["start"], "end": w["end"], "text": w["word"]}
+             for seg in result["segments"] for w in seg.get("words", [])]
+    return words or result["segments"]
 
 
 def segments_to_transcript(segments: list[dict],
@@ -83,4 +93,8 @@ if __name__ == "__main__":
     print(out)
     assert out.splitlines()[0] == "Speaker1: Let's kick off. First item is the budget."
     assert len(out.splitlines()) == 3
+    # word by word, as _transcribe_segments now returns them: one segment that hides a pause
+    words = [{"start": 0.0, "end": 0.5, "text": " Can"}, {"start": 0.5, "end": 1.0, "text": " you?"},
+             {"start": 3.0, "end": 3.4, "text": " Sure."}]
+    assert segments_to_transcript(words).splitlines() == ["Speaker1: Can you?", "Speaker2: Sure."]
     print("self-test passed")

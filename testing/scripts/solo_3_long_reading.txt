@@ -1,0 +1,57 @@
+# Solo audio test 3: a long reading, 50 short lines, read by ONE person (you play both people)
+#
+# Same rules as solo_1: read the words after the colon in your normal voice, stop for a
+# full 2 seconds between lines, and don't pause longer than half a second inside a line.
+# The lines are everyday meeting talk, not one story, so you can stop and start again.
+# About 5 minutes. Run:  python testing/solo_test.py --name YOURNAME --script solo_3
+# The label (dis/dec/act) and the name are not read out loud.
+dis  Sam: Good morning everyone, thanks for coming.
+dis  Lee: No problem, the room is a bit cold today.
+dis  Sam: The projector is working again, so we can start.
+dis  Lee: Great, I brought the printed agenda for everyone.
+dis  Sam: First topic is the end of semester dinner.
+dis  Lee: Last year about forty people turned up.
+dis  Sam: How about we book the cafeteria for Friday?
+dec  Lee: Sounds good.
+act  Sam: Can you call the cafeteria manager tomorrow?
+act  Lee: Sure, I'll call after lunch.
+dis  Sam: The budget for food is two hundred dollars.
+dis  Lee: Okay.
+dis  Sam: Should we ask the sponsors for more money?
+dis  Lee: I'd rather not, they already gave us a lot.
+dec  Sam: Okay, we'll stick with the two hundred dollars then.
+dis  Lee: The poster still needs a new design.
+act  Sam: Lee, please send the new design to the printer by Wednesday.
+act  Lee: Got it.
+dis  Sam: I sent the invitations yesterday.
+dis  Lee: Nice, did anyone reply yet?
+dis  Sam: Only five people so far.
+dis  Lee: That is a bit low.
+dec  Sam: Let's extend the sign up deadline to next Monday.
+dec  Lee: Agreed.
+dis  Sam: What time should we start?
+dis  Lee: I think seven is too late for the first years.
+dec  Sam: Okay, six thirty it is.
+act  Lee: I'll update the poster tonight.
+dis  Sam: Does anyone know where the keys are?
+dis  Lee: They are with the security desk.
+dis  Sam: Thanks, that helps.
+dis  Lee: The weather forecast says rain on Friday.
+dis  Sam: We should prepare a backup plan.
+dec  Lee: Let's move everything indoors just in case.
+act  Sam: Lee, could you check whether the hall is free?
+act  Lee: Yes, I will check this afternoon.
+dis  Sam: Our last event had some complaints about the sound.
+dis  Lee: Yeah, the speakers were too quiet.
+act  Sam: Someone has to borrow better speakers.
+act  Lee: Leave it with me.
+dec  Sam: The treasurer confirmed that we have enough money.
+dis  Lee: I don't think we need name tags.
+dis  Sam: Fair enough.
+dec  Lee: The venue is booked for the twentieth.
+dis  Sam: I'm not sure about the dessert.
+dis  Lee: We could ask people what they prefer.
+act  Sam: Please post a short poll in the group chat tonight.
+act  Lee: No problem.
+dis  Sam: That is all from me.
+dec  Lee: Great, let's end here and meet again next Thursday.

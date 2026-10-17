@@ -12,13 +12,15 @@ Everything for the testing phase in one place: what to run, the scripts to read 
 
 ## Quick start: test it on your own
 
-You need Python with the repo's requirements, plus Whisper, a microphone library and ffmpeg:
+You need Python, plus Whisper, a microphone library and ffmpeg. Run these from the repo folder (`python -m pip` works even when `pip` alone isn't found):
 
 ```
-pip install -r requirements.txt
-pip install openai-whisper sounddevice
-winget install --id Gyan.FFmpeg -e        (Windows; Mac: brew install ffmpeg)
+python -m pip install -r requirements.txt
+python -m pip install openai-whisper sounddevice
+winget install --id Gyan.FFmpeg -e
 ```
+
+The last line is for Windows; on a Mac use `brew install ffmpeg`. Reopen the terminal afterwards so ffmpeg is found. Whisper pulls in PyTorch, so the install is a few GB.
 
 Then, from the repo folder:
 
@@ -34,7 +36,7 @@ Recorded on your phone instead? Read [`scripts/solo_1_sample_meeting.txt`](scrip
 python testing/solo_test.py --name Asy --file my_recording.m4a
 ```
 
-Add `--script solo_2` for the second, harder script.
+Add `--script solo_2` for the second, harder script, or `--script solo_3` for a long reading of 50 short everyday lines (about 5 minutes).
 
 Recordings (`.wav`, `.m4a`, `.mp3`) stay on your computer: `testing/.gitignore` keeps them out of git. Only the text result is pushed.
 
@@ -47,7 +49,7 @@ Recordings (`.wav`, `.m4a`, `.mp3`) stay on your computer: `testing/.gitignore` 
 | `testing.md` | This page: how to run each test, and all the results |
 | [`model_update_16oct/`](model_update_16oct/model_update.md) | The 16 Oct model update: the rule, what shipped, what was tried, every score |
 | [`solo_test.py`](solo_test.py) | The individual test: records one person (or checks a recording), runs the audio check, saves the result |
-| [`scripts/`](scripts/) | The 8 scripts to read aloud: `solo_1`, `solo_2` (one person) and `1`-`6` (two or three people) |
+| [`scripts/`](scripts/) | The 9 scripts to read aloud: `solo_1`, `solo_2`, `solo_3` (one person) and `1`-`6` (two or three people) |
 | [`testing script.md`](testing%20script.md) | The 67 meeting tests with the minutes each one should produce |
 | [`results/claude/`](results/claude/) | Every result from Claude's side, one file per run |
 | [`results/manual/`](results/manual/) | Results from manual runs by the team (filled in by `solo_test.py`) |
@@ -144,7 +146,17 @@ Add a row for every manual run. `solo_test.py` saves the result file; link it he
 
 | Date | Who | Test | Recording | transcriber | end to end | Result file |
 |---|---|---|---|---|---|---|
-| | | | | | | *none yet* |
+| 17 Oct | Asy | Solo `solo_1`, microphone, guided | `base`, old pause rule | FAIL (3 of 9 turns, 60% of words) | FAIL | [file](results/manual/Asy_solo_1_sample_meeting_2026-10-17_1810.txt) |
+| 17 Oct | Asy | Same recording re-scored after the fixes below | `small` (multilingual, English forced), word-level pauses | FAIL (9 of 9 turns, 71% of words: only the words fail) | FAIL (labels and minutes match) | not saved: a re-score of the line above |
+
+**What the first manual run found (17 Oct), and what was changed:**
+- Whisper guessed the language from a Malaysian accent and wrote Malay, which was also very slow. Fixed: `transcriber.py` now says `language="en"`.
+- Whisper joined several spoken lines into one segment, so the 0.8 s pause rule saw 3 turns instead of 9. Fixed: the rule now runs on single words, which keep their own times (9 of 9 turns on the same recording).
+- The `base` model heard 60% of the words ("catering" as "Patterning"); `small` hears 71% and got the labels and minutes right (a 461 MB download; 36 s for this 73 s recording on a laptop CPU, against 15 s for `base`).
+- **English only, hard-set (17 Oct):** `transcriber.py` now uses `small.en`, a Whisper model trained on English alone, so it cannot write another language, plus `language="en"` and `task="transcribe"` so nothing is guessed or translated. On Asy's recording it hears the same 71% of the words as `small`. On a clean synthetic reading of `solo_1` (Windows voice Hazel, 2 s gaps) it hears **98%** and nothing but English.
+- **Open problem: in-line pauses.** The pause rule splits at 0.8 s, so a pause at a full stop inside a line becomes a new turn (Hazel: 12 turns heard for 9; Asy's recording: 11). Measured gaps: pauses inside a line were at most 1.1 s, gaps between lines at least 2.3 s (Hazel) and 3.2 s (Asy). A solo-test threshold of about 1.5 s would separate them; it is not applied, because pair conversations need the shorter rule (see Pause rule limits).
+- Tried and dropped: finding pauses from the audio's volume (worse), and a vocabulary hint to Whisper (+4 points of words, but 13 times slower).
+- Still failing: the 90% word bar. Some misses are the model ("I'll email them" heard as "I will be more than"), some are spelling ("Q3" against "quarter three", "8%" against "8,000"), which the word counter treats as errors. For participants with thick accents, `medium` is the next size up (about 1.5 GB, slower); it was not tested.
 
 When the first row shows `transcriber: PASS` for a real person, tick "Real transcriber swap" in `progress.md`.
 

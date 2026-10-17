@@ -24,6 +24,12 @@ Needs: pip install openai-whisper (and ffmpeg). For the microphone mode also
 pip install sounddevice; without it, record on your phone and use --file.
 """
 
+import os
+
+# Anaconda on Windows can load two copies of the OpenMP library (numpy and torch), which stops
+# the run with "OMP: Error #15" after the transcript. This lets it carry on.
+os.environ.setdefault("KMP_DUPLICATE_LIB_OK", "TRUE")
+
 import argparse
 import contextlib
 import datetime

@@ -1,0 +1,46 @@
+Solo audio test -- Asy, 17 Oct 2026 18:12
+Script:    testing\scripts\solo_1_sample_meeting.txt
+Recording: Asy_solo_1_sample_meeting_2026-10-17_1810.wav (microphone, guided)
+Whisper:   openai-whisper 20250625, model 'base'; Python 3.12.7 on Windows
+
+Heard (what Whisper and the pause rule produced):
+  Speaker1: Let's kick off. First item is the quarter three budget review. I've sent in number so we're currently 8 to 100 budget. Let's skip monitor in that. Next, the workshop venue. Well the venue is confirmed for the 14th. Patterning is still pending. Can you follow up with Patterning on my Friday?
+  Speaker2: Yes, I will email them today. Great last item. Get back from the last
+  Speaker1: session. Well mostly positive a few people want more hands on time though. Note it. Let's add the three next agenda meeting at your.
+
+Script: solo_1_sample_meeting.txt
+
+  Said:
+    Speaker1: Let's kick off. First item is the Q3 budget review.
+    Speaker2: I've sent the numbers over, we're currently 8% under budget.
+    Speaker1: Good, let's keep monitoring that. Next, the workshop venue.
+    Speaker2: Venue is confirmed for the 14th, catering still pending.
+    Speaker1: Can you follow up with catering by Friday?
+    Speaker2: Yes, I'll email them today.
+    Speaker1: Great, last item, feedback from the last session.
+    Speaker2: Mostly positive, a few people wanted more hands-on time.
+    Speaker1: Noted, let's add that to the next agenda. Meeting adjourned.
+  Heard:
+    Speaker1: Let's kick off. First item is the quarter three budget review. I've sent in number so we're currently 8 to 100 budget. Let's skip monitor in that. Next, the workshop venue. Well the venue is confirmed for the 14th. Patterning is still pending. Can you follow up with Patterning on my Friday?
+    Speaker2: Yes, I will email them today. Great last item. Get back from the last
+    Speaker1: session. Well mostly positive a few people want more hands on time though. Note it. Let's add the three next agenda meeting at your.
+
+  Turns     FAIL  said 9, heard 3: merged (fewer turns)
+  Speakers  FAIL  pattern differs
+  Words     FAIL  60% of the script's words heard (need 90%)
+  Labels    FAIL  can't compare turn by turn
+  Minutes   FAIL  differ (below)
+
+  Minutes from the typed script:
+    ## Decisions
+    - (none)
+    ## Action Items
+    - [ ] Follow up with catering by Friday -- Speaker2 (due Friday)
+  Minutes from the audio:
+    ## Decisions
+    - (none)
+    ## Action Items
+    - [ ] Follow up with Patterning on my Friday -- Speaker2
+
+FAIL  transcriber: the audio did not become the script's turns, speakers and words (Turns / Speakers / Words above)
+FAIL  end to end:  can't pass until the transcriber line passes
