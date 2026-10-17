@@ -1,10 +1,34 @@
 # Facilitator page: the hook (Agenda item 1, 00:00-00:08)
 
-Script, key and this whole plan were revised on 17 Oct 2026 (see
-`ATTEMPTS.md` for the full history, including why the first version was
-replaced). The script was chosen after seeing how the model reads it
-(Rule H, `plan/RULES.md`): `demo/script.txt` is the orchestrator session's
-script, independently re-run and re-verified here, not reworded further.
+The first script and key (`6b7424c`) were committed before any model run.
+The final script and key (this version) were drafted by the PM with model
+feedback during drafting, and the key was fixed from a plain reading of
+each draft, never bent to match the model -- see `ATTEMPTS.md` for the full
+history, both this session's own rewording of the superseded first script
+and the PM's attempts on the final one.
+
+Both decisions in the demo are phrased as agreement to a proposal
+("Sounds good") -- this scores 0.77 and 0.60 for `decision` in the
+model's own confidence, independently re-derived in `HANDOFF-WP1.md`.
+Plain-fact decisions ("Venue is confirmed for the 14th") are the model's
+known weak spot and are deliberately **not** in this demo -- see
+`labelling_guide.md` and `plan/SPEC.md`'s tensions list.
+
+## Pre-session rehearsal checklist
+
+- [ ] Rehearse the live skit with the two people who will act it out: one
+  sentence per turn, a clear ~2-second pause before the other person
+  speaks, don't overlap (see "Pacing" below -- this has not been tested
+  end to end, only the backup WAV has).
+- [ ] Record that rehearsal on a phone, then run
+  `python prototype/demo.py your_recording.wav` and check it against
+  `demo/ANSWER_KEY.md`.
+- [ ] If the rehearsal doesn't match the key, use the backup WAV on the
+  day instead -- it is the one path that has actually been verified
+  end to end (see `HANDOFF-WP1.md`).
+- [ ] Run cell 1 of `demo/hook_demo.ipynb` before the session (preloads
+  Whisper -- slow the first time).
+- [ ] `python prototype/run_tests.py` says `0 failed`.
 
 ## What to say
 
@@ -13,12 +37,30 @@ script, independently re-run and re-verified here, not reworded further.
 2. Run the skit live (two presenters read `demo/script.txt` as Mei and
    Ravi), recorded from the browser mic in `demo/hook_demo.ipynb`
    (facilitator notebook, cells 2-3), or play `demo/backup_meeting.wav` if
-   nobody can act it out.
+   nobody can act it out or the live path hasn't been rehearsed.
+   **Pacing:** one sentence per turn; leave a clear ~2-second pause before
+   the other person speaks; don't overlap. (Not "normal pace" -- the
+   transcriber splits speakers on a gap of 1.5 seconds or more, so a
+   natural, quick back-and-forth gets heard as one person and the minutes'
+   owners come out wrong. See `ATTEMPTS.md`'s backup-WAV attempts for why.)
+
+   **The live-skit path is untested until the team rehearses it** (see the
+   checklist above: two people, a phone recording, then
+   `python prototype/demo.py <file>`). Until that rehearsal happens and
+   passes, **the backup WAV is the safe route** for the actual event.
 3. Let the room call out the decisions and to-dos. Don't correct them yet.
 4. **Press one button** (`demo/hook_demo.ipynb` cell 3, or on a laptop:
    `python prototype/demo.py skit.wav`).
 5. Read the printed minutes against what the room called out
-   (`demo/ANSWER_KEY.md` has the reference list).
+   (`demo/ANSWER_KEY.md` has the reference list). Two things to expect,
+   both harmless:
+   - Whisper may write "T-shirts" as "t -shirts" in the audio runs (the
+     typed-text run says "T-shirts"). That is the speech-to-text stage
+     rendering a word oddly, not the minutes model -- no need to explain
+     it unless someone asks.
+   - The action items keep the full spoken sentence ("I'll send the order
+     form to everyone tonight.") rather than the key's shorter phrasing
+     ("Send the order form to everyone") -- same item, just not trimmed.
 6. Close with the two "Sure." exchanges, read aloud (not run through the
    app on stage -- see "The two Sure. exchanges" below):
    - "Can you book the room?" "Sure."
@@ -29,8 +71,10 @@ script, independently re-run and re-verified here, not reworded further.
 
 ## Running it: Colab (primary) or laptop (fallback)
 
-**Colab, `demo/hook_demo.ipynb`** (facilitator-only -- not the participants'
-notebook, which only has a one-line pointer to this file):
+**Colab, `demo/hook_demo.ipynb`** (facilitator-only -- hand out
+`workshop_files.zip` to participants only *after* the hook, so nobody sees
+`demo/script.txt` -- or the answer key, which is kept out of the zip
+entirely -- before being asked to call out the decisions and to-dos):
 - Cell 1, **before the session starts**: installs Whisper, unzips
   `workshop_files.zip`, and preloads the `medium.en` model (slow the first
   time -- do this ahead of time, not live).
@@ -42,30 +86,42 @@ notebook, which only has a one-line pointer to this file):
 
 **Laptop fallback (no internet / Colab unavailable):** record the skit any
 way you like (phone, laptop mic) and run
-`python prototype/demo.py your_recording.wav`. If Whisper's default
-`medium.en` is too slow or can't download on the day, set
-`WHISPER_MODEL=small.en` first -- this was tested on the backup WAV and
-gets the same result (see `ATTEMPTS.md` and `HANDOFF-WP1.md`).
+`python prototype/demo.py your_recording.wav`. `medium.en` on a laptop CPU
+is slow -- timed on the backup WAV (53.5s of audio) with nothing else
+running: `medium.en` 2 min 56 s, `small.en` 1 min 7 s (see `HANDOFF-WP1.md`
+for the exact commands). **`medium.en` is well over 60 seconds on a laptop
+CPU, so the laptop fallback should use `small.en`** (`WHISPER_MODEL=small.en
+python prototype/demo.py your_recording.wav`) -- this gets the exact same
+result as `medium.en`, just faster.
 
 ## If the minutes differ from the room's list
 
-The default text run (`python prototype/demo.py`) and the audio runs (live
-skit's backup WAV, both `medium.en` and `small.en`, `pause_gap=1.5`) all
-match the answer key exactly (10/10 turns, both decisions, both action
-items, correct owners and deadlines -- see `HANDOFF-WP1.md`). If something
-still looks off on the day:
+The default text run (`python prototype/demo.py`) and the backup-WAV runs
+(both `medium.en` and `small.en`, `pause_gap=1.5`) all match the answer key
+(10/10 turns, both decisions, both action items, correct owners and
+deadlines -- see `HANDOFF-WP1.md`; "match" there means the standard check's
+80%-word-similar comparison, not byte-identical text, so small wording
+differences like the two in step 5 above are expected and fine). If
+something still looks off on the day:
 
 - **An item the room called out is missing, or an extra item appears:**
   say so plainly -- "the model isn't perfect, here's a case where a human
   still beats it" -- and move on.
 - **The live skit doesn't come out right:** the model needs the two
-  speakers to strictly alternate turns, in one sentence each (no internal
-  full stop) -- see `demo/script.txt`'s header and `ATTEMPTS.md` for why.
-  If a turn gets skipped, merged or split while acting it out, re-run with
-  the backup WAV instead (cell 4, or
-  `python prototype/demo.py demo/backup_meeting.wav`).
+  speakers to strictly alternate turns, one sentence each, with the ~2 s
+  pause from the Pacing note above. If a turn gets skipped, merged or
+  split while acting it out, re-run with the backup WAV instead (cell 4,
+  or `python prototype/demo.py demo/backup_meeting.wav`).
 - **Nobody can act it out at all:** use the backup WAV (cell 4) instead of
   skipping the skit.
+
+## Timing
+
+The script is 68 spoken words -- about 25-30 s read straight through. With
+the required ~2 s pauses between all nine speaker changes, the full skit
+runs about 50 s, close to the Agenda's "~1 minute". The backup WAV itself
+runs 53.5 s for the same reason (2.0 s silences between turns, not just
+pauses in speech).
 
 ## The backup WAV
 
@@ -76,6 +132,7 @@ over the `pause_gap=1.5` the demo uses for real two-person speech (not
 `transcriber.py`'s untested-on-two-people 0.8 s default). Made with
 `demo/make_backup_wav.py`; see that file's docstring for exactly how, and
 `HANDOFF-WP1.md` for the full, honest result of running it through Whisper.
+This is currently the only path that has been run and verified end to end.
 
 ## The two "Sure." exchanges
 

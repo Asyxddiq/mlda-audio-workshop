@@ -87,9 +87,25 @@ the script was replaced for unrelated (product-scope) reasons.
 
 From the orchestrator session, independently re-verified here.
 
+### PM attempts (reported by the orchestrator, not re-run here)
+
+Per Rule H, every attempt must be listed with what changed and the result.
+These four are the PM's own drafting attempts, reported by the PM and not
+independently reproduced in this session -- only the final, adopted script
+(below) was re-run here. The key was never changed to fit any of these; it
+was written from a plain reading of each draft.
+
+| # | What changed | Result |
+|---|---|---|
+| PM-1 | 11-turn draft: turn 3/4 "Should we go with the 21st so we have more time to practise?" / "Sounds good."; turn 9 "Agreed, black it is."; turn 10 "I'll send the order form to everyone tonight." | 10/11. Turn 4 -> `discussion` (should be `decision`). |
+| PM-2 | Turn 3/4 wording variants tried on the 11-turn draft: "Should we move the showcase to the 21st?" / "Sounds good." -> 11/11; "...to the 21st so we have more time?" / "Sounds good." -> 10/11 (turn 4 missed); "How about the 21st, so we have more time to practise?" / "Sounds good, let's do the 21st." -> 11/11; "Should we go with the 21st...?" / "Sounds good, let's go with the 21st." -> 11/11; "...?" / "Agreed, the 21st it is." -> 11/11; "Should we hold the showcase on the 21st?" / "Sounds good." -> 11/11. | Chose the last ("Should we hold the showcase on the 21st?" / "Sounds good.") for the cleanest minutes line: "Hold the showcase on the 21st (agreed)". |
+| PM-3 | Restructured to 10 turns so each actor owns one to-do; second decision/to-do wording variants: "Should we get black ones?" / "Sounds good, white gets dirty too fast." -> 10/10; "Should we get black ones this year?" / "Yes, black is better, white gets dirty too fast." -> 9/10 (turn 8 -> `discussion`); "Black or white?" / "Black, white gets dirty too fast." / "Agreed, we'll go with black T-shirts." / "Okay." (12 turns) -> 11/12 (the extra "Okay." -> `decision`); "Should we order black ones?" / "Sounds good." -> 10/10; "How about black this year?" / "Sounds good, white gets dirty too fast." -> 9/10 (turn 8 missed). | Narrowed to the two 10/10 variants. |
+| PM-4 | "ones" -> "black T-shirts" in the chosen wording, for a clearer minutes line. This is the final script. | 10/10. Robustness checked: still 10/10 with punctuation stripped, every "?" changed to ".", "I'll" -> "I will", dates spelled out, lowercased, and "T-shirts" -> "t shirts". Decision confidence 0.77 (turn 4) / 0.60 (turn 8). |
+
+### This session's own re-verification
+
 | # | Command | Result |
 |---|---|---|
-| orchestrator's 4 attempts (not re-run; see its message for exact wording tried and discarded) | -- | Reported by the orchestrator, not independently reproduced -- only its final, adopted script was re-run here. |
 | final script, text mode | `python prototype/pipeline.py --compare --text demo/script.txt` | 10/10 matches the hand label. Minutes: 2 decisions, 2 action items, matching `ANSWER_KEY.md` exactly. |
 | decision-confidence check | `python -c "..."` using `lstm_model.label_probabilities` (see `HANDOFF-WP1.md` for the full command) | Turn 4 ("Sounds good.") 0.774 decision; turn 8 ("Sounds good, white gets dirty too fast.") 0.603 decision. Matches the orchestrator's claimed 0.77 / 0.60. Turn 8's margin over `discussion` (0.603 vs 0.387) is thinner than turn 4's, but still decisive; kept as-is rather than trying more wordings, since the orchestrator had already tried several worse ones and this preserves the most natural line. |
 

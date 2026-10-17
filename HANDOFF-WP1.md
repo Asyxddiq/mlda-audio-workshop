@@ -2,12 +2,15 @@
 
 **Branch:** `claude/build-workshop-gaps-756dec` (the label `build/workshop-gaps`
 in `plan/`, `plan/WORK_PACKAGES.md`, etc. refers to this branch).
-**Last commit:** `6b7424c` (WP1: mock CCA meeting script + answer key). Per a
-mid-task direction (see "A note on process" below, confirmed by Asy), this
-session did **not** commit anything after that: every file below is in the
-working tree, uncommitted, for the orchestrator session to review and commit.
-**Status:** all of D1-D6 done and verified; see "Not done / open" at the end
-for the few things still outside this session's scope or verification reach.
+**Committed by the orchestrator as `efa5fd0`** (WP1: hook demo with
+one-button runner, facilitator notebook and backup WAV), on top of this
+session's own `6b7424c`. Per the orchestration protocol (see "A note on
+process" below, confirmed by Asy): the orchestrator alone commits; this
+session doesn't. Round 2 (below) addresses the reviewer's findings on
+`efa5fd0` and is, again, left uncommitted for the orchestrator.
+**Status:** Round 1 covered all of D1-D6; Round 2 below fixes every blocker
+and should-fix the reviewer found. See "Not done / open" for what's still
+outside this session's scope or verification reach.
 
 ---
 
@@ -154,9 +157,22 @@ probs = label_probabilities(turns, trained)
 
 Matches the orchestrator's claimed 0.77 / 0.60. Turn 8's margin is thinner
 than turn 4's but still clearly decisive; kept as-is rather than trying
-more wordings (several were already tried and discarded -- see
-`demo/ATTEMPTS.md`), since this phrasing is the most natural of the
-options tried.
+more wordings, since this phrasing is the most natural of the options
+tried.
+
+### PM attempts (reported by the orchestrator, not re-run here)
+
+Full table in `demo/ATTEMPTS.md`; summary (every attempt the PM reported
+trying before the final script, per Rule H):
+
+| # | What changed | Result |
+|---|---|---|
+| PM-1 | 11-turn draft, turn 3/4 "...so we have more time to practise?" / "Sounds good."; turn 9 "Agreed, black it is." | 10/11 -- turn 4 -> `discussion` |
+| PM-2 | Six turn-3/4 wording variants on the 11-turn draft | Four reached 11/11; chose "Should we hold the showcase on the 21st?" / "Sounds good." for the cleanest minutes line |
+| PM-3 | Restructured to 10 turns (one to-do per actor); six second-decision wordings tried | Two reached 10/10; narrowed to those |
+| PM-4 | "ones" -> "black T-shirts" for a clearer minutes line -- the final script | 10/10. Robust to punctuation/case/date/contraction changes (checked by the PM). Decision confidence 0.77 / 0.60 (independently re-derived above as 0.774 / 0.603). |
+
+The key was never changed to fit any of these attempts.
 
 ---
 
@@ -234,8 +250,13 @@ Minutes match: True
 hand label match: 10/10
 ```
 
-Both models pass fully, word-for-word same labels and minutes as the typed
-script.
+Both models pass fully, same labels on every turn. "Minutes match: True"
+uses `audio_check.py`'s own `same_minutes()`, which accepts items that are
+at least 80% word-similar (`prototype/audio_check.py:104-116`), not
+byte-identical text -- so this means the same decisions and action items,
+same owners and due dates, worded close enough to be clearly the same
+item, not that the two Markdown strings are identical (they aren't: see
+"t -shirts" below).
 
 ### `prototype/demo.py` itself, on the backup WAV
 
@@ -304,12 +325,13 @@ and no error (no leak detected).
 ## `notebook/make_bundle.py` and the bundled zip
 
 Added `demo.py` to the `prototype/` bundle list and a new `demo/` list
-(`script.txt`, `ANSWER_KEY.md`, `backup_meeting.wav`) so `demo/hook_demo.ipynb`
-and `prototype/demo.py` work from `workshop_files.zip` alone in Colab.
+(`script.txt`, `backup_meeting.wav` -- **not** `ANSWER_KEY.md`, see Round 2
+finding 6) so `demo/hook_demo.ipynb` and `prototype/demo.py` work from
+`workshop_files.zip` alone in Colab.
 
 ```
 $ python notebook/make_bundle.py
-wrote .../notebook/workshop_files.zip (2.6 MB, 18 files)
+wrote .../notebook/workshop_files.zip (2.6 MB, 17 files)
 ```
 
 (`workshop_files.zip` is gitignored -- rebuilt, not committed, as before.)
@@ -335,3 +357,149 @@ wrote .../notebook/workshop_files.zip (2.6 MB, 18 files)
   directly (not through the preload cell) on this machine.
 - Nothing else in WP1's deliverable list (see `plan/WORK_PACKAGES.md`) is
   outstanding.
+
+---
+
+## Round 2 (review verdict: CHANGES on `efa5fd0`)
+
+Reviewer's findings: `git show claude/review-workshop-gaps-53e548:reviews/WP1.md`.
+Orchestrator's decisions on each finding, applied below, all independently
+verified by this session (not copied from either message). Nothing
+committed -- same protocol as Round 1 (orchestrator commits, this session
+doesn't).
+
+| # | Finding | Fix applied | Verified |
+|---|---|---|---|
+| 1 (blocker) | `hook_demo.ipynb` cell 8 (backup) used `run_demo`/`Markdown`/`display`, imported only in cell 6 -- `NameError` if cell 6 never ran | Moved all three imports into the setup cell (cell 2), so both cell 6 and cell 8 work on their own | Simulated fresh-kernel: ran the setup cell's imports only, then confirmed `run_demo` was defined before cell 8's code runs (below) |
+| 2 (blocker) | "Normal pace" in `script.txt`, `FACILITATOR.md`, `hook_demo.ipynb` cell 0 doesn't say to leave the ~2s gap `pause_gap=1.5` needs | Replaced with "one sentence per turn; leave a clear ~2-second pause before the other person speaks; don't overlap" in all three places. `FACILITATOR.md` now states plainly the live-skit path is untested until rehearsed, and the backup WAV is the safe route. Added a pre-session rehearsal checklist. | Re-read all three files after editing; `demo/script.txt` still parses and matches the key (below) |
+| 3 (blocker) | PM's 4 drafting attempts not listed (Rule H) | Added a "PM attempts" table to `demo/ATTEMPTS.md` (full) and this handoff (summary), marked "reported by the orchestrator, not re-run here" | N/A -- transcription of the orchestrator's own report, not a claim this session verified |
+| 4 (blocker) | `progress.md`/`ANSWER_KEY.md` implied the final script+key were committed before any model run, and that the script "changed once" | Reworded both: the *first* script/key were pre-model (`6b7424c`); the *final* PM script was drafted with model feedback and the key fixed from a plain reading; this session's own two rewordings plus the PM's four attempts are now explicit | Re-read both files after editing |
+| 5 (should-fix) | "t -shirts" vs "T-shirts" unexplained; handoff's "Minutes match: True" implies exact text | Added a facilitator line (no post-processing, no rewording) and softened the handoff wording to explain the 80%-word-similar check | Re-read `FACILITATOR.md` and this handoff |
+| 6 (should-fix) | Participants' notebook had a full demo cell, docs said "one-line pointer"; bundle shipped the answer key to every participant | Restored `notebook/audio_workshop.ipynb` to its exact pre-WP1 content (`git checkout 0a67bbc -- notebook/audio_workshop.ipynb`); dropped `ANSWER_KEY.md` from `make_bundle.py`'s `DEMO` list; fixed `demo.py`'s print message (no longer names a file participants lack); `FACILITATOR.md` now says to hand out the zip only after the hook | `git diff --stat main -- notebook/audio_workshop.ipynb` -> empty (exact match to `main`); rebuilt the zip, 17 files (was 18) |
+| 7 (should-fix) | D1's "~1 minute" unstated for the script's actual length | Added a Timing section to `FACILITATOR.md`: 68 words / ~25-30s read straight, ~50s with the required pauses | No script change (as the reviewer suggested keeping) |
+| 8 (nit) | `hook_demo.ipynb` cells 6/8 printed the banner AND `display(Markdown(...))` | Added `banner: bool = True` to `run_demo()`; notebook cells now call `run_demo(path, banner=False)`, laptop CLI keeps the banner | Ran `run_demo(backup_path, banner=False)` directly -- banner suppressed, `display(Markdown(...))` still gets the minutes (below) |
+| 9 (nit) | `record_skit()` hid ffmpeg's stderr on failure; never stopped the mic stream | Print `result.stderr` before raising on a non-zero ffmpeg exit; `micStream.getTracks().forEach(t => t.stop())` after `recorder.stop()` | Read-through only -- can't exercise Colab's mic/ffmpeg from here |
+| 10 (nit) | Handoff header said nothing was committed; it was (`efa5fd0`) | Header rewritten | This section |
+| 11 (nit) | Unicode-escape noise in the notebook diff | Gone automatically -- `audio_workshop.ipynb` restored byte-for-byte to `main` (fix 6) | Same `git diff --stat` as fix 6 |
+| 12 (nit) | No laptop timing for the fallback | Timed both models on the backup WAV, nothing else running | `medium.en` 2m55.8s, `small.en` 1m6.5s (below) -- added to `FACILITATOR.md`, with the guidance to use `small.en` as the live fallback |
+
+### Verification commands and output
+
+**`run_tests.py`:**
+```
+$ python prototype/run_tests.py
+PASS  a. imports                  11 modules import  (0.4s)
+PASS  b. weights                  5 members, labels discussion / decision / action_item  (0.0s)
+PASS  c. shipped KPIs reproduce   dev 0.96/0.948, test 0.84/0.825, 36-turn test 0.86/0.853, sample 7/9, probes 9/12  (10.1s)
+PASS  d. demo minutes             no decisions, one action item (catering by Friday, Priya)  (0.5s)
+PASS  e. --text example           runs, model matches the hand labels 7/7  (0.9s)
+PASS  f. hands-on                 solution: both parts OK, 35/45 at knob 0; unfilled version says 'not written yet'  (3.5s)
+PASS  g. training data            leak checks pass  (6.0s)
+PASS  h. scorecard                frozen scorecard runs (hash ignores line endings)  (3.5s)
+PASS  i. smoke runs               5 scripts exit 0  (8.8s)
+PASS  j. text clean-up            text clean-up: 31/31 clean-up checks pass  (1.7s)
+PASS  k. holdout meetings         holdout 1 0.879/0.806, holdout 2 0.852/0.762 (accuracy / macro-F1)  (12.2s)
+SKIP  l. audio (optional)         no --audio FILE given  (0.0s)
+PASS  m. repo unchanged           git status and git diff identical before and after  (0.1s)
+
+12 passed, 0 failed, 1 skipped in 48.0 s
+```
+
+**Frozen-file check** (`reviews/check_frozen.sh` is on the reviewer's branch,
+not in this worktree -- used the same `git diff --stat` check as Round 1):
+```
+$ git diff --stat main -- prototype/trained_lstm.npz training_data.py scorecard_data.py \
+    holdout_data.py minutes_tests.py normalise_tests.py lstm_model.py train_lstm.py \
+    meeting_minutes.py transcriber.py hands_on_reference.py testing/ prototype/hands_on.py
+(no output -- nothing frozen was touched)
+```
+
+**Participants' notebook restored exactly:**
+```
+$ git checkout 0a67bbc -- notebook/audio_workshop.ipynb
+$ git diff --stat main -- notebook/audio_workshop.ipynb
+(no output -- byte-for-byte match to main)
+```
+
+**Text demo, unchanged:**
+```
+$ python prototype/demo.py
+...
+## Decisions
+- Hold the showcase on the 21st (agreed)
+- Get black T-shirts (agreed)
+
+## Action Items
+- [ ] Book the hall by Friday -- Ravi (due Friday)
+- [ ] I'll send the order form to everyone tonight. -- Mei (due tonight)
+```
+
+**`banner=False` fix (finding 8), verified directly:**
+```
+$ python -c "
+import sys; sys.path.insert(0, 'prototype')
+import os, whisper, transcriber
+transcriber._model = whisper.load_model(transcriber.WHISPER_MODEL)
+from demo import run_demo
+backup_path = 'demo/backup_meeting.wav'
+minutes = run_demo(backup_path, banner=False)
+print(minutes)
+"
+```
+Output: no banner box printed, `minutes` itself is the plain Markdown
+string (same content as below) -- confirms `hook_demo.ipynb` cells 6/8's
+`display(Markdown(minutes))` is now the only rendering, not a duplicate.
+
+**Cell-8-standalone fix (finding 1), verified by simulating a fresh kernel
+(setup-cell imports only, then straight to the backup cell's code):**
+```
+$ python -c "
+import os, sys; sys.path.insert(0, 'prototype')
+import whisper, transcriber
+transcriber._model = None
+from demo import run_demo
+from IPython.display import Markdown, display
+print('setup-cell imports OK')
+backup_path = next(p for p in ('demo/backup_meeting.wav', '../demo/backup_meeting.wav') if os.path.isfile(p))
+print('run_demo defined before cell 8 runs:', 'run_demo' in dir())
+"
+setup-cell imports OK
+run_demo defined before cell 8 runs: True
+```
+(Before the fix, this would `NameError` -- `run_demo` was only imported in
+cell 6.)
+
+**Laptop fallback timing (finding 12), backup WAV, nothing else running:**
+```
+$ time python prototype/demo.py demo/backup_meeting.wav
+... (medium.en, default)
+real    2m55.784s
+
+$ WHISPER_MODEL=small.en time python prototype/demo.py demo/backup_meeting.wav
+... (small.en)
+real    1m6.517s
+```
+Both produce identical minutes to the text-mode run above (Decisions:
+"Hold the showcase on the 21st (agreed)", "Get black t -shirts (agreed)";
+Action Items: "Book the hall by Friday -- Ravi (due Friday)", "I'll send
+the order form to everyone tonight. -- Mei (due tonight)"). `medium.en` is
+well over 60s, so `FACILITATOR.md` now says to use `small.en` for the
+laptop fallback.
+
+**Bundle, 17 files (was 18 -- `ANSWER_KEY.md` dropped, finding 6):**
+```
+$ python notebook/make_bundle.py
+wrote .../notebook/workshop_files.zip (2.6 MB, 17 files)
+```
+
+### Not re-verified (same reasons as Round 1)
+
+Findings 1 and 9's full Colab/browser-mic behaviour (the actual
+`eval_js`/MediaRecorder flow, the ffmpeg subprocess inside Colab) cannot be
+exercised from this session -- fixes were applied by reading the code
+through carefully and, for finding 1, by simulating the import order in a
+fresh interpreter (above). The reviewer's own commands/output quoted in
+`reviews/WP1.md` (`git show claude/review-workshop-gaps-53e548:reviews/WP1.md`)
+reproduced everything else in Round 1 independently; this session trusts
+that re-reading rather than re-running it a third time, except where the
+fix itself needed a fresh run (above).

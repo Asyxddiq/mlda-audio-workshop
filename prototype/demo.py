@@ -13,9 +13,9 @@ boxed banner) instead of pipeline.py's three-stage log, which is for
 debugging, not for an audience.
 
 Runs on a laptop (this file, from the command line) or in Colab
-(`demo/hook_demo.ipynb`, the facilitator-only notebook -- not the
-participants' notebook, which only gets one short cell pointing at this
-file; see RULES.md's "where the builder may write").
+(`demo/hook_demo.ipynb`, the facilitator-only notebook -- the participants'
+notebook does not call this file at all; see RULES.md's "where the builder
+may write").
 
 Two audio-specific choices, both from the 17 Oct PM direction (see
 demo/ATTEMPTS.md):
@@ -90,12 +90,18 @@ def run_from_audio(audio_path: str, pause_gap: float = PAUSE_GAP,
     return generate_minutes(turns, labels)
 
 
-def run_demo(source: str | None = None) -> str:
+def run_demo(source: str | None = None, banner: bool = True) -> str:
     """Run the full pipeline on `source` (a WAV, or a text script) and print
     the minutes large and readable. Returns the minutes Markdown.
 
     `source=None` (the default, and what a bare `python prototype/demo.py`
     does) uses demo/script.txt -- the committed, answer-keyed mock meeting.
+
+    `banner=False` (used by demo/hook_demo.ipynb) skips the boxed-text
+    printout: the notebook shows the minutes once, large, with
+    `IPython.display.Markdown` instead -- printing both was finding 8 in
+    the WP1 review. The laptop command keeps the banner (no notebook
+    rendering there).
     """
     from pipeline import run
 
@@ -111,9 +117,9 @@ def run_demo(source: str | None = None) -> str:
     else:
         minutes = run(text=source, verbose=False)
 
-    print(_banner(minutes))
-    print("\nCompare this with what the room called out -- see demo/ANSWER_KEY.md "
-          "and demo/FACILITATOR.md.")
+    if banner:
+        print(_banner(minutes))
+        print("\nCompare this with what the room called out.")
     return minutes
 
 

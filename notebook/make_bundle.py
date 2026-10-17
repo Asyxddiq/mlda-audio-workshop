@@ -16,9 +16,13 @@ PROTOTYPE = ["audio_check.py", "audio_features.py", "demo.py", "hands_on.py", "h
              "lstm_model.py", "meeting_minutes.py", "pipeline.py", "rnn_ctc_demo.py", "training_data.py",
              "transcriber.py", "transcript_placeholder.py", "trained_lstm.npz"]
 AUDIO = ["sample_meeting.wav", "sample_short.wav"]
-# The hook demo (D1-D6): the script, its answer key and the two-voice backup
-# WAV, so demo/hook_demo.ipynb and prototype/demo.py work from the zip alone.
-DEMO = ["script.txt", "ANSWER_KEY.md", "backup_meeting.wav"]
+# The hook demo (D1-D6): the script and the two-voice backup WAV, so
+# demo/hook_demo.ipynb and prototype/demo.py work from the zip alone.
+# ANSWER_KEY.md is deliberately NOT bundled: it is the facilitator's
+# reference, handed out from the repo, not in the zip participants get --
+# putting it in the zip would hand the room the answers before D2's "let
+# the room call out the decisions and to-dos" (WP1 review finding 6).
+DEMO = ["script.txt", "backup_meeting.wav"]
 
 out = os.path.join(HERE, "workshop_files.zip")
 with zipfile.ZipFile(out, "w", zipfile.ZIP_DEFLATED) as z:
