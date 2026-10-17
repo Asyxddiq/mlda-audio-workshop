@@ -110,3 +110,16 @@ Run for every notebook WP (after `python notebook/make_bundle.py`; see "Notebook
 - **blocker**: frozen file touched, key/script cherry-picking, claim with no reproducible number, notebook cell fails from the empty folder, wrong equation, retention/LSTM claims violating Honesty, default demo misses a key item without honest disclosure.
 - **should-fix**: timing overrun, missing facilitator guidance, non-portable code outside the optional generator, unclear instructions, missing minutes per section.
 - **nit**: wording, formatting, unused imports.
+
+## WP1 additions (orchestrator decisions with Asy, supersede the "one notebook cell" wording above)
+
+No commits by the reviewer from now on: the orchestrator commits my files. Questions go to the orchestrator, not Asy.
+
+| ID | Check I will run | Pass looks like |
+|---|---|---|
+| W1a | `ls demo/`; read the handoff | Delivery is a LIVE skit script plus a synthetic two-voice backup WAV (not a recording of real people). Both are present; the WAV generation is documented and reproducible. |
+| W1b | `demo/hook_demo.ipynb` exists and is facilitator-only (says so in its first cell). Execute it with `nbconvert` (or read it if Colab T4 / GPU is unavailable, and say which). Count the cells the facilitator must run at the "press" moment. | The button is ONE cell. Colab T4 with `medium.en` preloaded in a setup cell BEFORE the button (so the press itself does not download or load a model). It is not part of the participants' `audio_workshop.ipynb`. `prototype/demo.py` also works from a laptop, with the documented command. |
+| W1c | Read `prototype/demo.py` and the notebook cell | Calls `transcriber.get_transcript(..., pause_gap=1.5)` (signature exists at `prototype/transcriber.py:84`, so no frozen-file edit is needed); `Speaker1` / `Speaker2` are mapped to the actors' names in the output; Whisper stage is separate from the label/minutes stage (N10). |
+| W1d | `python notebook/make_bundle.py`; `unzip -l notebook/workshop_files.zip`; check the diff of `notebook/make_bundle.py` is within `notebook/**` | The demo files (script, key if intended for the bundle, WAV, `demo.py`) are added to the bundle as the orchestrator specified, and `demo.py` runs from a folder holding only the unzipped bundle. |
+| W1e | The handoff's laptop-fallback section; re-run `python prototype/demo.py <wav>` with `small.en` (env `WHISPER_MODEL=small.en`, if Whisper is installed here) | The small.en result is REPORTED (turns found, word accuracy, whether the minutes match the key), including if it is worse than medium.en. I reproduce at least turns and match/no-match. If I cannot run Whisper I say so and mark those numbers unverified. |
+| W1f | Handoff section "PM attempts" (the orchestrator's four script attempts) vs `git log -p -- demo/` and the key's history | The four PM attempts are listed as "PM attempts" with what changed and the result each; the builder's own attempts (if any) are listed separately. The key file is identical in content from its first commit to the final commit, apart from clearly stated non-semantic fixes; the key commit precedes the first model run (H4-H6). Any key edit to match the model = blocker. |
