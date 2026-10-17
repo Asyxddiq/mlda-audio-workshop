@@ -12,9 +12,11 @@ import zipfile
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 REPO = os.path.dirname(HERE)
-PROTOTYPE = ["audio_check.py", "audio_features.py", "demo.py", "hands_on.py", "hands_on_reference.py",
-             "lstm_model.py", "meeting_minutes.py", "pipeline.py", "rnn_ctc_demo.py", "training_data.py",
-             "transcriber.py", "transcript_placeholder.py", "trained_lstm.npz"]
+PROTOTYPE = ["audio_check.py", "audio_features.py", "demo.py", "demo_student_council.txt", "hands_on.py",
+             "hands_on_reference.py", "lstm_model.py", "meeting_minutes.py", "pipeline.py", "rnn_ctc_demo.py",
+             "training_data.py", "transcriber.py", "transcript_placeholder.py", "trained_lstm.npz"]
+# demo_student_council.txt: N7's held-out meeting (keyword rules vs the trained LSTM,
+# section 4). Never in training_data.py -- see that file's own header comment.
 AUDIO = ["sample_meeting.wav", "sample_short.wav",
         # N2's Kahoot clips (notebook/make_noisy_clips.py) -- rebuild those before this if
         # sample_short.wav or sample_meeting.wav change.
