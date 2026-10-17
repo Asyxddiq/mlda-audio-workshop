@@ -26,6 +26,7 @@ os.environ.setdefault("KMP_DUPLICATE_LIB_OK", "TRUE")   # Anaconda on Windows (s
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 sys.path.insert(0, os.path.join(os.path.dirname(HERE), "prototype"))
+from audio_features import mfcc          # audio -> 13 numbers per 10 ms (shared with the notebook)
 GAP = 1.5          # seconds of silence that count as the next person (same as the solo test)
 RATE = 16000
 
@@ -53,29 +54,6 @@ def record(path: str) -> None:
         w.setframerate(RATE)
         w.writeframes(audio.tobytes())
     print(f"Recorded {len(audio) / RATE:.0f} s -> {path}")
-
-
-def mfcc(x, sr=RATE, n_fft=400, hop=160, n_mels=26, n_ceps=13):
-    """Audio samples (floats, 16 kHz) -> (frames, 13) numbers: the standard speech features.
-    25 ms windows every 10 ms, a mel filterbank, log, then a DCT. Plain NumPy."""
-    import numpy as np
-    x = np.append(x[0], x[1:] - 0.97 * x[:-1])                         # pre-emphasis
-    n = 1 + (len(x) - n_fft) // hop
-    idx = np.arange(n_fft)[None, :] + hop * np.arange(n)[:, None]
-    power = np.abs(np.fft.rfft(x[idx] * np.hamming(n_fft), 512)) ** 2
-    mel = lambda f: 2595 * np.log10(1 + f / 700)
-    inv = lambda m: 700 * (10 ** (m / 2595) - 1)
-    pts = inv(np.linspace(mel(0), mel(sr / 2), n_mels + 2))
-    bins = np.floor((512 + 1) * pts / sr).astype(int)
-    fb = np.zeros((n_mels, 257))
-    for m in range(1, n_mels + 1):
-        a, b, c = bins[m - 1], bins[m], bins[m + 1]
-        fb[m - 1, a:b] = (np.arange(a, b) - a) / max(b - a, 1)
-        fb[m - 1, b:c] = (c - np.arange(b, c)) / max(c - b, 1)
-    logmel = np.log(power @ fb.T + 1e-10)
-    k = np.arange(n_ceps)[None, :]
-    dct = np.cos(np.pi / n_mels * (np.arange(n_mels)[:, None] + 0.5) * k)
-    return logmel @ dct
 
 
 class Results:
@@ -113,6 +91,9 @@ def main() -> int:
     print("\n=== Phase 1: Audio -> text (Whisper listens to your audio)")
     print("  (the first time, this downloads the Whisper model)")
     from transcriber import WHISPER_MODEL, get_transcript
+    if WHISPER_MODEL == "medium.en":
+        print("  (medium.en hears the most but is slow: about two minutes per minute of speech on a laptop CPU.\n"
+              "   For a quick try: set WHISPER_MODEL=small.en first.)")
     transcript = get_transcript(audio_path, pause_gap=GAP)
     if not transcript.strip():
         res.add(1, "Audio -> text", False, "nothing was heard; check the microphone isn't muted")

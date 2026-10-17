@@ -151,15 +151,29 @@ Add a row for every manual run. `solo_test.py` saves the result file; link it he
 |---|---|---|---|---|---|---|
 | 17 Oct | Asy | Solo `solo_1`, microphone, guided | `base`, old pause rule | FAIL (3 of 9 turns, 60% of words) | FAIL | [file](results/manual/Asy_solo_1_sample_meeting_2026-10-17_1810.txt) |
 | 17 Oct | Asy | Same recording re-scored after the fixes below | `small` (multilingual, English forced), word-level pauses, 1.5 s solo gap | FAIL (9 of 9 turns, 71% of words: only the words fail) | FAIL (labels and minutes match) | not saved: a re-score of the line above |
+| 17 Oct | Asy | Solo `solo_1`, microphone, guided (19:05) | `small.en`, 1.5 s gap | FAIL (6 of 9 turns, 60% of words) | FAIL | [file](results/manual/Asy_solo_1_sample_meeting_2026-10-17_1905.txt) |
+| 17 Oct | Asy | Same recording, run by Claude | `medium.en`, 1.5 s gap | **FAIL by one point: 9 of 9 turns, speakers right, 89% of words (needs 90%)** | not reached | not saved: a re-score of the line above |
+| 17 Oct | Asy | Solo `solo_1`, microphone, guided (19:11) | `small.en` | FAIL: the recording is only 23 s, almost silent (heard "Classroom"), so lines were skipped or whispered | FAIL | [file](results/manual/Asy_solo_1_sample_meeting_2026-10-17_1911.txt) |
+| 17 Oct | Asy | `phases.py --manual` (19:21) | `small.en` | Phase 1 FAIL (64% of words over 5 sentences); phase 2 FAIL (a bug in our tool: it rejected letters typed without spaces, fixed); phases 3 and 4 PASS | n/a | [file](results/manual/Asy_phases_2026-10-17_192146.txt) |
 
 **What the first manual run found (17 Oct), and what was changed:**
 - Whisper guessed the language from a Malaysian accent and wrote Malay, which was also very slow. Fixed: `transcriber.py` now says `language="en"`.
 - Whisper joined several spoken lines into one segment, so the 0.8 s pause rule saw 3 turns instead of 9. Fixed: the rule now runs on single words, which keep their own times (9 of 9 turns on the same recording).
 - The `base` model heard 60% of the words ("catering" as "Patterning"); `small` hears 71% and got the labels and minutes right (a 461 MB download; 36 s for this 73 s recording on a laptop CPU, against 15 s for `base`).
-- **English only, hard-set (17 Oct):** `transcriber.py` now uses `small.en`, a Whisper model trained on English alone, so it cannot write another language, plus `language="en"` and `task="transcribe"` so nothing is guessed or translated. On Asy's recording it hears the same 71% of the words as `small`. On a clean synthetic reading of `solo_1` (Windows voice Hazel, 2 s gaps) it hears **98%** and nothing but English.
+- **English only, hard-set (17 Oct):** `transcriber.py` uses an `.en` model, trained on English alone, so it cannot write another language, plus `language="en"` and `task="transcribe"` so nothing is guessed or translated. On a clean synthetic reading of `solo_1` (Windows voice Hazel, 2 s gaps) `small.en` hears **98%** and nothing but English.
 - **In-line pauses (fixed for the solo test):** the pause rule splits at 0.8 s, so a pause at a full stop inside a line became a new turn (Hazel: 12 turns heard for 9; Asy's recording: 11). Measured: pauses inside a line were at most 1.1 s, gaps between lines at least 2.3 s (Hazel) and 3.2 s (Asy). `get_transcript` now takes `pause_gap`; `solo_test.py` uses 1.5 s, and the pair tests keep 0.8 s. Re-scored: **Hazel passes both verdicts** (9/9 turns, 98% of words, labels and minutes match; [result](results/claude/Claude-hazel-1.5s_solo_1_sample_meeting_2026-10-17_1843.txt)), and Asy's recording gets turns, speakers, labels and minutes right and fails only on words (71%).
 - Tried and dropped: finding pauses from the audio's volume (worse), and a vocabulary hint to Whisper (+4 points of words, but 13 times slower).
-- Still failing: the 90% word bar. Some misses are the model ("I'll email them" heard as "I will be more than"), some are spelling ("Q3" against "quarter three", "8%" against "8,000"), which the word counter treats as errors. For participants with thick accents, `medium` is the next size up (about 1.5 GB, slower); it was not tested.
+- **Which Whisper model?** Compared on Asy's real microphone recordings (words heard, `solo_1`; time on a laptop CPU for about 70 s of speech):
+
+  | Model | 18:10 recording | 19:05 recording | "The budget meeting starts after lunch." | Time |
+  |---|---|---|---|---|
+  | `small.en` | 72% | 80% | 0% ("The budget is in the stance of the language.") | about 20 s |
+  | `medium.en` | 85% | 90% | 100% | about 130-160 s |
+  | `turbo` (large-v3-turbo) | 76% | 90% | 100% | about 80-230 s |
+
+  Through the real pipeline (`phases.py 1`, 1.5 s gap) `medium.en` on the 19:05 recording gives 9 of 9 turns, the right speakers and 89% of the words: one point short of the bar, where `small.en` gave 6 turns and 60%. `transcriber.py` now defaults to **`medium.en`**: it is the best of the three and the only one that nearly passes on a real accented microphone. It is slow on a CPU and a 1.5 GB download, so `WHISPER_MODEL=small.en` (or `base.en`) switches to a faster one, and on a GPU such as Colab it is fast. `turbo` is no better than `medium.en` and slower to load.
+- A near-silent recording makes Whisper invent words: Asy's 23 s recording came back as "Classroom". If the text is one odd word, check the recording level first ([debug cheat sheet](../debug_cheatsheet.md)).
+- Still failing (with `small.en`): the 90% word bar. Some misses are the model ("I'll email them" heard as "I will be more than"), some are spelling ("Q3" against "quarter three", "8%" against "8,000"), which the word counter treats as errors. For participants with thick accents, `medium` is the next size up (about 1.5 GB, slower); it was not tested.
 
 When the first row shows `transcriber: PASS` for a real person, tick "Real transcriber swap" in `progress.md`.
 

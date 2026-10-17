@@ -17,14 +17,20 @@ regex like ^(\\w+): (.*) parses every line.
 """
 from __future__ import annotations
 
+import os
+
 from transcript_placeholder import get_transcript as _placeholder
 
 PAUSE_GAP = 0.8      # seconds of silence that counts as a speaker change
 NUM_SPEAKERS = 2     # speakers alternate: 1, 2, 1, 2 ...
-# English only, on purpose: "small.en" is a Whisper model trained on English alone, so it cannot
-# write another language. LANGUAGE and TASK are set as well so the choice never depends on
-# Whisper guessing (a Malaysian accent was once guessed as Malay) and nothing gets translated.
-WHISPER_MODEL = "small.en"
+# English only, on purpose: the ".en" models are trained on English alone, so they cannot write
+# another language. LANGUAGE and TASK are set as well so the choice never depends on Whisper
+# guessing (a Malaysian accent was once guessed as Malay) and nothing gets translated.
+# medium.en is the default because it heard a real accented microphone recording best (89% of the
+# words, against 60% for small.en). It is also the slowest: about two minutes of laptop CPU per
+# minute of speech, and a 1.5 GB download the first time. For speed: set WHISPER_MODEL=small.en
+# (or base.en); on a GPU (Colab) medium.en is fast.
+WHISPER_MODEL = os.environ.get("WHISPER_MODEL", "medium.en")
 LANGUAGE = "en"
 TASK = "transcribe"
 

@@ -1,0 +1,108 @@
+Phase-by-phase manual test -- Asy, 17 Oct 2026 19:21
+
+=== Phase 1: Audio -> text
+  You will say 5 short sentences, one recording each. Quiet room, normal voice.
+  (The first one downloads the Whisper model if you haven't used it yet.)
+
+    [1/5] Say:  Please send the report by Friday.
+      Press Enter, then SPEAK the sentence, then press Enter again when you finish...       ...recording (Enter to stop)       heard:  Please send the report by Friday.
+      words:  100%
+
+    [2/5] Say:  The budget meeting starts after lunch.
+      Press Enter, then SPEAK the sentence, then press Enter again when you finish...       ...recording (Enter to stop)       heard:  The budget is in the stance of the language.
+      words:  0%
+
+    [3/5] Say:  Let's order pizza for the whole team.
+      Press Enter, then SPEAK the sentence, then press Enter again when you finish...       ...recording (Enter to stop)       heard:  Let's order the pizza for the whole thing.
+      words:  71%
+
+    [4/5] Say:  I will book the room for tomorrow morning.
+      Press Enter, then SPEAK the sentence, then press Enter again when you finish...       ...recording (Enter to stop)       heard:  I will book the room for tomorrow morning.
+      words:  100%
+
+    [5/5] Say:  Everyone agreed to move the deadline.
+      Press Enter, then SPEAK the sentence, then press Enter again when you finish...       ...recording (Enter to stop)       heard:  Everyone agreed to move to a table.
+      words:  50%
+    [FAIL]  64% of the words heard across the 5 sentences (need 90%)
+  FAIL  phase 1
+  Not proven: Model small.en. One sentence per recording, so the pause rule is not tested here (that is the 'turns' check in: python testing/phases.py 1 --audio ...).
+
+=== Phase 2: RNN
+  The RNN gives one letter guess per audio frame; the CTC decoder merges repeats and drops blanks.
+  Type frames as letters separated by spaces; _ is a blank. Example: h h e _ l l _ l o  ->  hello
+  Task: write frames that decode to each target. (Empty line = give up.)
+
+    target 'hello'   frames >       decoded: 'hello'
+    [ok]  you wrote frames that decode to 'hello'
+
+    target 'good'   frames >       decoded: 'good'
+    [ok]  you wrote frames that decode to 'good'
+
+    target 'see'   frames >       not a letter the model knows: ['se_e_e']
+
+    target 'see'   frames >       not a letter the model knows: ['se_e']
+
+    target 'see'   frames >       not a letter the model knows: ['se', '_eeeeeeee']
+    [FAIL]  you wrote frames that decode to 'see'
+    [ok]  the RNN turns 50 fake audio frames into (50, 29) probabilities that sum to 1
+  FAIL  phase 2
+  Not proven: The RNN has random weights: this checks the shapes and the decoder, not that it hears speech.
+
+=== Phase 3: LSTM
+  Type a short meeting, one turn at a time. Press Enter alone to use the suggested line,
+  or type your own ('Name: text'). Lines you type yourself are shown, not scored.
+
+    turn 1  [Enter = Sam: Should we move the meeting to Friday?]
+      > 
+    turn 2  [Enter = Lee: Sounds good.]
+      > 
+    turn 3  [Enter = Sam: Lee, can you book the room by Thursday?]
+      > 
+    turn 4  [Enter = Lee: Sure.]
+      > 
+    turn 5  [Enter = Sam: The room is on the second floor.]
+      > 
+    turn 6  [Enter = Lee: Okay.]
+      > 
+      turn                                           model        keywords     should be
+      Sam: Should we move the meeting to Friday?     discussion   discussion   discussion
+    [ok]  'Should we move the meeting to Friday?' -> discussion
+      Lee: Sounds good.                              decision     discussion   decision
+    [ok]  'Sounds good.' -> decision
+      Sam: Lee, can you book the room by Thursday?   action_item  action_item  action_item
+    [ok]  'Lee, can you book the room by Thursday?' -> action_item
+      Lee: Sure.                                     action_item  discussion   action_item
+    [ok]  'Sure.' -> action_item
+      Sam: The room is on the second floor.          discussion   discussion   discussion
+    [ok]  'The room is on the second floor.' -> discussion
+      Lee: Okay.                                     discussion   discussion   discussion
+    [ok]  'Okay.' -> discussion
+  PASS  phase 3
+  Not proven: A few turns is a smoke test. The scores on held-out meetings are in: python prototype/run_tests.py
+
+=== Phase 4: Meeting minutes
+
+      minutes:
+        # Meeting Minutes
+        
+        **Attendees:** Lee, Sam
+        
+        ## Decisions
+        - Move the meeting to Friday (agreed)
+        
+        ## Action Items
+        - [ ] Book the room by Thursday -- Lee (due Thursday)
+
+    [ok]  the decision is to move the meeting to Friday
+    [ok]  ONE action item: book the room, owner Lee (the one who said 'Sure'), due Thursday
+  PASS  phase 4
+  Not proven: Typed text only: this is the labels -> minutes step on its own.
+
+=== Summary
+  FAIL  1. Audio -> text
+  FAIL  2. RNN
+  PASS  3. LSTM
+  PASS  4. Meeting minutes
+
+Saved to testing\results\manual\Asy_phases_2026-10-17_192146.txt
+Push it, or send it to Claude, so it goes into testing/testing.md.

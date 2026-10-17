@@ -1,0 +1,23 @@
+# Demo meeting for the workshop: a student council, 18 turns, three speakers, never trained on.
+# The trained model gets 17 of 18 turns right and no wrong minutes items; the one miss (the last decision) is worth discussing.
+#   python prototype/pipeline.py --compare --text prototype/demo_student_council.txt
+# (For a LIVE AUDIO demo use the two-speaker sample meeting instead: testing/scripts/solo_1_sample_meeting.txt.
+#  The audio pipeline tells only two speakers apart.)
+dis  Marcus: Let us begin. First, the Friday assembly.
+dis  Ella: The hall is booked from two to four.
+dis  Marcus: Are we doing the awards before or after the performances?
+dis  Ella: After, I think, so people stay until the end.
+dec  Marcus: That is settled, awards go last.
+dis  Tariq: Should the juniors sit at the front?
+dec  Ella: Yes, juniors at the front.
+dis  Marcus: Next, the budget. We have 600 dollars left.
+dis  Tariq: The sound system rental alone is 200.
+dis  Ella: Could we borrow the speakers from the music department instead?
+dec  Marcus: Good, we will borrow theirs and drop the rental.
+act  Ella: I will talk to the music teacher tomorrow.
+dis  Tariq: The banner design is still not finished.
+act  Marcus: Tariq, could you finish the banner by Wednesday?
+act  Tariq: Got it, I will.
+dis  Ella: What about refreshments?
+dec  Marcus: No refreshments this time, we are saving the money for the trip.
+dis  Tariq: That is everything from my side, thanks.

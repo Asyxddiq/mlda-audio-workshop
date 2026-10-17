@@ -308,7 +308,7 @@ def manual2(args) -> Phase:
     import rnn_ctc_demo as demo
     ix = {c: i for i, c in enumerate(demo.CHARS)}
     print("  The RNN gives one letter guess per audio frame; the CTC decoder merges repeats and drops blanks.\n"
-          "  Type frames as letters separated by spaces; _ is a blank. Example: h h e _ l l _ l o  ->  hello\n"
+          "  Type one letter per frame (spaces optional); _ is a blank. Example: h h e _ l l _ l o  ->  hello\n"
           "  Task: write frames that decode to each target. (Empty line = give up.)")
     for target, hint in CTC_EXERCISES:
         done = False
@@ -316,7 +316,7 @@ def manual2(args) -> Phase:
             raw = ask(f"\n    target '{target}'   frames > ")
             if not raw:
                 break
-            tokens = raw.split()
+            tokens = list(raw.replace(" ", ""))               # "h e l _ l o" and "hel_lo" both work: one frame per character
             bad = [t for t in tokens if t != "_" and t not in ix]
             if bad:
                 print(f"      not a letter the model knows: {bad}")

@@ -4,15 +4,15 @@ Backend prototype for the MLDA Academics workshop **Deep Learning in Audio Appli
 
 The pipeline is audio → transcript → LSTM → meeting minutes. It is written as small, readable NumPy code so that beginner-to-intermediate participants can follow every step and run it on free Google Colab.
 
-| Component | Owner | Status (16 Oct 2026) |
+| Component | Owner | Status (17 Oct 2026) |
 |---|---|---|
-| Real audio → transcript (Whisper, pause-based speakers) | Pasan, Rahini | Passes on synthetic speech and LibriSpeech clips; a team member's recording is still to test (see [testing](testing/testing.md)). A reply under 0.8 s can still be merged; more than two speakers are not told apart |
+| Real audio → transcript (Whisper, English only, pause-based speakers) | Pasan, Rahini | Passes on clean synthetic speech (98% of words). **Real microphone, 17 Oct: one point short** (Asy's recording: 9 of 9 turns and 89% of words with the default `medium.en`, 60–72% with `small.en`; bar is 90%; see [testing](testing/testing.md)). Two speakers only; a reply under 0.8 s can still be merged |
 | RNN + CTC teaching demo | Pasan, Rahini | Working |
 | 5-layer hourglass LSTM | Asy | Working |
 | Training data: 40 hand-labelled meetings (577 turns) + 60 generated practice meetings, plus a frozen 6-meeting scorecard (105 turns) | Asy (drafted by Claude); Nomt checked his half (4 meetings) 8 Oct | Draft; the 29 meetings added 8 and 13 Oct are not yet checked by a person; Asy's blind check to do |
 | Trained turn classifier (`train_lstm.py`, NumPy) | Asy | Working; ships the **tuned 13 Oct ensemble** (5 seeds) behind the 16 Oct text clean-up: test 0.84, probes 9/12, scorecard 0.90 (see [results](#step-4-training-the-classifier)). Two 16 Oct retrains failed their ship rule ([model update](testing/model_update_16oct/model_update.md)) |
 | Meeting minutes (trained labels, keyword fallback) | Nomt | Working |
-| Participants' hands-on (`hands_on.py`) | Asy | Ready 13 Oct: Part A writes the RNN step and switches its memory off; Part B writes the LSTM notebook update and turns the forget knob. `--solution` runs the answers |
+| Participants' notebook (`notebook/audio_workshop.ipynb`) and hands-on (`hands_on.py`) | Asy | Notebook built 17 Oct, five sections like the poster; every cell ran from a fresh folder on a laptop, **not yet run on Colab**. Part A writes the RNN step and switches its memory off; Part B writes the LSTM notebook update and turns the forget knob |
 | RNN vs LSTM comparison (`compare_rnn.py`) | Asy, for Pasan and Rahini | Done 13 Oct, with both the old and the tuned settings: **no clear difference** on our data by the rule written beforehand; both use about one turn of context |
 | Whole chain in one command (`pipeline.py`) | All | Working on the sample meeting |
 
@@ -159,6 +159,7 @@ mlda-audio-workshop/
 ├── README.md                          you are here
 ├── progress.md                        Asy's LSTM-track progress tracker: log, decisions, next up
 ├── labelling_guide.md                 rules for labelling training turns
+├── debug_cheatsheet.md                for Part 9, Debug time: symptom, cause, fix
 ├── requirements.txt                   numpy
 ├── prototype/
 │   ├── pipeline.py                    whole chain in one command (start here)
@@ -173,6 +174,7 @@ mlda-audio-workshop/
 │   ├── hands_on.py                    participants' hands-on: RNN step, LSTM notebook update, forget knob
 │   ├── hands_on_reference.py          reference answers for hands_on.py (facilitators)
 │   ├── my_meeting_example.txt         example input for pipeline.py --text
+│   ├── demo_student_council.txt       the typed demo meeting: 17 of 18 turns right, never trained on
 │   ├── scorecard_data.py              6 frozen held-out meetings (never trained on or tuned against)
 │   ├── scorecard.py                   aggregate scores on the scorecard
 │   ├── holdout_data.py                17 fresh held-out meetings written 16 Oct (never trained on)
@@ -181,10 +183,16 @@ mlda-audio-workshop/
 │   ├── minutes_tests.py               67 typed meeting tests with expected minutes
 │   ├── normalise_tests.py             checks for the text clean-up
 │   ├── audio_check.py                 scores a recording of a script: transcriber and end-to-end verdicts
+│   ├── audio_features.py              audio -> 13 numbers per 10 ms (MFCC), the RNN's input
 │   ├── audio_tests/                   older copy of the reading scripts (use testing/scripts/)
 │   └── train_classifier.py            earlier PyTorch scaffold (Nomt), kept for reference
+├── notebook/                          the participants' Colab notebook
+│   ├── audio_workshop.ipynb           five sections: audio to text, where it struggles, RNN, LSTM, minutes
+│   ├── make_bundle.py                 makes workshop_files.zip, the code + audio to upload to Colab
+│   └── audio/                         two synthetic-voice samples the notebook uses
 └── testing/                           the testing phase: start at testing/testing.md
     ├── testing.md                     how to run each test, and every result
+    ├── try_it.py                      talk like a meeting: your audio through all four phases, PASS or FAIL each
     ├── phases.py                      each stage on its own: audio to text, RNN, LSTM, minutes
     ├── solo_test.py                   one-person recording test
     ├── scripts/                       scripts to read aloud
@@ -434,6 +442,8 @@ Verdict, both times: **no clear difference** (old settings: LSTM +0.046 macro-F1
 | Run the whole chain | `python prototype/pipeline.py` |
 | Run it on real audio | `python prototype/pipeline.py meeting.wav` (needs `pip install openai-whisper` and ffmpeg) |
 | Run all checks before a push or the workshop | `python prototype/run_tests.py` (about 25 s, no training, no internet; `--audio FILE` adds an audio run) |
+| Make the Colab zip for participants | `python notebook/make_bundle.py` (writes `notebook/workshop_files.zip`; rebuild after changing `prototype/`) |
+| Show the model at its best (typed demo meeting) | `python prototype/pipeline.py --compare --text prototype/demo_student_council.txt` |
 | Test each phase on your own voice | `python testing/try_it.py --name YOU` (talk like a meeting; audio -> text, RNN, LSTM and minutes each say PASS or FAIL) |
 | Test one stage at a time | `python testing/phases.py` (all four phases, automatic) or `python testing/phases.py --manual --name YOU` (by hand: you give each phase its input) |
 | Meeting tests, clean-up tests, audio tests | `python prototype/minutes_tests.py`, `python prototype/normalise_tests.py`, `python testing/solo_test.py --name YOU`: all explained in [testing/testing.md](testing/testing.md) |
@@ -453,19 +463,13 @@ Verdict, both times: **no clear difference** (old settings: LSTM +0.046 macro-F1
 
 ### Google Colab (free tier)
 
-The repo is private, so the simplest route in Colab is to upload the files:
+The repo is private, so participants get the code as one zip and the notebook as one file.
 
-1. Open a new notebook at colab.research.google.com.
-2. In the Files panel on the left, upload `transcript_placeholder.py`, `transcriber.py` and `lstm_model.py` (`lstm_model.py` imports the other two). Add `trained_lstm.npz` too if you want the trained weights.
-3. Run in a cell:
+1. Make the zip (rebuild it whenever anything in `prototype/` changes): `python notebook/make_bundle.py` writes `notebook/workshop_files.zip`.
+2. In Colab: **File > Upload notebook**, choose `notebook/audio_workshop.ipynb`. Drag `workshop_files.zip` into the Files panel on the left. Optional but several times faster: **Runtime > Change runtime type > T4 GPU**.
+3. Run the cells top to bottom. The first cell installs Whisper (about a minute) and unpacks the zip. The notebook has two **YOUR TURN** cells (the RNN step, the LSTM notebook update).
 
-```python
-!python lstm_model.py
-```
-
-For the hands-on, also upload `hands_on.py`, `hands_on_reference.py` and `training_data.py` (plus `trained_lstm.npz`), then run `!python hands_on.py`.
-
-numpy is preinstalled on Colab, and the CPU runtime is enough.
+Tested 17 Oct: every cell ran from a fresh folder holding only the zip, on a laptop CPU. **Not yet tested on Colab itself**: do a dry run with a fresh runtime before the day. Whisper downloads its model on first use (139 MB for `base.en`, 461 MB for `small.en`), so Colab needs internet. The scripts also run in a cell, for example `!python prototype/hands_on.py`.
 
 ### Git workflow
 

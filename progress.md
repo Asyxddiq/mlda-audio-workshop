@@ -6,7 +6,7 @@
 | **Track** | 2: LSTM (with Nomt, who owns meeting minutes) |
 | **Code** | `prototype/lstm_model.py`, `prototype/train_lstm.py`, `prototype/training_data.py`, `prototype/holdout_data.py`, `prototype/transcript_placeholder.py`, `prototype/hands_on.py`, `prototype/scorecard.py`, `prototype/compare_rnn.py` |
 | **Last updated** | 17 Oct 2026 |
-| **Current phase** | Testing ([testing/testing.md](testing/testing.md)): Claude's side done 16 Oct; the 13 Oct ensemble plus the 16 Oct text clean-up is shipped. Next: blind check, a team member's recording, real meetings, the demo-meeting choice |
+| **Current phase** | Testing, 5 days before the workshop (Thu 22 Oct, 7-9 PM, TR+102 NTU). The 13 Oct ensemble plus the 16 Oct text clean-up is shipped. Real-microphone audio is the open risk: `medium.en` is at 89% of words on Asy's recording (bar 90%). Next: a team member's recording, a dry run of the notebook on Colab, real meetings |
 
 Current results and how the pipeline works are in the [README](README.md); test results are in [testing/testing.md](testing/testing.md). This file is the history: what was done, decided and is next.
 
@@ -28,7 +28,9 @@ Update this file whenever something is finished, decided or blocked. Tick the bo
 | Participants' hands-on | Done | `hands_on.py`: Part A the RNN step (+ memory off), Part B the LSTM notebook update (+ forget knob); `pipeline.py --text` for their own lines |
 | RNN vs LSTM check | Done | `compare_rnn.py`: no clear difference, with both the old and the tuned settings (rule written beforehand) |
 | Hand-off to Nomt | Done | `run_pipeline()` loads the trained weights; `label_turns_model()` in `meeting_minutes.py` |
-| Real transcriber swap | In progress | Wired up in `pipeline.py`; passes on synthetic speech and LibriSpeech clips on Claude's side ([testing](testing/testing.md)). **Done when** a team member's recording gives `transcriber: PASS` (`python testing/solo_test.py --name YOU`) |
+| Real transcriber swap | In progress | English-only `medium.en`, word-level pauses. Passes on clean synthetic speech; on Asy's real microphone recording: 9 of 9 turns, 89% of words (bar 90%). **Done when** a team member's recording gives `transcriber: PASS` (`python testing/solo_test.py --name YOU`; `WHISPER_MODEL=small.en` for a faster, less accurate run) |
+| Participants' notebook | Done, not yet run on Colab | `notebook/audio_workshop.ipynb` (five sections like the poster) + `notebook/make_bundle.py`; every cell ran from a fresh folder on a laptop CPU |
+| Debug cheat sheet | Done | [debug_cheatsheet.md](debug_cheatsheet.md), from the failures hit while testing |
 
 ---
 
@@ -85,8 +87,8 @@ Green: done · Blue: in progress · Dashed: to do
 ### Weekend 3: freeze
 
 - [x] Decide which 20% participants complete: write the RNN step, then the LSTM notebook update and the forget knob, then personalise with their own lines (agenda agreed 13 Oct)
-- [ ] Write participant starter code and a debug-time cheat sheet: starter code done (`hands_on.py`, `pipeline.py --text`, 13 Oct); cheat sheet to do
-- [ ] Dry run with someone outside the LSTM track, then freeze
+- [x] Write participant starter code and a debug-time cheat sheet: `hands_on.py`, `pipeline.py --text` (13 Oct), the Colab notebook and [debug_cheatsheet.md](debug_cheatsheet.md) (17 Oct)
+- [ ] Dry run with someone outside the LSTM track, on a fresh Colab runtime, then freeze (needs a person; the notebook has only been run on a laptop)
 
 ---
 
@@ -204,6 +206,19 @@ Green: done · Blue: in progress · Dashed: to do
   - New held-out data: `holdout_data.py`, 17 meetings in two sets; the second was written after round 1 failed so round 2 could be judged on unseen meetings. The leak check now covers the holdouts and the meeting tests.
   - Takeaway: more of our own writing moves our own tests and hurts the team's; decisions need real meetings.
 
+### Sat 17 Oct 2026
+
+- **Asy's first real-microphone runs** (testing phase, [results](testing/testing.md#manual-runs-by-the-team)). They failed, and showed four things:
+  - Whisper guessed the language from the accent (Malay), which also made it take minutes. Fixed: English only (`.en` models, `language="en"`, `task="transcribe"`).
+  - Whisper joined several spoken lines into one segment, so the 0.8 s pause rule saw 3 turns instead of 9. Fixed: the rule runs on single words. For one person reading with 2 s gaps the solo test uses a 1.5 s gap (pauses inside a line were at most 1.1 s, gaps between lines at least 2.3 s); pair tests keep 0.8 s. `get_transcript(audio, pause_gap=...)`.
+  - Accent and a noisy room: `small.en` heard 60-72% of the words. Compared on the real recordings: `medium.en` 85-90%, `turbo` 76-90%, `small.en` 72-80%. `medium.en` through the real pipeline: 9 of 9 turns, 89% of words, one point under the bar. It is now the transcriber default (slow on a CPU; `WHISPER_MODEL` switches size).
+  - A 23 s near-silent recording came back as the single word "Classroom": Whisper invents text from silence.
+- **Testing tools** (all in `testing/`): `try_it.py` (talk like a meeting; your own audio goes through Whisper, features + RNN + CTC, the LSTM and the minutes, PASS or FAIL for each), `phases.py` (each phase on its own, automatic or `--manual`), a 50-line reading script `solo_3`. `phases.py` bug found by Asy's run and fixed: letters typed without spaces were rejected.
+- **Participants' notebook** `notebook/audio_workshop.ipynb`, five sections matching the poster (audio to text, where transcription struggles with noise, a poor microphone and your own accent, RNN with the YOUR TURN `rnn_step`, LSTM with the YOUR TURN notebook update and forget knob, meeting minutes), built on `hands_on.py`. `notebook/make_bundle.py` makes the one zip to upload to Colab (the repo is private). The audio is `audio_features.py` (13 numbers per 10 ms) feeding the RNN. Every cell ran from a fresh folder holding only the zip.
+- **Demo meetings chosen**: live audio = the sample meeting (the only unseen meeting with exactly two speakers, which is all the audio pipeline can separate; no wrong items, finds the action item, misses both decisions). Typed, the model at its best = `student_council` (`prototype/demo_student_council.txt`; holdout, never trained on; 17 of 18 turns, no wrong items; keyword rules miss every decision). `group_project_3` was dropped: its minutes list a wrong action item ("Remind me where the form is"), against the team rule.
+- **Debug cheat sheet** written: [debug_cheatsheet.md](debug_cheatsheet.md).
+- Still needs a person: a team member's recording at 90%+, a dry run on Colab itself, Asy's blind check.
+
 <!-- Add new entries above this line, newest date last. -->
 
 ---
@@ -244,6 +259,9 @@ Green: done · Blue: in progress · Dashed: to do
 | 13 Oct | Keep the 7 Oct weights; don't ship the first 13 Oct ensemble | Failed the do-no-harm check written beforehand (untouched test 0.83 vs 0.86, probes 8 vs 9), although better on dev and the scorecard. **Superseded the same evening** by the tuned ensemble, below |
 | 13 Oct | Tune settings on dev only (12 single changes, then the best combination); ship the tuned 5-seed ensemble | Asy asked for the best score before testing. Held-out sets were scored once, after the choice, and the same ship rule passed: nothing below the 7 Oct model, dev 0.96, scorecard 0.90 |
 | 13 Oct | RNN vs LSTM: "no clear difference" | Rule written before the run; both models use about one turn of context |
+| 17 Oct | Whisper: English-only `medium.en` as the default, word-level pauses, `pause_gap` 1.5 s for the solo test | Real accented microphone audio: `small.en` gave 60-72% of the words and merged turns; `medium.en` gives 9/9 turns and 89%. Language guessing turned an accent into Malay |
+| 17 Oct | Live audio demo = the sample meeting; typed demo = `student_council`; drop `group_project_3` | Only the sample meeting has two speakers; `student_council` is unseen and has no wrong items; `group_project_3` lists a wrong action item |
+| 17 Oct | Hand the notebook out as one `.ipynb` plus one zip (`make_bundle.py`) | The repo is private, so Colab cannot clone it |
 | 16 Oct | Ship the text clean-up on the 13 Oct weights; don't ship either retrain | The retrains failed the rule written before training (test meetings and demo minutes got worse); the clean-up changes no measured turn and fixes "I will" style transcripts |
 
 ---
@@ -293,8 +311,8 @@ sequenceDiagram
 1. **Asy:** blind-label `blind_check_for_asy.md` (10 of Nomt's turns, kept outside the repo), compare with the key, tighten the guide where you disagree. (Nomt's 10: done 8 Oct, 10/10 agree.)
 2. **Team:** collect 5 to 10 short real meetings (CCA, project or club, with permission), label them with the guide, and keep them as a fresh test set. That shows how the shipped model does on writing that isn't ours, and gives the decision examples it still lacks.
 3. **Nomt:** review the 13 Oct changes, especially the ensemble path in `label_turns_model()`, `pipeline.py --text` and `hands_on.py`.
-4. **Asy:** human recording, solo is fine: `python testing/solo_test.py --name Asy` (setup in the [testing quick start](testing/testing.md#quick-start-test-it-on-your-own)). `transcriber: PASS` closes the "Real transcriber swap" row; add the result to the manual runs table in `testing/testing.md`.
+4. **Asy and Nomt:** more real recordings. Quiet room, microphone close, `python testing/try_it.py --name YOU` (or `solo_test.py`). Asy's 19:05 recording is 9/9 turns and 89% with `medium.en`; one more point passes the bar. A pass closes the "Real transcriber swap" row.
 5. **Pasan:** review the 8 Oct one-line change in `transcriber.py` (`word_timestamps=True`). Still open: more than two speakers, overlapping speech, replies under 0.8 s. Pasan and Rahini: the RNN vs LSTM result is in the 13 Oct log.
-6. Dry-run `hands_on.py` on free Colab with someone outside the LSTM track, and write the debug-time cheat sheet.
-7. Choose the live demo meeting: the sample meeting (7 Oct model 7/9, keyword rules 8/9, no decisions found) or `group_project_3` via `pipeline.py --meeting` (model 16/18, keyword rules 12/18).
+6. **Someone outside the LSTM track:** dry-run `notebook/audio_workshop.ipynb` on a fresh Colab runtime (upload the notebook and `workshop_files.zip`; try a T4 GPU and the free CPU) and report where they got stuck. Add what they hit to `debug_cheatsheet.md`.
+7. ~~Choose the live demo meeting~~ Done 17 Oct: live audio = the sample meeting, typed = `student_council` (see the log). Rehearse both on the presenter laptop.
 8. **Everyone:** run `python prototype/run_tests.py` before every push, and on the presenter laptop the day before the workshop.

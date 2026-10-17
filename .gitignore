@@ -6,3 +6,6 @@ venv/
 .env
 .DS_Store
 Thumbs.db
+
+# built by notebook/make_bundle.py (rebuild it, do not commit it)
+notebook/workshop_files.zip
