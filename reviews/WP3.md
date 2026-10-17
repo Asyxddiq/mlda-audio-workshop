@@ -1,4 +1,69 @@
-VERDICT: CHANGES
+VERDICT: PASS
+Round 2: re-review of `198fee6` (parent `2f2d470`). All three should-fix items, nits 4-6 and the zip split are done and check out. One nit is left. Round-1 text is kept below.
+
+Re-run by me, on CPU only (no GPU, no Colab). Nothing frozen was touched.
+
+## Round-1 findings
+
+| # | Round-1 finding | Status | How I checked |
+|---|---|---|---|
+| 1 | best-case meeting not disclosed | **Fixed** | Cell 39 now says `student_council` is "the team's **best-case** held-out meeting ... not a typical one", and quotes 131/149 (0.879) and 104/122 (0.852) for the LSTM against 111/149 (0.745) and 93/122 (0.762) for the keyword checklist, plus "on 3 of those 17 meetings the keyword checklist scores better". Those are the figures I measured in round 1 (my own per-meeting count over `HOLDOUT` and `HOLDOUT2`), and the LSTM figures equal the accuracies `run_tests.py` check k prints. |
+| 2 | loss example rounding | **Fixed** | Cell 38 now prints `p(correct) = 0.0037, loss = 5.61` and `p(correct) = 0.9957, loss = 0.00`; -ln(0.0037) is 5.60 to the printed digits and 5.61 from the unrounded value, so a participant using a calculator gets within 0.01. Cell 37 says "(the natural log)". |
+| 3 | "skip ahead" note | **Fixed** | Cell 3 now reads "Participants: run these cells too (about a minute on a T4); the later sections reuse their results." No "skip ahead" remains in the notebook. |
+| 4 (nit) | cell 32 stronger than the evidence | **Fixed** | "giving memory fewer steps to survive there by design -- an architecture idea, not something this trained classifier measures or proves on its own". |
+| 5 (nit) | hourglass as a picture | **Fixed** | Cell 33 adds a bar chart of units per layer after the table; it ran with no error in my run (I did not inspect the image itself). |
+| 6 (nit) | knob left at +6 | **Fixed** | Cell 46 ends with `hands_on.FORGET_KNOB = 0`. |
+
+## The zip split and `.gitignore`
+
+- `python notebook/make_bundle.py` writes two zips and `git status` stays clean (both are ignored). `.gitignore` gains exactly one line, `notebook/facilitator_files.zip`; `check_frozen.sh` reports it as outside the allowed list and that is the approved exception, nothing else is flagged and no frozen file is touched.
+- **`workshop_files.zip`: 17 files, 2.8 MB.** I listed it: no `hands_on_reference.py`, no `rnn_ctc_demo.py`, no `demo.py`, nothing under `demo/`, no `ANSWER_KEY.md`.
+- **`facilitator_files.zip`: 20 files, 3.7 MB.** The participant files plus `prototype/demo.py`, `demo/script.txt` and `demo/backup_meeting.wav`. No `ANSWER_KEY.md`, no `hands_on_reference.py`.
+- **Participants' notebook from a folder holding only `workshop_files.zip` and the `.ipynb`:** all 52 cells ran, 0 errors, 111 s on CPU. Cell 33 prints the hourglass, cell 38 the 4-decimal loss example, cell 40 12/18 vs 17/18, cell 46 "not written yet" three times with the stub, and section 5 the unchanged minutes.
+- **Facilitator notebook from a folder holding only `facilitator_files.zip`:** the real cell 2 (setup and preload) followed by the real cell 8 (backup button), with `WHISPER_MODEL=small.en` to save time: no error, and the same minutes as before (both decisions, Ravi and Mei as owners, "t -shirts" as Whisper writes it). Cells 4 and 6 need a browser microphone and were not run, same limit as WP1.
+- **Names:** `demo/hook_demo.ipynb` (markdown cell 1 and the setup cell) and `demo/FACILITATOR.md` now name `facilitator_files.zip`; `audio_workshop.ipynb` still names `workshop_files.zip`. `grep` of `demo/`, the notebook and `prototype/*.py` finds no stale reference. `FACILITATOR.md` says to hand out `workshop_files.zip` only after the hook.
+
+## Remaining nit (does not block the merge)
+
+| # | Severity | File | What | Fix |
+|---|---|---|---|---|
+| R1 | nit | `notebook/audio_workshop.ipynb` cell 39 | The cell points to "`python prototype/run_tests.py` check k" for the held-out figures, but that check prints only the LSTM accuracy (0.879, 0.852) and macro-F1, not the keyword checklist's 0.745 / 0.762 or the three meetings where the keywords win; those come from the per-meeting count (my round-1 script and the builder's). The numbers in the cell are correct, only the pointer is loose; participants also do not have `holdout_data.py`. | Say "(counted by scoring every meeting in `holdout_data.py`; check k prints the LSTM accuracies)", or drop the pointer. |
+
+## Commands I ran, with output
+
+```
+$ bash reviews/check_frozen.sh 198fee6
+frozen: none changed
+FAIL files outside the builder's allowed write list:  .gitignore        (approved by the orchestrator, one line: notebook/facilitator_files.zip)
+
+$ git diff --stat 2f2d470 198fee6
+ .gitignore | 1 +   HANDOFF-WP3.md   demo/FACILITATOR.md   demo/hook_demo.ipynb   notebook/audio_workshop.ipynb   notebook/make_bundle.py
+
+$ python notebook/make_bundle.py ; git status --short
+wrote .../workshop_files.zip (2.8 MB, 17 files)
+wrote .../facilitator_files.zip (3.7 MB, 20 files)       (git status: nothing to commit)
+
+# participants' notebook, folder with only workshop_files.zip + audio_workshop.ipynb, nbclient, base.en, CPU
+52 cells, no cell errors, TOTAL 111.3 s
+[38] Venue is confirmed for the 14th, catering still pending.  gold = decision, p(correct) = 0.0037, loss = 5.61
+     Yes, I'll email them today.                               gold = action_item, p(correct) = 0.9957, loss = 0.00
+[40] keyword rules: 12/18 turns right / trained LSTM: 17/18 turns right / LSTM miss: 'No refreshments this time, ...'
+[46] "check: not written yet (it returned None)" three times (stub)
+
+# facilitator notebook, folder with only facilitator_files.zip, real cells 2 then 8, WHISPER_MODEL=small.en
+Whisper (small.en) preloaded and ready.   Press. One. Button.   (input: demo/backup_meeting.wav)
+Decisions: Hold the showcase on the 21st (agreed) / Get black t -shirts (agreed)
+Action Items: Book the hall by Friday -- Ravi (due Friday) / I'll send the order form to everyone tonight. -- Mei (due tonight)
+```
+All code cells compile (`compile()` over every cell's joined source); the committed notebook has 0 saved outputs.
+
+Not re-run: `prototype/run_tests.py` and the knob-sweep numbers (10, 35 and 22 of 45), since `prototype/` is unchanged since `2f2d470` and the sweep cell's loop is untouched except for the reset line. I verified those numbers in round 1. Not verified: Colab, a T4, and the bar chart image itself.
+
+---
+
+# Round 1 (kept for the record): `2f2d470`
+
+ROUND 1 VERDICT: CHANGES
 
 Reviewed commit `2f2d470` (parent `86d4b8e`), in a detached worktree. IDs claimed: N6, N7, N8, plus the WP2 carry-over (cell 23 CPU wording).
 Everything below was re-run by me, on CPU only (no GPU, no Colab).
