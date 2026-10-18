@@ -47,6 +47,15 @@ AUDIO = ["sample_meeting.wav", "sample_short.wav",
         # N2's Kahoot clips (notebook/make_noisy_clips.py) -- rebuild those before this if
         # sample_short.wav or sample_meeting.wav change.
         "noisy_1_ideal.wav", "noisy_2_hiss.wav", "noisy_3_poor_mic.wav", "noisy_4_second_voice.wav"]
+# WP7's live-mic no-mic fallback clips (notebook/make_live_clips.py) -- one per live
+# prompt_id, read by live_mic.say() when there's no mic, it isn't Colab, or permission
+# was denied.
+AUDIO_LIVE = ["block2_clear.wav", "block2_noisy.wav", "block2_backward.wav",
+              "block3_sentence.wav", "block4_cats.wav", "block4_dogs.wav",
+              "block5_short_a.wav", "block5_short_b.wav", "block5_long_a.wav", "block5_long_b.wav"]
+# live_mic.py sits at the zip root (same level as audio_workshop.ipynb), not under
+# prototype/ -- that is where every live cell imports it from.
+NOTEBOOK_TOP = ["live_mic.py"]
 
 # Only for the facilitator notebook (demo/hook_demo.ipynb), on top of the above.
 # ANSWER_KEY.md is deliberately NOT bundled, even here: it is read from the
@@ -57,7 +66,8 @@ FACILITATOR_PROTOTYPE = ["demo.py"]
 FACILITATOR_DEMO = ["script.txt", "backup_meeting.wav"]
 
 
-def _write(out_name: str, prototype: list[str], audio: list[str], demo: list[str]) -> str:
+def _write(out_name: str, prototype: list[str], audio: list[str], demo: list[str],
+           audio_live: list[str], notebook_top: list[str]) -> str:
     out = os.path.join(HERE, out_name)
     with zipfile.ZipFile(out, "w", zipfile.ZIP_DEFLATED) as z:
         for name in prototype:
@@ -66,11 +76,16 @@ def _write(out_name: str, prototype: list[str], audio: list[str], demo: list[str
             z.write(os.path.join(HERE, "audio", name), f"audio/{name}")
         for name in demo:
             z.write(os.path.join(REPO, "demo", name), f"demo/{name}")
-    count = len(prototype) + len(audio) + len(demo)
+        for name in audio_live:
+            z.write(os.path.join(HERE, "audio", "live", name), f"audio/live/{name}")
+        for name in notebook_top:
+            z.write(os.path.join(HERE, name), name)
+    count = len(prototype) + len(audio) + len(demo) + len(audio_live) + len(notebook_top)
     print(f"wrote {out} ({os.path.getsize(out) / 1e6:.1f} MB, {count} files)")
     return out
 
 
 if __name__ == "__main__":
-    _write("workshop_files.zip", PROTOTYPE, AUDIO, [])
-    _write("facilitator_files.zip", PROTOTYPE + FACILITATOR_PROTOTYPE, AUDIO, FACILITATOR_DEMO)
+    _write("workshop_files.zip", PROTOTYPE, AUDIO, [], AUDIO_LIVE, NOTEBOOK_TOP)
+    _write("facilitator_files.zip", PROTOTYPE + FACILITATOR_PROTOTYPE, AUDIO, FACILITATOR_DEMO,
+           AUDIO_LIVE, NOTEBOOK_TOP)
