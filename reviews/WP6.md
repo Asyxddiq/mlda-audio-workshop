@@ -1,4 +1,49 @@
 VERDICT: CHANGES
+Round 2: re-verification of `1101432` (parent `cb9a4a2`). Eleven of the twelve items are fixed and verified; the twelfth, V1, is fixed in the notebook but **`demo/FACILITATOR.md` was not updated and now sends the facilitator to the wrong cells**. That is a one-file text fix. Round-1 text is kept below.
+
+Re-run by me on CPU only (no GPU, no Colab). `bash reviews/check_frozen.sh 1101432`: **no frozen file changed** (only the approved `plan/handoffs/` files are flagged); `git diff --stat main 1101432 -- prototype` is empty.
+
+## The one remaining item
+
+| # | Severity | Where | What a facilitator experiences | Fix | Effort |
+|---|---|---|---|---|---|
+| R1 | **should-fix (must fix before the day)** | `demo/FACILITATOR.md` lines 5-6, 18, 28-30, 33, 59-60, 76, 110-112 | The notebook now has two backup cells: **8 plays the recording, 10 presses** (cell 9 is the "4b" heading), and the **text-only fallback moved from cell 10 to cell 12**. `FACILITATOR.md` was not edited, so it still says: "cell 10 is the text-only fallback", the failure table says "Cell 2 fails, or Whisper won't load: **Use cell 10**", and "Cell 8: plays the backup WAV to the room, **then the same button on it**". Following the table in the one case it exists for (Whisper will not load) I ran cell 10 straight after setup and got `NameError: name 'backup_path' is not defined`; even with the right variable it is the Whisper path, which is the thing that failed. The text fallback is cell 12 (it ran in 0.7 s and rendered the big-print minutes). The order itself is stated correctly in generic words (running order steps 4 and 5: the room calls out first, **then** press), but with the old cell numbers and a description of the old single cell. `RUNSHEET.md` does not cover the hook (it points to `FACILITATOR.md`), so there is no second place that gives it correctly. | In `FACILITATOR.md` change: "cell 8 plays the backup recording, cell 10 presses the button on it"; "cell 12 is the text-only fallback" (and the failure-table rows, the "Running it" list and the "What to say" step 2/4 references accordingly); and in the running order put "play (cell 8), room calls out, press (cell 10)". | S |
+
+## V1 to V12
+
+| ID | Result | How I checked |
+|---|---|---|
+| V1 | **Notebook fixed, doc stale (R1).** | Real hook cells 2, 8, 10, 12 in order from `facilitator_files.zip` in an empty folder: cell 8 runs in 0.2 s and shows **only the audio player**; the minutes appear only when cell 10 runs ("Press. One. Button.", then the big-print minutes; 93 s on this busy CPU); cell 12 text fallback 0.7 s. Cell 7's heading and the new "4b" heading both say to run them in order and wait for the room. |
+| V2 | **Fixed.** | Cell 30 now says, in bold, to ignore the printed "Now set MEMORY_ON = False and run again." because it is only half the job. |
+| V3 | **Fixed.** | I extracted the retention figure from my own executed notebook: legend outside the axes on the right, both full curves and the dotted toy curve visible, the 9.0% endpoint no longer covered. (The builder's screenshot 06 shows the retention curves drawn on top of the earlier waveform and spectrogram figure; that is an artefact of whatever script produced the screenshot, not of the notebook: my render of the same cell is clean, one figure. Adding `plt.figure()` at the start of cell 33 would make it immune to that anyway; optional.) |
+| V4 | **Fixed**, one number slightly off. | Cell 62 now says "(still narrow) correct `decision`, 56% against 44%". The model's other probability is 43.4% (0.562 against 0.434), so it should read 43%. |
+| V5 | **Fixed.** | Cell 26 now has `import numpy as np`; the run-sheet sentence is rewritten ("imports `numpy` and `lstm_model` itself"). (It still needs Setup for the `sys.path`; the sentence "needs nothing from earlier cells" is a little strong, nit.) |
+| V6 | **Fixed.** | Onboarding step 1 now reads "Share the notebook ahead of time; the zip after the hook"; block-2 timings carry "(+ model download on first use; not measured)" and a tip to run a throwaway transcription first. |
+| V7 | **Fixed.** | Gate plot, from my own render: legend outside on the right, no bar covered; the eraser's dip at `<eot>` (0.36, the lowest of the eight tokens) is visible. The optional run-sheet line "watch the eraser at `<eot>`" was not added; fine. |
+| V8 | **Fixed.** | Cell 34: "with one fixed fade rate for every word". |
+| V9 | **Fixed.** | Cell 63: "ignored" (names clause removed); take-home now says the full code, including training, is with the facilitators and not in the zip, which is accurate (`train_lstm.py` is not in it). |
+| V10 | **Fixed**, with a caveat. | Cell 61 prints `Ravi: first "Sure." (after the proposal) -> decision (56%)` and `Ravi: second "Sure." (after the request) -> action_item (99%)`. The two labels are fixed text keyed to the default meeting, so if a participant edits the meeting they can be wrong; nit. |
+| V11 | **Fixed.** | Cell 53 now states that the sweep runs one of the five models while the Sure. test averages all five. |
+| V12 | **Fixed.** | The stale comment in the hook setup cell now reads "Cells 6, 8 and 10 all need these". |
+
+## Re-runs
+
+- Participants' notebook, empty folder with only `workshop_files.zip` (17 files) and the `.ipynb`: **unsolved 65 cells, 75.1 s, 0 errors; solved (Part A and B filled in inline) 83.6 s, 0 errors.** Cell 61 prints the labelled "Sure." lines above; the retention and gate figures are the clean ones described.
+- `facilitator_files.zip` (20 files) with `hook_demo.ipynb`: cells 2 (GPU: no, `small.en`), 8, 10, 12 as above.
+- `python prototype/run_tests.py`: 12 passed, 0 failed, 1 skipped.
+- Frozen check: no frozen file changed.
+
+Not verified: Colab and a T4, the microphone, the live skit, projector audio, and how anything sounds.
+
+## To get to PASS
+
+Update `demo/FACILITATOR.md` for R1 (cell 8 plays, cell 10 presses, cell 12 is the text fallback). Optionally fix the 44%/43% number and make the two "Sure." labels generic. I will then re-read that file against the notebook's cell indexes and re-run the hook cells.
+
+---
+
+# Round 1 (kept for the record): `cb9a4a2`
+
+ROUND 1 VERDICT: CHANGES
 
 Verification of WP6 at `cb9a4a2` (parent `1b2dfea`), detached worktree, redoing the audit's key checks in the same two roles (facilitator, participant with no ML background). Everything below was run or read by me, on CPU only (no GPU, no Colab).
 
