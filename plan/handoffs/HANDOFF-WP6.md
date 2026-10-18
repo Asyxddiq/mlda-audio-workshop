@@ -278,6 +278,136 @@ nothing here is unverified, just not pictured.)
 
 ---
 
+## Round 2
+
+**Reviewer findings:** 1 blocker + 5 should-fix + 6 polish (V1-V12), all
+fixed per the orchestrator's explicit per-finding instructions. Nothing
+committed this round -- same protocol.
+
+### Per-finding table
+
+| ID | Severity | What changed | Verified |
+|---|---|---|---|
+| V1 | blocker | `demo/hook_demo.ipynb`'s backup-WAV cell split in two: cell 8 now only plays the audio (`display(Audio(...))`), a new cell 9 (markdown, "4b. Press the button on the backup") separates it from a new cell 10, which presses the button and shows the minutes. Cell 7's markdown explains the two-cell order. Fallback cells renumbered 11/12. | Ran cells 2, 8, 10, 12 (new order) from `facilitator_files.zip` in an empty folder, 0 errors; `nbconvert`-rendered HTML confirms the Audio player sits alone under "4.", the minutes under a separate "4b." heading -- screenshot `08_hook_split_4_4b_minutes.jpg`. |
+| V2 | should-fix | Cell 30 (break-the-memory instructions) now has an explicit sentence telling participants to ignore the misleading half-instruction `hands_on.py` prints ("Now set MEMORY_ON = False and run again."), and to do both steps -- the flag *and* deleting the term. | Re-read the cell; the sentence sits directly under the printed line it's correcting. |
+| V3 | should-fix | Retention-graph legend (cell 33) moved entirely outside the axes (`bbox_to_anchor=(1.02, 1.0), loc="upper left"`), replacing the round-1 `loc="lower right"` fix that still covered the 0.95 curve's tail and its 9% label. | Rendered the actual PNG from the executed notebook (not a browser screenshot) -- legend box sits fully in the figure's right margin, zero overlap with any of the three curves. Screenshot `06_retention_legend_outside_axes.png`. |
+| V4 | should-fix | Cell 62 (markdown after the "add a line" cell) reworded from a vaguer "confident" framing to the actual numbers: "a (still narrow) correct `decision`, 56% against 44%." | Re-derived standalone: first "Sure." -> `decision` 56%; matches the wording exactly. |
+| V5 | should-fix | Cell 26 now imports `numpy` itself (it was relying on an earlier cell's import). `demo/RUNSHEET.md`'s block-3 row rewritten to state only what's true of cell 26 specifically (self-contained, no dependency on run order), instead of the blanket "this cell now imports what it needs" claim the reviewer flagged as applying to cell 26 only, not a general guarantee. | `compile()` on cell 26 alone (no earlier cells run) succeeds; re-read every RUNSHEET row claiming self-containment (26, 33) against the actual cell source -- 33 already imports both `numpy` and `matplotlib.pyplot` itself, so its claim was already true and left unchanged; 26's was the only false one, now fixed. |
+| V6 | should-fix | `demo/RUNSHEET.md` onboarding step 1 reworded to resolve the contradiction: share the notebook file ahead of time, but not the zip until after the hook (exact split the orchestrator specified). Added "(+ model download on first use; not measured)" to the Setup and cell-4 timing figures, since the shipped ~20s/~1-minute numbers are CPU timings with the Whisper model already cached. | Re-read the corrected section; the two instructions ("share ahead of time" / "not before the hook") no longer conflict -- the notebook file is what's shared early, the zip is what's withheld. |
+| V7 | polish | Gate-plot (cell 37) legend moved outside the axes, same pattern as V3 (`bbox_to_anchor=(1.02, 1.0)`), replacing the default `plt.legend()` placement that sat over the "you" bars. Checked cell 36's and the RUNSHEET's narration against the actual numbers: no unsupported "pencil spikes on content words" claim exists anywhere in the current notebook or RUNSHEET (grepped both; the only gate-related claims found are cell 36's accurate ensemble/layer caveat and the eraser dropping at `<eot>`, which the numbers support). | Re-derived all 8 tokens' gate values standalone (`can`...`sure`) -- eraser dips to 0.36 at `<eot>` vs. 0.57-0.83 elsewhere (supported); pencil is highest on "you" (0.74), not a content word, and lowest on "room" (0.32) -- confirms no "content word" pattern exists, consistent with there being no such claim left to fix. Screenshot `07_gate_plot_legend_clear.png`. |
+| V8 | polish | Cell 34 (LSTM section intro): "with no control over how much" reworded to "with one fixed fade rate for every word" -- the original implied the RNN had *no* fade control at all, when the real point is that the rate is fixed/uniform rather than adjustable per word. | Re-read |
+| V9 | polish | Cell 63 (wrap-up): removed the unsupported "including most names" clause from limit #2 (unseen words), and replaced the take-home's implicit promise of a retrain-from-zip with an honest note that the training code is with the facilitators, not in `workshop_files.zip`. | Confirmed `train_lstm.py` is not among the 17 files `make_bundle.py` puts in `workshop_files.zip` (`python notebook/make_bundle.py` file list, below). |
+| V10 | should-fix | The "add a line" cell (61) now labels which "Sure." is which when printing results ("first 'Sure.' (after the proposal)" / "second 'Sure.' (after the request)"), instead of an ambiguous repeated line. | Re-derived standalone: `Ravi: first "Sure." (after the proposal) -> decision (56%)`, `Ravi: second "Sure." (after the request) -> action_item (99%)` -- matches the full-notebook run's cell 61 output exactly. |
+| V11 | polish | Cell 53 ("All three settings, compared") gained one caveat sentence: the knob sweep runs on one ensemble member only (member 0, same as `hands_on.py`), while the "Sure." test (cell 47) averages all five -- the two cells aren't measuring quite the same model. | Re-read `lstm_model.label_probabilities` (averages the 5-member ensemble) against `hands_on.py`'s `_member_predict` (member 0 only) -- confirms the distinction the new sentence states. |
+| V12 | polish | `hook_demo.ipynb` cell 2's stale comment (referring to the pre-split cell numbering) rewritten to describe the current split (cells 6, 8, 10). | Re-read, numbers match the post-V1 cell layout. |
+
+### Full verification
+
+**`compile()`, every cell, both notebooks:**
+```
+notebook/audio_workshop.ipynb cells: 65 errs: 0
+demo/hook_demo.ipynb cells: 13 errs: 0
+```
+
+**Both zips, rebuilt:**
+```
+$ python notebook/make_bundle.py
+wrote .../notebook/workshop_files.zip (2.8 MB, 17 files)
+wrote .../notebook/facilitator_files.zip (3.7 MB, 20 files)
+```
+
+**`run_tests.py` and the frozen-file check:**
+```
+$ python prototype/run_tests.py
+PASS  a. imports                  11 modules import  (0.8s)
+PASS  b. weights                  5 members, labels discussion / decision / action_item  (0.1s)
+PASS  c. shipped KPIs reproduce   dev 0.96/0.948, test 0.84/0.825, 36-turn test 0.86/0.853, sample 7/9, probes 9/12  (7.8s)
+PASS  d. demo minutes             no decisions, one action item (catering by Friday, Priya)  (0.4s)
+PASS  e. --text example           runs, model matches the hand labels 7/7  (0.6s)
+PASS  f. hands-on                 solution: both parts OK, 35/45 at knob 0; unfilled version says 'not written yet'  (2.0s)
+PASS  g. training data            leak checks pass  (4.9s)
+PASS  h. scorecard                frozen scorecard runs (hash ignores line endings)  (2.4s)
+PASS  i. smoke runs               5 scripts exit 0  (4.5s)
+PASS  j. text clean-up            text clean-up: 31/31 clean-up checks pass  (0.9s)
+PASS  k. holdout meetings         holdout 1 0.879/0.806, holdout 2 0.852/0.762 (accuracy / macro-F1)  (6.8s)
+SKIP  l. audio (optional)         no --audio FILE given  (0.0s)
+PASS  m. repo unchanged           git status and git diff identical before and after  (0.2s)
+
+12 passed, 0 failed, 1 skipped in 31.5 s
+```
+```
+$ git diff --stat main -- prototype/ data/
+(no output -- nothing frozen was touched)
+```
+
+**Participants' notebook, `workshop_files.zip` alone, empty folder -- unsolved (shipped state):**
+```
+$ <exec every code cell from audio_workshop.ipynb against the unzipped folder>
+[cell 2] OK: ready
+[cell 4] OK: base.en transcription, Q3 budget review text
+...
+[cell 28] OK: check (MEMORY_ON = True): not written yet (it returned None)
+[cell 33] OK: 0.49^47 = 0.0000%   0.95^47 = 9.0%   toy RNN: r=0.578
+[cell 37] OK: can eraser=0.41 pencil=0.44 voice=0.46 / you eraser=0.77 pencil=0.74 voice=0.65 / ...
+[cell 50] OK: check: not written yet (it returned None)
+[cell 61] OK: Ravi: first "Sure." (after the proposal) -> decision (56%)
+             Ravi: second "Sure." (after the request) -> action_item (99%)
+DONE unsolved errors: 0
+```
+All numbers match the standalone re-derivations above exactly, including
+the gate values (V7) and the "Sure." labels (V4/V10).
+
+**Solved** (throwaway copy, `hands_on.py`'s own reference lines filled in
+at cells 28/50, `hands_on.py` itself never touched):
+```
+[cell 28] OK: check (MEMORY_ON = True): OK  got [-0.9964  0.5838], expected [-0.9964  0.5838]
+[cell 50] OK: check: OK  got [ 0.5263  0.5426  0.402  -0.7362], expected [ 0.5263  0.5426  0.402  -0.7362]
+DONE solved errors: 0
+```
+
+**Deliberate mistake** (`W_x @ x + W_h @ h_prev` missing `+ b` for Part A,
+`f * c_prev + i` missing `* g` for Part B -- plausible, not contrived,
+errors):
+```
+[cell 28] OK: check (MEMORY_ON = True): not quite  got [-0.9874  0.5559], expected [-0.9964  0.5838]
+[cell 50] OK: check: not quite  got [1.2686 0.6611 0.6255 0.7188], expected [ 0.5263  0.5426  0.402  -0.7362]
+DONE mistake errors: 0
+```
+All three variants: 0 execution errors. The mistake run's cells 28/50
+show "not quite" with a concrete got/expected mismatch rather than a
+traceback -- the YOUR-TURN cells fail the way they're supposed to, not
+by crashing.
+
+**`hook_demo.ipynb`, `facilitator_files.zip` alone, empty folder, new
+cell order (2, 8, 10, 12 -- cells 4/6 need a real Colab mic, skipped):**
+```
+[cell 2]  GPU: no -- small.en preloaded and ready
+[cell 8]  Audio player displayed (backup_meeting.wav, 0:53)
+[cell 10] Press. One. Button. -> rendered minutes (big_minutes HTML):
+          Decisions: Hold the showcase on the 21st (agreed); Get black t -shirts (agreed)
+          Action Items: Book the hall by Friday -- Ravi; I'll send the order form... -- Mei
+[cell 12] Press. One. Button. (text-only fallback, demo/script.txt) -> same minutes, no Whisper
+```
+Rendered via `nbconvert --to html` from an executed copy (live-mic cells
+4/6 replaced with a no-op placeholder so nbconvert doesn't hang on them)
+and visually confirmed in-browser -- the Audio player sits under its own
+"4." heading, the button press and minutes under a separate "4b." heading,
+confirming V1's split actually works end to end, not just that the code
+compiles. Screenshot `08_hook_split_4_4b_minutes.jpg`.
+
+### Screenshots added this round (`plan/handoffs/wp6/`, 3 new files)
+
+```
+06_retention_legend_outside_axes.png  V3: legend fully outside the axes,
+                                       no overlap with any of the three curves
+07_gate_plot_legend_clear.png         V7: gate-plot legend clear of all bars
+08_hook_split_4_4b_minutes.jpg        V1: the backup Audio player under "4.",
+                                       the pressed-button minutes under a
+                                       separate "4b." heading
+```
+
+---
+
 ## Not checked / open
 
 - Same as every round: Colab, a real T4, the microphone recorder, the

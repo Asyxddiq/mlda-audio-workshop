@@ -14,19 +14,22 @@ and block 2.
 
 The repo is private, so participants can't just open a GitHub link.
 
-1. **Share two things** with participants ahead of time (email, chat,
-   whatever the group uses): the notebook file, `notebook/audio_workshop.ipynb`,
-   and `notebook/workshop_files.zip` (rebuild it first: `python
-   notebook/make_bundle.py`). **Do not hand out the zip until after the
-   hook** (block 1) -- it contains `demo/script.txt`, which gives away the
-   hook's answers.
+1. **Share the notebook ahead of time; the zip after the hook.** Send
+   participants `notebook/audio_workshop.ipynb` (email, chat, whatever the
+   group uses) before the session. **Do not hand out
+   `notebook/workshop_files.zip`** (rebuild it first: `python
+   notebook/make_bundle.py`) **until after the hook** (block 1) -- it
+   contains `demo/script.txt`, which gives away the hook's answers. They
+   can open the notebook file early; cell 2 (Setup) just won't run until
+   they have the zip too.
 2. Participants open Colab (colab.research.google.com), then **File > Upload
    notebook** and pick `audio_workshop.ipynb`.
 3. **Runtime > Change runtime type > T4 GPU > Save** (the runtime restarts).
 4. Participants run cell 2 (Setup) once they're told to -- **not before the
    hook is done**, since it needs the zip. Setup takes about a minute on
    Colab (`pip install`, no large download -- the Whisper model itself
-   downloads lazily the first time it's used, in block 2).
+   downloads lazily the first time it's used, in block 2; that first
+   download isn't measured here).
 5. When Setup finishes it prints `ready`. If it instead says "Upload
    workshop_files.zip...", they uploaded the notebook but not the zip (or
    to the wrong Files panel) -- have them upload the zip and re-run cell 2.
@@ -38,7 +41,7 @@ either is fine (cell 0's boxed note already says so).
 
 | Cells | Say (one line) | Expect | Time (CPU) | If it fails |
 |---|---|---|---|---|
-| 4 | "Three lines of code, and it's already transcribing." | The meeting's text printed | ~20s | `ModuleNotFoundError: whisper` -- cell 2 didn't finish; re-run it. |
+| 4 | "Three lines of code, and it's already transcribing." | The meeting's text printed | ~20s (+ model download on first use; not measured) | `ModuleNotFoundError: whisper` -- cell 2 didn't finish; re-run it. |
 | 6, 8 | "Here's what it's actually reading -- time left to right, pitch bottom to top." | Waveform + spectrogram image; two audio players (forwards/backwards) | ~3s | Blank plot -- re-run cell 2 then cell 4 first (needs `model`). |
 | 10 | "Underneath, a spectrogram becomes a handful of numbers every 10 milliseconds." | A frame count printed | <1s | -- |
 | 12 | "Now it's telling the two speakers apart too." | The meeting again, with `Speaker1`/`Speaker2` | ~20s | -- |
@@ -46,14 +49,16 @@ either is fine (cell 0's boxed note already says so).
 | 22, 24 | **Kahoot now:** play the four clips from cell 22's output (ideal, hiss, poor mic, second voice, in that order) in the live Kahoot quiz; the room votes on the ranking *in Kahoot*, not in the notebook. Then run cell 24 for the real numbers as the answer key. | Four accuracy percentages, same order as played | ~20s | -- |
 
 **Total block 2 compute:** about 85-90s spread across the block's 10
-minutes -- not a bottleneck, but don't start cell 4 after a long pause in
-the talk; start it right as you begin speaking so the wait overlaps.
+minutes (plus the Whisper model's first-use download, not measured here --
+do a throwaway transcription before the session so it's cached) -- not a
+bottleneck, but don't start cell 4 after a long pause in the talk; start it
+right as you begin speaking so the wait overlaps.
 
 ## Block 3: RNNs, a running summary (00:18-00:33, 15 min)
 
 | Cells | Say | Expect | Time | If it fails |
 |---|---|---|---|---|
-| 26 | "Watch it read one word at a time, and turn each into a number." | The word list, then the memory vector after each word | <1s | `NameError: np` -- run cell 2 (this cell now imports what it needs, but `tokenize_transcript` etc. come from `lstm_model`, already imported here). |
+| 26 | "Watch it read one word at a time, and turn each into a number." | The word list, then the memory vector after each word | <1s | Cell 26 imports `numpy` and `lstm_model` itself and needs nothing from earlier cells -- if it still fails, something's wrong with the environment, not the run order. |
 
 ## Block 4: Hands-on A -- build the memory, then break it (00:33-00:43, 10 min)
 
