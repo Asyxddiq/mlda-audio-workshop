@@ -408,6 +408,96 @@ compiles. Screenshot `08_hook_split_4_4b_minutes.jpg`.
 
 ---
 
+## Round 3
+
+**Reviewer findings:** re-verification of `1101432` found 11 of 12 Round-2
+items fixed; one doc fix (R1) plus two small touches (R2, R3) remained.
+All three fixed. Nothing committed this round -- same protocol.
+
+### Per-finding table
+
+| ID | Severity | What changed | Verified |
+|---|---|---|---|
+| R1 | should-fix (must fix before the day) | `demo/FACILITATOR.md` updated throughout for the Round-2 cell split: cell 8 now described as "plays the backup WAV" only, cell 10 as "presses the button on it", cell 12 (was 10) as the text-only fallback. Fixed in the intro paragraph, the six-step running order, the failure table (all 3 rows that referenced the old numbers), the "What to say" step 4, and the "Running it: Colab" cell-by-cell list. | Compared every "cell N" reference in `demo/FACILITATOR.md` against `hook_demo.ipynb`'s actual cell indexes (2=Setup, 4=recorder, 6=live button, 8=backup play, 10=backup press, 12=fallback), read directly from the notebook JSON -- all now match. Grepped `demo/` and `notebook/` for every other `hook_demo.ipynb` cell reference (`demo/RUNSHEET.md` line 116, `notebook/make_bundle.py` comments) -- none reference specific cell numbers that needed changing. `demo/RUNSHEET.md`'s own cell numbers (26, 33, 37, etc.) are a different notebook (`audio_workshop.ipynb`) and were already correct. |
+| R2 | polish | Cell 62: "56% against 44%" corrected to "56% against 43%", matching the model's actual `discussion` probability (0.434, not 0.44) for the first "Sure." after the added context line. | Re-derived from the full notebook run, not just the cell's own math: `{'discussion': 0.434, 'decision': 0.5619, 'action_item': 0.0041}` -- 43.4% rounds to 43%, not 44%. |
+| R3 | polish | `plt.figure(figsize=(7, 4))` added at the top of cell 33 (retention graph), so it always draws on its own fresh figure regardless of what an earlier cell (e.g. cell 6's waveform/spectrogram) left open. Cell 37 (gate plot) already had its own `plt.figure(figsize=(9, 3))` from the V7 fix in Round 2 -- no change needed there. | Re-ran cell 33 inside the full notebook sequence (cell 6's waveform plot executes first, same as a real run) and confirmed `plt.get_fignums()` shows 2 open figures afterward, with `plt.gcf()`/`savefig()` correctly grabbing cell 33's own figure -- a clean, single retention plot with no merged waveform, matching what the reviewer's own render already showed. Screenshot `09_retention_clean_single_figure.png`. |
+
+### Full verification
+
+**`compile()`, every cell, both notebooks:**
+```
+notebook/audio_workshop.ipynb cells: 65 errs: 0
+demo/hook_demo.ipynb cells: 13 errs: 0
+```
+
+**Both zips, rebuilt:**
+```
+$ python notebook/make_bundle.py
+wrote .../notebook/workshop_files.zip (2.8 MB, 17 files)
+wrote .../notebook/facilitator_files.zip (3.7 MB, 20 files)
+```
+
+**`run_tests.py` and the frozen-file check:**
+```
+$ python prototype/run_tests.py
+PASS  a. imports                  11 modules import  (0.3s)
+PASS  b. weights                  5 members, labels discussion / decision / action_item  (0.1s)
+PASS  c. shipped KPIs reproduce   dev 0.96/0.948, test 0.84/0.825, 36-turn test 0.86/0.853, sample 7/9, probes 9/12  (3.3s)
+PASS  d. demo minutes             no decisions, one action item (catering by Friday, Priya)  (0.2s)
+PASS  e. --text example           runs, model matches the hand labels 7/7  (0.3s)
+PASS  f. hands-on                 solution: both parts OK, 35/45 at knob 0; unfilled version says 'not written yet'  (1.1s)
+PASS  g. training data            leak checks pass  (2.2s)
+PASS  h. scorecard                frozen scorecard runs (hash ignores line endings)  (1.0s)
+PASS  i. smoke runs               5 scripts exit 0  (2.5s)
+PASS  j. text clean-up            text clean-up: 31/31 clean-up checks pass  (0.5s)
+PASS  k. holdout meetings         holdout 1 0.879/0.806, holdout 2 0.852/0.762 (accuracy / macro-F1)  (4.9s)
+SKIP  l. audio (optional)         no --audio FILE given  (0.0s)
+PASS  m. repo unchanged           git status and git diff identical before and after  (0.1s)
+
+12 passed, 0 failed, 1 skipped in 16.6 s
+```
+```
+$ git diff --stat main -- prototype/ data/
+(no output -- nothing frozen was touched)
+```
+
+**Hook cells in the order `demo/FACILITATOR.md` now gives, `facilitator_files.zip` alone, empty folder:**
+```
+$ <exec cells 2, 8, 10, 12 in that order against the unzipped folder>
+[cell 2]  OK: ffmpeg: found; GPU: no -- small.en preloaded and ready
+[cell 8]  OK: Audio object displayed (backup_meeting.wav) -- plays only, no button
+[cell 10] OK: "Press. One. Button." -> rendered minutes HTML (room has already
+          called out decisions/to-dos by the time this cell is run)
+[cell 12] OK: "Press. One. Button." (text-only fallback, demo/script.txt) -> same minutes
+DONE
+```
+Confirms the running order `FACILITATOR.md` now describes -- play (8), room
+calls out, press (10) -- is exactly what the notebook does.
+
+**Participants' notebook, `workshop_files.zip` alone, empty folder -- solved**
+(throwaway copy, reference lines filled in at cells 28/50, `hands_on.py`
+never touched):
+```
+[cell 28] OK: check (MEMORY_ON = True): OK  got [-0.9964  0.5838], expected [-0.9964  0.5838]
+[cell 50] OK: check: OK  got [ 0.5263  0.5426  0.402  -0.7362], expected [ 0.5263  0.5426  0.402  -0.7362]
+[cell 61] OK: Ravi: first "Sure." (after the proposal) -> decision (56%)
+              Ravi: second "Sure." (after the request) -> action_item (99%)
+DONE solved errors: 0
+```
+All cells ran 0 errors; the printed numbers match the standalone
+re-derivation for R2 above exactly.
+
+### Screenshot added this round (`plan/handoffs/wp6/`, 1 new file)
+
+```
+09_retention_clean_single_figure.png  R3: cell 33's retention graph, confirmed
+                                       to draw on its own fresh figure (no
+                                       merged waveform artifact) with an
+                                       earlier audio-plot cell run first
+```
+
+---
+
 ## Not checked / open
 
 - Same as every round: Colab, a real T4, the microphone recorder, the

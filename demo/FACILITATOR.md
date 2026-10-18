@@ -2,10 +2,11 @@
 
 Cell numbers below are `demo/hook_demo.ipynb`'s actual cell indexes (0-indexed,
 counting markdown and code cells together), not section numbers -- cell 2 is
-Setup, cell 4 is the recorder, cell 6 is the live-recording button, cell 8 is
-the backup WAV, cell 10 is the text-only fallback. The detailed workshop-wide
-run order (blocks 2-10, what to say, expected output, timing) is in
-`demo/RUNSHEET.md`; this page covers the hook only.
+Setup, cell 4 is the recorder, cell 6 is the live-recording button, cell 8
+plays the backup WAV, cell 10 presses the button on it, cell 12 is the
+text-only fallback. The detailed workshop-wide run order (blocks 2-10, what
+to say, expected output, timing) is in `demo/RUNSHEET.md`; this page covers
+the hook only.
 
 ## Running order, in six steps
 
@@ -15,22 +16,22 @@ run order (blocks 2-10, what to say, expected output, timing) is in
    until you do.
 3. Ask the room: "Who actually remembers what was decided, and who's doing
    what?"
-4. Run the skit (cell 4 + 6 live, or play the backup WAV from cell 8 if
+4. Run the skit (cell 4 + 6 live, or play the recording from cell 8 if
    nobody can act it out, or hasn't rehearsed).
 5. Let the room call out decisions and to-dos first -- **then** press the
-   button.
+   button (cell 6 for the live recording, cell 10 for the backup).
 6. Close with the two "Sure." exchanges, read aloud (not run on stage).
 
 ## If something goes wrong
 
 | What happens | What to do |
 |---|---|
-| Cell 2 fails, or Whisper won't load | Use cell 10, the text-only fallback (`demo/script.txt`, no audio, instant) -- keeps the hook going with no model at all. |
-| The live skit wasn't rehearsed, or acting it out live feels risky | Play the backup WAV from cell 8 instead (`display(Audio(...))` plays it to the room first, then the button). This is the one path verified end to end. |
-| A turn gets skipped, merged or split (live skit) | Re-run with the backup WAV (cell 8). |
+| Cell 2 fails, or Whisper won't load | Use cell 12, the text-only fallback (`demo/script.txt`, no audio, instant) -- keeps the hook going with no model at all. |
+| The live skit wasn't rehearsed, or acting it out live feels risky | Play the backup WAV from cell 8 instead (`display(Audio(...))` plays it to the room), let the room call out, then press cell 10. This is the one path verified end to end. |
+| A turn gets skipped, merged or split (live skit) | Re-run with the backup WAV (cell 8, then cell 10). |
 | The minutes differ from what the room called out | Say so plainly -- "the model isn't perfect, here's a case where a human still beats it" -- and move on. Don't re-run hoping for a different answer. |
 | No GPU / a CPU-only Colab | Cell 2 prints `GPU: no` and switches to `small.en` automatically (about 1 minute instead of `medium.en`'s 3). |
-| Mic permission denied, or no browser mic | Skip to the backup WAV (cell 8), or the laptop fallback below. |
+| Mic permission denied, or no browser mic | Skip to the backup WAV (cell 8, then cell 10), or the laptop fallback below. |
 
 ## Pre-session rehearsal checklist
 
@@ -73,7 +74,8 @@ run order (blocks 2-10, what to say, expected output, timing) is in
    `python prototype/demo.py <file>`). Until that rehearsal happens and
    passes, **the backup WAV is the safe route** for the actual event.
 3. Let the room call out the decisions and to-dos. Don't correct them yet.
-4. **Press one button** (`demo/hook_demo.ipynb` cell 6, or on a laptop:
+4. **Press one button** (`demo/hook_demo.ipynb` cell 6 for the live
+   recording, cell 10 for the backup WAV, or on a laptop:
    `python prototype/demo.py skit.wav`).
 5. Read the printed minutes against what the room called out
    (`demo/ANSWER_KEY.md` has the reference list). Two things to expect,
@@ -108,8 +110,10 @@ and to-dos):
 - Cell 4: records the skit from the browser microphone to `skit.wav`
   (needs mic permission in the browser tab; a T4 GPU speeds up Whisper).
 - Cell 6: the button, on the live recording.
-- Cell 8: plays the backup WAV to the room, then the same button on it.
-- Cell 10: text-only fallback, no Whisper at all, if the model won't load.
+- Cell 8: plays the backup WAV to the room only -- no button yet.
+- Cell 10: the button, on the backup WAV -- run only after the room has
+  called out the decisions and to-dos.
+- Cell 12: text-only fallback, no Whisper at all, if the model won't load.
 
 **Laptop fallback (no internet / Colab unavailable):** record the skit any
 way you like (phone, laptop mic) and run
