@@ -1,4 +1,34 @@
-VERDICT: CHANGES
+VERDICT: PASS
+Round 2: re-review of `2b2dd49` (parent `cecf3da`). Both should-fix items and all three nits are fixed and verified. No new findings. This is the last package, and the branch is ready to merge. Round-1 text is kept below.
+
+Re-run by me, on CPU only (no GPU, no Colab). The commit changes only `notebook/audio_workshop.ipynb` and `plan/handoffs/HANDOFF-WP4.md`; nothing in `prototype/` has changed against `main`.
+
+## Round-1 findings
+
+| # | Round-1 finding | Status | How I checked |
+|---|---|---|---|
+| 1 | leftover duplicate own-meeting cell | **Fixed** | The old unlabelled `MY_MEETING = '''Sam: Should we move the meeting to Friday?...'''` cell is gone: the notebook has 53 cells (was 54), the last code cell is the N9 cell, and the only `MY_MEETING` left is in it. |
+| 2 | traceback on bad input | **Fixed** | `load_text` is wrapped in `try/except ValueError` with the temp path stripped and the rest of the cell skipped cleanly (`if my_text is not None:`). I ran the real cell with the three bad inputs: partly labelled gives `Couldn't read that meeting: label every line (act / dec / dis) or none of them; 2 of 3 lines have one`; a line with no speaker name gives `... line 2: expected 'Speaker: text', got "dis Let's start the meeting."`; empty text gives `... has no 'Speaker: text' lines`. Each is followed by `Hint: label every line or none of them, and write each line as 'Name: text' (something after the colon).` No traceback, no temp-file path. The temp file is removed in a `finally`. |
+| 3 (nit) | "553" typed in | **Fixed** | The cell now prints `len(load_trained_model()["vocab"])`, and the output is still `The model knows 553 words`. |
+| 4 (nit) | "club and CCA meetings" | **Fixed** | Cell 50 now says "17 held-out meetings (clubs, projects, group work)". |
+| 5 (nit) | names in the unknown-word list | **Fixed** | Cell 50 explains that names show up as unseen words because the model never reads them (they are dropped before it sees the text), which is true (`tokenize_transcript` drops the speaker). |
+
+The good paths still work: the default labelled example flags the "venue is confirmed" mismatch and prints the minutes, the unseen words, the vocabulary size and the "which EARLIER line should it have remembered?" prompt; unlabelled lines print the model labels plus "No labels given ..."; invented words are listed; 3-line, 8-line, blank-line, emoji and single-speaker inputs all run.
+
+## Checks
+
+- **Frozen check:** `bash reviews/check_frozen.sh 2b2dd49`: **no frozen file changed**. The only flagged files are the approved ones (`plan/PROMPTS.md`, `plan/WORK_PACKAGES.md`, `plan/handoffs/*`, the handoff-path line in `progress.md`, and `.gitignore` from earlier rounds). `git diff --stat main 2b2dd49 -- prototype` is empty.
+- **Participants' notebook from `workshop_files.zip` alone (17 files, 2.8 MB), in an empty folder:** all 53 cells ran, **0 errors, unsolved 126 s** (a second job was running on the machine) **and solved 69 s** (both YOUR-TURN cells filled in inline). Solved output includes `check: OK` for Part A and Part B and the knob sweep.
+- **`run_tests.py`:** 12 passed, 0 failed, 1 skipped. Every code cell compiles; the committed notebook has 0 saved outputs.
+- **Not re-run this round:** the facilitator zip and `hook_demo` cells, because nothing in `demo/`, `prototype/` or `make_bundle.py` changed since `cecf3da`, where I ran them.
+
+Not verified by anyone here: Colab, a T4, the microphone cells of the facilitator notebook, and audio playback.
+
+---
+
+# Round 1 (kept for the record): `cecf3da`
+
+ROUND 1 VERDICT: CHANGES
 
 Final review of `cecf3da` (parent `198fee6`; base `main` = `3736eaf`), in a detached worktree. IDs claimed: N9, the integration items (bundle, zip-only run, minutes table), `progress.md`, `debug_cheatsheet.md`, the handoff move to `plan/handoffs/`, and the WP3 carry-over. I also did the whole-branch pass against `main` that you asked for.
 Everything was re-run by me, on CPU only (no GPU, no Colab).
