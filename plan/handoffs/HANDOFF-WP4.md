@@ -291,3 +291,140 @@ now starts with `plan/handoffs/`.
 - Nothing else in WP4's deliverable list, or in
   `plan/WORK_PACKAGES.md` as a whole, is outstanding. This was the last
   work package.
+
+---
+
+## Round 2 (final review verdict: CHANGES on `cecf3da`, no blockers, whole-branch pass otherwise clean)
+
+Reviewer's findings: `git show claude/review-workshop-gaps-53e548:reviews/WP4.md`.
+Both findings and all nits applied below, independently re-verified.
+Nothing committed -- same protocol as every round.
+
+| # | Finding | Fix applied | Verified |
+|---|---|---|---|
+| 1 (should-fix) | A leftover, unlabelled own-meeting cell (the pre-WP4 `MY_MEETING = '''Sam: Should we move...'''` cell) was still sitting right after the new N9 cell, same variable name, no heading -- a participant could easily edit the wrong one | Deleted the leftover cell entirely (53 cells now, was 54) | Confirmed by index: the only `MY_MEETING` cell left is the N9 one |
+| 2 (should-fix) | Labelling only some lines, a line with no `Name:`, or empty text all raised an uncaught `ValueError` with a stack trace and the temp-file's path | Wrapped `load_text(...)` in `try/except ValueError`, printing the message with the temp path stripped plus a hint, then skipping the rest of the cell cleanly (an `if my_text is not None:` block, no `SystemExit`) | All three of the reviewer's exact cases re-tested (below): clean one-line messages, no traceback |
+| 3 (nit) | "553 words" was a typed constant | `vocab_size = len(load_trained_model()["vocab"])`, printed from that variable | Re-ran: still prints `553`, now computed live |
+| 4 (nit) | "17 held-out club and CCA meetings" is loose -- several aren't clubs or CCAs | Reworded to "17 held-out meetings (clubs, projects, group work)" | Re-read |
+| 5 (nit) | Unknown-word list includes names, which could read as if names matter to the model | Added: "Names show up as unseen words too, for the same reason -- the model never actually reads them (they are dropped before it sees the text), so this is expected and harmless." | Re-read |
+
+**A real bug found while applying finding 2, not in the review:** the
+first attempt stripped the temp-file path with `str(e).split(": ", 1)[-1]`,
+which works for two of the three error messages but garbles the
+"has no 'Speaker: text' lines" one -- that message's first `": "` is
+inside the quoted phrase `'Speaker: text'`, not after the path, so the
+split cut it at the wrong point (`"Couldn't read that meeting: text'
+lines"`). Fixed by replacing the known `my_meeting_path` substring
+directly instead of splitting on a delimiter that can appear elsewhere in
+the message, then stripping leftover punctuation.
+
+### The three error cases, re-tested after the fix
+
+```
+$ <exec cell 51's real source with MY_MEETING swapped for each case, prerequisites imported>
+
+=== g_partly_labelled (2 of 3 lines labelled) ===
+Couldn't read that meeting: label every line (act / dec / dis) or none of them; 2 of 3 lines have one
+Hint: label every line or none of them, and write each line as 'Name: text'
+(something after the colon).
+(no exception)
+
+=== h_no_speaker_name (a line with no "Name:") ===
+Couldn't read that meeting: line 2: expected 'Speaker: text', got "dis  Let's start the meeting."
+Hint: label every line or none of them, and write each line as 'Name: text'
+(something after the colon).
+(no exception)
+
+=== i_empty (blank text) ===
+Couldn't read that meeting: has no 'Speaker: text' lines
+Hint: label every line or none of them, and write each line as 'Name: text'
+(something after the colon).
+(no exception)
+```
+All three now print one clean, readable line each -- no traceback, no
+temp-file path, no mangled message.
+
+### Full notebook, empty folder with only the rebuilt zip -- unsolved and solved
+
+```
+$ python notebook/make_bundle.py
+wrote .../notebook/workshop_files.zip (2.8 MB, 17 files)
+wrote .../notebook/facilitator_files.zip (3.7 MB, 20 files)
+
+$ <nbclient run from a folder holding only workshop_files.zip + the notebook, Parts A/B unsolved>
+... (53 cells)
+=== OK in 70.9s ===
+```
+Cell 51's output, unsolved notebook, default (labelled) example:
+```
+discussion   (you)   discussion   (model)   Sam: Let's go over what's left before the trip.
+decision     (you)   discussion   (model)   Lee: The venue is confirmed for Friday.  <- X
+discussion   (you)   discussion   (model)   Sam: Should we also book the shuttle?
+action_item  (you)   action_item  (model)   Sam: Lee, can you call the shuttle company?
+action_item  (you)   action_item  (model)   Lee: Sure.
+
+# Meeting Minutes
+...
+Words the model never saw in training (read as <unk>): lee, shuttle, what's
+The model knows 553 words; anything else is read as <unk>.
+
+Pick one line it got wrong. Which EARLIER line should it have remembered?
+```
+
+```
+$ <same folder, Parts A and B solved inline (throwaway copy, hands_on.py untouched)>
+... (53 cells)
+=== OK in 75.2s ===
+```
+Part A: `check (MEMORY_ON = True): OK`. Part B: `check: OK`, knob sweep
+`10/45 (0.22)` at -6, `35/45 (0.78)` at 0, `22/45 (0.49)` at +6 -- same
+numbers as every earlier round.
+
+### `compile()` check, every code cell, full joined source
+
+```
+$ python -c "
+import json
+nb = json.load(open('notebook/audio_workshop.ipynb', encoding='utf-8'))
+for i, c in enumerate(nb['cells']):
+    if c['cell_type'] == 'code':
+        compile(''.join(c['source']), f'cell{i}', 'exec')
+print('all code cells compile cleanly,', len(nb['cells']), 'total cells')
+"
+all code cells compile cleanly, 53 total cells
+```
+
+### `run_tests.py` and frozen-file check
+
+```
+$ python prototype/run_tests.py
+PASS  a. imports                  11 modules import  (0.9s)
+PASS  b. weights                  5 members, labels discussion / decision / action_item  (0.1s)
+PASS  c. shipped KPIs reproduce   dev 0.96/0.948, test 0.84/0.825, 36-turn test 0.86/0.853, sample 7/9, probes 9/12  (20.4s)
+PASS  d. demo minutes             no decisions, one action item (catering by Friday, Priya)  (0.4s)
+PASS  e. --text example           runs, model matches the hand labels 7/7  (0.7s)
+PASS  f. hands-on                 solution: both parts OK, 35/45 at knob 0; unfilled version says 'not written yet'  (2.4s)
+PASS  g. training data            leak checks pass  (3.4s)
+PASS  h. scorecard                frozen scorecard runs (hash ignores line endings)  (1.3s)
+PASS  i. smoke runs               5 scripts exit 0  (2.9s)
+PASS  j. text clean-up            text clean-up: 31/31 clean-up checks pass  (0.6s)
+PASS  k. holdout meetings         holdout 1 0.879/0.806, holdout 2 0.852/0.762 (accuracy / macro-F1)  (3.5s)
+SKIP  l. audio (optional)         no --audio FILE given  (0.0s)
+PASS  m. repo unchanged           git status and git diff identical before and after  (0.1s)
+
+12 passed, 0 failed, 1 skipped in 36.8 s
+```
+
+```
+$ git diff --stat main -- prototype/trained_lstm.npz training_data.py scorecard_data.py \
+    holdout_data.py minutes_tests.py normalise_tests.py lstm_model.py train_lstm.py \
+    meeting_minutes.py transcriber.py hands_on_reference.py testing/ prototype/hands_on.py
+(no output -- nothing frozen was touched)
+```
+
+### Files changed this round
+
+```
+ notebook/audio_workshop.ipynb | deleted the leftover cell (54 -> 53 cells); cell 50/51 reworded and hardened
+```
+No other files changed this round.
