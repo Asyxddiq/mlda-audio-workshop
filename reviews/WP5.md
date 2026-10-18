@@ -1,4 +1,22 @@
 VERDICT: PASS
+Round 2: re-review of `be4bdcb` (parent `e89780b`). Nits 1-4 are fixed; one new cosmetic nit left. The commit touches `notebook/audio_workshop.ipynb`, `demo/hook_demo.ipynb` and `plan/handoffs/` only; nothing in `prototype/` has changed against `main`, and `bash reviews/check_frozen.sh be4bdcb` reports **no frozen file changed** (it lists only the approved `plan/` and `.gitignore` paths). Round-1 text is kept below.
+
+| # | Round-1 nit | Round 2 |
+|---|---|---|
+| 1 | retention legend covered the curves, title too wide | **Fixed, one small leftover.** I pulled the PNG out of my own executed notebook (not the builder's screenshot): the title now fits on one line ("Memory retention: r^n (an illustration, not measured)"), the legend is in the lower right and no longer covers the starts of the curves. Leftover: the tail of the 0.95 curve (n about 38 to 47, ending at 9%) runs into the top-right corner of the legend box. Nit: `plt.legend(loc="center right")` would leave both curves clear. |
+| 2 | minutes printed as raw Markdown | **Fixed.** Cells 48 and 51 now call `display(Markdown(...))`; my executed notebook has Markdown display outputs in both, and screenshots 10 and 11 show real "Meeting Minutes" / "Decisions" / "Action Items" headings and bullets, with the `<- X` mark still visible in the table above. |
+| 3 | red FP16 warning | **Fixed and specific.** Both setup cells now run `warnings.filterwarnings("ignore", message="FP16")`. I tested it: the exact Whisper message is hidden, `warnings.warn("some other warning")` still prints, and so does a message that merely contains "FP16" later in the text (the match is at the start of the message only). My solved participants' notebook run has no stderr output in any cell, and the `hook_demo` cells 2 and 8 run from `facilitator_files.zip` printed 0 `UserWarning` lines. Screenshot 12 shows the minutes with no red box. |
+| 4 | handoff caption and header | **Fixed** (read the new Round 2 section; caption says the image is cropped and the four-player claim comes from the DOM check). |
+
+Re-runs, in empty folders from freshly built zips: participants' notebook (`workshop_files.zip`, 17 files, Parts A and B solved inline), **53 cells, 0 errors, 98 s**; `hook_demo` real cells 2 then 8 from `facilitator_files.zip` (`WHISPER_MODEL=small.en` for speed): both decisions and both action items with Ravi and Mei as owners. `run_tests.py`: 12 passed, 0 failed, 1 skipped.
+
+Not verified: Colab, a T4, listening to the audio, the microphone cells.
+
+---
+
+# Round 1 (kept for the record): `e89780b`
+
+ROUND 1 VERDICT: PASS
 
 Review of WP5, "Rendered output check", at `e89780b` (parent `2b2dd49`), in a detached worktree. I opened all 10 screenshots myself, then re-rendered the participants' notebook (solved) from `workshop_files.zip` alone in an empty folder and checked what it produced, including the audio data inside the players, which a screenshot cannot show.
 
