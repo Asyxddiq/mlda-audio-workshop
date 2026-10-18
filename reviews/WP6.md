@@ -1,4 +1,28 @@
-VERDICT: CHANGES
+VERDICT: PASS
+Round 3: re-verification of `f1507ea` (parent `1101432`). R1, R2 and R3 are fixed and verified; nothing is left open from this audit. Rounds 1 and 2 are kept below.
+
+Re-run by me on CPU only (no GPU, no Colab). `bash reviews/check_frozen.sh f1507ea`: **no frozen file changed** (only the approved `plan/handoffs/` files are flagged); `git diff --stat main f1507ea -- prototype` is empty.
+
+| Item | Result | How I checked |
+|---|---|---|
+| **R1** `FACILITATOR.md` cell numbers | **Fixed.** | I read every cell reference in the file (lines 4-6, 13, 19-22, 29-34, 48, 60-61, 77-78, 106-116) against the notebook and then followed it literally from `facilitator_files.zip` in an empty folder. Running order: setup is cell 2; the recorder is 4; the live button is 6; **cell 8 plays the recording** (ran in 0.9 s, showed only the audio player, no minutes); then, after the room calls out, **cell 10 presses** (printed "Press. One. Button." and the big-print minutes). Failure table row 1 ("Cell 2 fails, or Whisper won't load: use cell 12"): cell 12 is the text-only fallback, and after setup it ran in 0.6 s and rendered the big-print minutes. The other rows (live skit not rehearsed, a turn skipped or merged, mic denied) now say "cell 8, then cell 10". The "Running it" list says cell 8 "plays the backup WAV to the room only -- no button yet", cell 10 "run only after the room has called out the decisions and to-dos", cell 12 is the fallback. The step-4 "press one button" line names cell 6 for the live recording and cell 10 for the backup. No stale reference left. |
+| **R2** the number | **Fixed.** | Cell 62 now says "`decision`, 56% against 43%", matching 0.562 and 0.434. |
+| **R3** `plt.figure()` in cell 33 | **Fixed.** | Cell 33 now starts its plot with `plt.figure(figsize=(7, 4))`. My executed notebook has exactly one image in that cell: the retention figure, three curves, legend outside the axes, 9.0% endpoint visible (the builder's new screenshot 09 shows the same). |
+
+Quick checks:
+- Participants' notebook, empty folder with only `workshop_files.zip` and the `.ipynb`, Parts A and B solved inline: **65 cells, 0 errors** (167 s on a loaded machine; the earlier clean runs were 75 to 96 s).
+- `python prototype/run_tests.py`: 12 passed, 0 failed, 1 skipped.
+- Frozen check: no frozen file changed.
+
+Remaining nits, none blocking and none new: the two "Sure." labels in cell 61 are fixed text keyed to the default meeting; the run-sheet does not add a "watch the eraser at `<eot>`" line (it was optional); cell 26's run-sheet sentence says it "needs nothing from earlier cells" although it still needs Setup for the module path.
+
+Not verified, as throughout: Colab and a T4, the microphone, the live skit, projector audio, and how anything sounds.
+
+---
+
+# Round 2 (kept for the record): `1101432`
+
+ROUND 2 VERDICT: CHANGES
 Round 2: re-verification of `1101432` (parent `cb9a4a2`). Eleven of the twelve items are fixed and verified; the twelfth, V1, is fixed in the notebook but **`demo/FACILITATOR.md` was not updated and now sends the facilitator to the wrong cells**. That is a one-file text fix. Round-1 text is kept below.
 
 Re-run by me on CPU only (no GPU, no Colab). `bash reviews/check_frozen.sh 1101432`: **no frozen file changed** (only the approved `plan/handoffs/` files are flagged); `git diff --stat main 1101432 -- prototype` is empty.
