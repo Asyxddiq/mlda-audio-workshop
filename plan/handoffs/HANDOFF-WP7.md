@@ -249,6 +249,24 @@ Colab and a working mic should:
 
 ---
 
+## Round 2
+
+Review verdict: CHANGES (W1, W2 blockers; W3-W9 should-fix/nit). All fixed, re-verified against the reviewer's own adversarial cases (mis-heard tails, tense mismatches, silence, noise, 5 recorder failure modes).
+
+| # | Fix | Verified |
+|---|---|---|
+| W1 blocker | New `notebook/toy_memory.py`: stated `KEEP_RATE=0.8` leaky integrator (`h = r*h_prev + (1-r)*x`) replaces the seed-2 random-matrix toy for blocks 3b/4b/5b. Decay is now `r^(n-1)` **exactly**, not an emergent property. | Short pair (4w) = 51.2%, long (16w) = 3.52%, zero variance over 500 random trials (self-test in the module). Two-bar chart, screenshot `07_block5_two_bar_fixed.png`. |
+| W2 blocker | `toy_memory.first_word_pair(words_a, words_b_spoken)`: builds the comparison sequence from B's own first word + A's own later words, so a mis-heard tail in either recording can never show up as a false difference. | Re-ran the reviewer's exact "Green/Red apples...Sala" and "Cats/Dogs...tense mismatch" cases: both now give the exact same guaranteed decay as the clean case. |
+| W3 should-fix | `live_mic.record()`: the stop/split/decode block now wrapped in one `try/except Exception`, not just the cases already anticipated. | Simulated stop-returns-None, malformed data URL, and a raising stop call: all three now give the plain fallback message, no traceback. |
+| W4 should-fix | New `live_mic.need_words()` + `say(..., minimum_words=2)`: a near-silent or noise-only recording falls back instead of passing `"You"` or `""` downstream. | Silence and hiss-only clips: both now print "heard almost nothing" and use the fallback, no `IndexError`/`nan%`. |
+| W5 should-fix | Block 3b now plots the **change** `|h_t - h_t-1|` per word, not `mean|h|`. | 4 varied sentences (3 to 23 words): zero identical adjacent bars in any case. Screenshot `05_block3_change_plot_fixed.png`. |
+| W6 should-fix | Noise cell's message is now conditional: if accuracy is 100%, says so instead of asserting a drop that didn't happen. | -- |
+| W7 should-fix | RUNSHEET: one paragraph on 30-laptops-one-room (speak close to the mic, a table at a time, wait for `done.`). | -- |
+| W8 nit | Block 4b marked "(bonus, if Part A left time)"; block 5b split into a core short-pair prompt and a "(bonus)" long-pair prompt. | -- |
+| W9 nit | Stray duplicated line in cell 32's intro removed. | -- |
+
+Full re-verification after the fixes: `compile()` 105/105 cells clean; both zips rebuilt; unsolved + solved notebook runs from `workshop_files.zip`, 0 errors each; `hook_demo.ipynb` cells 2/8/10/12 from `facilitator_files.zip`, 0 errors; `run_tests.py` 12 passed/0 failed/1 skipped; frozen check empty.
+
 ## Not checked / open
 
 - No Colab, no real browser mic, no T4 GPU available from this build
