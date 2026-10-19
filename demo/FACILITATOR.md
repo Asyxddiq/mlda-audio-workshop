@@ -1,179 +1,102 @@
-# Facilitator page: the hook (Agenda item 1, 00:00-00:08)
+# Facilitator page: the hook
 
-Cell numbers below are `demo/hook_demo.ipynb`'s actual cell indexes (0-indexed,
-counting markdown and code cells together), not section numbers -- cell 2 is
-Setup, cell 4 is the recorder, cell 6 is the live-recording button, cell 8
-plays the backup WAV, cell 10 presses the button on it, cell 12 is the
-text-only fallback. The detailed workshop-wide run order (blocks 2-10, what
-to say, expected output, timing) is in `demo/RUNSHEET.md`; this page covers
-the hook only.
+Agenda item 1, 00:00-00:08. Notebook: `demo/hook_demo.ipynb`.
+Cell numbers count from 0, markdown and code cells together.
+Blocks 2-10 are in `demo/RUNSHEET.md`.
 
-## Running order, in six steps
+## Running order
 
-1. **Before the session:** run cell 2 (installs Whisper, preloads the model --
-   slow the first time, do this ahead of time).
-2. **Rehearse** with the checklist below -- the live-skit path is untested
-   until you do.
-3. Ask the room: "Who actually remembers what was decided, and who's doing
-   what?"
-4. Run the skit (cell 4 + 6 live, or play the recording from cell 8 if
-   nobody can act it out, or hasn't rehearsed).
-5. Let the room call out decisions and to-dos first -- **then** press the
-   button (cell 6 for the live recording, cell 10 for the backup).
-6. Close with the two "Sure." exchanges, read aloud (not run on stage).
+1. Before the session, run cell 2. It installs Whisper and loads the model. The first run is slow.
+2. Rehearse once with the checklist below. The live skit is untested until you do.
+3. Ask the room:
+   > "You've just sat through an hour-long CCA meeting. Who actually remembers what was decided, and who's doing what?"
+4. Run the skit. Live: run cell 4 to record. Backup WAV: run cell 8 to play it.
+5. Let the room call out the decisions and to-dos. Don't correct them. Then press the button: cell 6 (live) or cell 10 (backup).
+6. Read the two "Sure." exchanges aloud. Don't run them on stage.
+   > "Can you book the room?" "Sure."
+   > "Shall we move it to Friday?" "Sure."
+
+   Ask what "Sure." means each time. Then say:
+   > "Today we teach a computer to do that."
 
 ## If something goes wrong
 
-| What happens | What to do |
+| What happens | Do this |
 |---|---|
-| Cell 2 fails, or Whisper won't load | Use cell 12, the text-only fallback (`demo/script.txt`, no audio, instant) -- keeps the hook going with no model at all. |
-| The live skit wasn't rehearsed, or acting it out live feels risky | Play the backup WAV from cell 8 instead (`display(Audio(...))` plays it to the room), let the room call out, then press cell 10. This is the one path verified end to end. |
-| A turn gets skipped, merged or split (live skit) | Re-run with the backup WAV (cell 8, then cell 10). |
-| The minutes differ from what the room called out | Say so plainly -- "the model isn't perfect, here's a case where a human still beats it" -- and move on. Don't re-run hoping for a different answer. |
-| No GPU / a CPU-only Colab | Cell 2 prints `GPU: no` and switches to `small.en` automatically (about 1 minute instead of `medium.en`'s 3). |
-| Mic permission denied, or no browser mic | Skip to the backup WAV (cell 8, then cell 10), or the laptop fallback below. |
+| Cell 2 fails, or Whisper won't load | Run cell 12. It reads `demo/script.txt` as text. No audio, instant. |
+| Skit not rehearsed, or acting it feels risky | Run cell 8 to play the backup WAV. Let the room call out. Then run cell 10. This is the one path verified end to end. |
+| A turn is skipped, merged or split (live skit) | Switch to the backup WAV: cell 8, then cell 10. |
+| Minutes differ from the room's list | Say: "The model isn't perfect. Here a human still beats it." Move on. Don't re-run for a different answer. |
+| No GPU (CPU-only Colab) | Cell 2 prints `GPU: no` and switches to `small.en`. The press takes about 1 minute, not 3. |
+| Mic permission denied, or no browser mic | Use the backup WAV (cells 8, 10) or the laptop fallback below. |
 
-## Pre-session rehearsal checklist
+## Pacing for the live skit
 
-- [ ] Rehearse the live skit with the two people who will act it out: say
-  each turn in one go, a clear ~2-second pause before the other person
-  speaks, don't overlap (see "Pacing" below -- this has not been tested
-  end to end, only the backup WAV has).
-- [ ] Record that rehearsal on a phone, then run
-  `python prototype/demo.py your_recording.wav` and check it against
-  `demo/ANSWER_KEY.md`.
-- [ ] If the rehearsal doesn't match the key, use the backup WAV on the
-  day instead -- it is the one path that has actually been verified
-  end to end.
-- [ ] Run cell 2 of `demo/hook_demo.ipynb` before the session (preloads
-  Whisper -- slow the first time).
+1. Say each turn in one go. No long pause inside it.
+2. Two turns in the script have two sentences. Say both without stopping.
+3. Leave a clear 2-second pause before the other person speaks.
+4. Don't overlap.
+
+Don't use a natural pace. The transcriber starts a new speaker at a gap of 1.5 seconds or more. A quick back-and-forth gets heard as one person. A long pause mid-turn gets heard as a speaker change. Either way the owners in the minutes come out wrong. See the backup-WAV attempts in `ATTEMPTS.md`.
+
+## Rehearsal checklist
+
+- [ ] Rehearse the live skit with the two people who will act it out. Follow the pacing above. Only the backup WAV has been tested end to end.
+- [ ] Record the rehearsal on a phone. Run `python prototype/demo.py your_recording.wav`. Check it against `demo/ANSWER_KEY.md`.
+- [ ] If it doesn't match the key, use the backup WAV on the day.
+- [ ] Run cell 2 of `demo/hook_demo.ipynb` before the session.
 - [ ] `python prototype/run_tests.py` says `0 failed`.
-- [ ] Note: both synthetic voices in the backup WAV (Zira as Mei, Hazel as
-  Ravi) are female -- the room may need the names said aloud to tell them
-  apart, since the voices alone don't signal it.
+- [ ] Both backup voices (Zira as Mei, Hazel as Ravi) are female. Say the names aloud so the room can tell them apart.
 
-## What to say
+## What to expect in the printed minutes
 
-1. "You've just sat through an hour-long CCA meeting. Who actually
-   remembers what was decided, and who's doing what?"
-2. Run the skit live (two presenters read `demo/script.txt` as Mei and
-   Ravi), recorded from the browser mic (cells 4 then 6 in
-   `demo/hook_demo.ipynb`), or play `demo/backup_meeting.wav` (cell 8) if
-   nobody can act it out or the live path hasn't been rehearsed.
-   **Pacing:** say each turn in one go, with no long pause inside it (two
-   turns in the script have two sentences -- say both without stopping);
-   leave a clear ~2-second pause before the other person speaks; don't
-   overlap. (Not "normal pace" -- the transcriber splits speakers on a gap
-   of 1.5 seconds or more, so a natural, quick back-and-forth gets heard as
-   one person, and a long pause mid-turn gets heard as a speaker change
-   too, and either way the minutes' owners come out wrong. See
-   `ATTEMPTS.md`'s backup-WAV attempts for why.)
+Read them against the room's list. `demo/ANSWER_KEY.md` has the reference. Two harmless differences:
 
-   **The live-skit path is untested until the team rehearses it** (see the
-   checklist above: two people, a phone recording, then
-   `python prototype/demo.py <file>`). Until that rehearsal happens and
-   passes, **the backup WAV is the safe route** for the actual event.
-3. Let the room call out the decisions and to-dos. Don't correct them yet.
-4. **Press one button** (`demo/hook_demo.ipynb` cell 6 for the live
-   recording, cell 10 for the backup WAV, or on a laptop:
-   `python prototype/demo.py skit.wav`).
-5. Read the printed minutes against what the room called out
-   (`demo/ANSWER_KEY.md` has the reference list). Two things to expect,
-   both harmless:
-   - Whisper may write "T-shirts" as "t -shirts" in the audio runs (the
-     typed-text run says "T-shirts"). That is the speech-to-text stage
-     rendering a word oddly, not the minutes model -- no need to explain
-     it unless someone asks.
-   - The action items keep the full spoken sentence ("I'll send the order
-     form to everyone tonight.") rather than the key's shorter phrasing
-     ("Send the order form to everyone") -- same item, just not trimmed.
-6. Close with the two "Sure." exchanges, read aloud (not run through the
-   app on stage -- see "The two Sure. exchanges" below):
-   - "Can you book the room?" "Sure."
-   - "Shall we move it to Friday?" "Sure."
-   Ask the room what "Sure." means each time. They get it instantly because
-   they remember the line before. Then: "Today we teach a computer to do
-   that."
+- Whisper may write "T-shirts" as "t -shirts" in audio runs. The typed run says "T-shirts". The speech-to-text stage does this, not the minutes model. Explain only if asked.
+- Action items keep the full spoken sentence ("I'll send the order form to everyone tonight."). The key has the shorter "Send the order form to everyone". Same item.
 
-## Running it: Colab (primary) or laptop (fallback)
+## Cells in `demo/hook_demo.ipynb`
 
-**Colab, `demo/hook_demo.ipynb`** (facilitator-only -- uses its own
-`facilitator_files.zip`, which the facilitator keeps; `workshop_files.zip`,
-the participants' separate zip, has no demo answers in it (`demo/script.txt`
-and the answer key are both facilitator-only, never in either participant
-zip) and is safe to hand out ahead of the session -- see
-`demo/RUNSHEET.md`'s onboarding step):
-- Cell 2, **before the session starts**: installs Whisper, unzips
-  `facilitator_files.zip`, prints whether a GPU is present, and preloads
-  the model (`medium.en` with a GPU, `small.en` without -- slow the first
-  time, do this ahead of time, not live).
-- Cell 4: records the skit from the browser microphone to `skit.wav`
-  (needs mic permission in the browser tab; a T4 GPU speeds up Whisper).
-- Cell 6: the button, on the live recording.
-- Cell 8: plays the backup WAV to the room only -- no button yet.
-- Cell 10: the button, on the backup WAV -- run only after the room has
-  called out the decisions and to-dos.
-- Cell 12: text-only fallback, no Whisper at all, if the model won't load.
+Facilitator only. It uses `facilitator_files.zip`, which you keep. The participants' `workshop_files.zip` holds no demo answers (`demo/script.txt` and the answer key are in neither participant zip). It is safe to send early. See `demo/RUNSHEET.md`, onboarding.
 
-**Laptop fallback (no internet / Colab unavailable):** record the skit any
-way you like (phone, laptop mic) and run
-`python prototype/demo.py your_recording.wav`. `medium.en` on a laptop CPU
-is slow -- timed on the backup WAV (53.5s of audio) with nothing else
-running: `medium.en` 2 min 56 s, `small.en` 1 min 7 s. **`medium.en` is
-well over 60 seconds on a laptop CPU, so the laptop fallback should use
-`small.en`** (`WHISPER_MODEL=small.en python prototype/demo.py
-your_recording.wav`) -- this gets the exact same result as `medium.en`,
-just faster.
+| Cell | What it does |
+|---|---|
+| 2 | Run before the session. Installs Whisper, unzips `facilitator_files.zip`, prints whether a GPU is present, preloads the model (`medium.en` with a GPU, `small.en` without). |
+| 4 | Records the skit from the browser mic to `skit.wav`. Needs mic permission in the tab. |
+| 6 | The button, on the live recording. |
+| 8 | Plays the backup WAV to the room. No button yet. |
+| 10 | The button, on the backup WAV. Run only after the room has called out. |
+| 12 | Text-only fallback. No Whisper at all. |
+
+## Laptop fallback (no internet, or no Colab)
+
+1. Record the skit with any app (phone, laptop mic).
+2. Run `WHISPER_MODEL=small.en python prototype/demo.py your_recording.wav`.
+
+Use `small.en`. On the backup WAV (53.5 s of audio, nothing else running), `medium.en` took 2 min 56 s on a laptop CPU. `small.en` took 1 min 7 s. The result is the same.
 
 ## Timing
 
-The script is 68 spoken words -- about 25-30 s read straight through. With
-the required ~2 s pauses between all nine speaker changes, the full skit
-runs about 50 s, close to the Agenda's "~1 minute". The backup WAV itself
-runs 53.5 s for the same reason (2.0 s silences between turns, not just
-pauses in speech).
+- The script is 68 spoken words. Read straight through, it takes 25-30 s.
+- Nine speaker changes, each with a 2 s pause, make the skit about 50 s. The Agenda says "~1 minute".
+- The backup WAV runs 53.5 s. It has 2.0 s of silence between turns.
 
 ## The backup WAV
 
-`demo/backup_meeting.wav` is the script spoken in two synthetic Windows
-voices (Microsoft Zira as Mei, Microsoft Hazel as Ravi -- both built into
-Windows, no install needed; both voices are female, see the checklist
-above), 2.0 s of silence between turns -- comfortably over the
-`pause_gap=1.5` the demo uses for real two-person speech. Made with
-`demo/make_backup_wav.py`; see that file's docstring for exactly how. This
-is currently the only path that has been run and verified end to end.
+`demo/backup_meeting.wav` is the script in two synthetic Windows voices. Microsoft Zira is Mei. Microsoft Hazel is Ravi. Both are built into Windows. There is 2.0 s of silence between turns, over the `pause_gap=1.5` the demo uses. Made with `demo/make_backup_wav.py` (see its docstring). It is the only path run and verified end to end.
 
 ## The two "Sure." exchanges
 
-These are a **human exercise** (D5 in `plan/SPEC.md`) -- read aloud to the
-room, not run through the app on stage. We did run them through the model
-once, honestly, to see what it does with them (`demo/sure_exchanges.txt`):
-it is not perfect on the second exchange, which is exactly the point of
-asking the room instead of the app. (The notebook's own "Sure. test" cell,
-block 6-7, revisits this honestly with the model's confidence printed.)
+These are a human exercise (D5 in `plan/SPEC.md`). Read them aloud. Don't run them in the app on stage.
+
+We did run them through the model once (`demo/sure_exchanges.txt`). It gets the second exchange wrong. That is why you ask the room instead of the app. The notebook's "Sure. test" cell (blocks 6-7) shows the model's confidence.
 
 ---
 
 ## Provenance
 
-The first script and key (`6b7424c`) were committed before any model run.
-The final script and key (this version) were drafted by the PM with model
-feedback during drafting, and the key was fixed from a plain reading of
-each draft, never bent to match the model -- see `ATTEMPTS.md` for the full
-history, both this session's own rewording of the superseded first script
-and the PM's attempts on the final one.
-
-Both decisions in the demo are phrased as agreement to a proposal
-("Sounds good") -- this scores 0.77 and 0.60 for `decision` in the
-model's own confidence, independently re-derived in
-`plan/handoffs/HANDOFF-WP1.md`. Plain-fact decisions ("Venue is confirmed
-for the 14th") are the model's known weak spot and are deliberately
-**not** in this demo -- see `labelling_guide.md` and `plan/SPEC.md`'s
-tensions list.
-
-The default text run (`python prototype/demo.py`) and the backup-WAV runs
-(both `medium.en` and `small.en`, `pause_gap=1.5`) all match the answer
-key (10/10 turns, both decisions, both action items, correct owners and
-deadlines -- see `plan/handoffs/HANDOFF-WP1.md`; "match" there means the
-standard check's 80%-word-similar comparison, not byte-identical text, so
-small wording differences are expected and fine).
+- The first script and key (`6b7424c`) were committed before any model run.
+- The final script and key were drafted by the PM, with model feedback while drafting. The key came from a plain reading of each draft. It was never bent to match the model. See `ATTEMPTS.md`.
+- Both decisions are agreements to a proposal ("Sounds good"). The model scores them 0.77 and 0.60 for `decision`. Re-derived in `plan/handoffs/HANDOFF-WP1.md`.
+- Plain-fact decisions ("Venue is confirmed for the 14th") are the model's weak spot. They are left out on purpose. See `labelling_guide.md` and `plan/SPEC.md`.
+- The default text run and the backup-WAV runs (`medium.en` and `small.en`, `pause_gap=1.5`) all match the key. That is 10/10 turns, both decisions, both action items, correct owners and deadlines. "Match" means at least 80% word similarity, not identical text. See `plan/handoffs/HANDOFF-WP1.md`.
