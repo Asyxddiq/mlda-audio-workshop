@@ -23,14 +23,14 @@
 |---|---|---|---|
 | 2 *(optional)* | 26, 28, 30 | a clear sentence; the same with noise; one word | your waveform/spectrogram; an accuracy %; forwards/backwards audio |
 | 3 | 35 | any sentence, 5-15 words | a bar chart, the memory **changing** at every word |
-| 4 *(bonus)* | 43-44 | "Cats are..." / "Dogs are..." (same ending) | ON decays smoothly, OFF flat at 0% from word 2 |
-| 5 | 49-50, *(bonus)* 51-52 | "Red/Blue cars drive fast"; *(bonus)* the long Monday/Tuesday pair | a two-bar chart: short keeps much more than long |
-| 6 | 62, 64 | a 2-turn exchange, ~2s pause | gate bar chart, `<eot>` marked; knob sweep reuses block 4's recording |
-| 7 | 72-74 | a request; a proposal; a plain fact | label + confidence + loss for each |
-| Sure. | 80-81 | "Can you book the room?.../Sure."; "Shall we move it to Friday?.../Sure." | the same word, two different labels |
-| 8 | 90 | a 2-turn exchange | the label changes as the knob moves |
-| 9 | 101 | your own 4-6 line meeting | transcript, labels, rendered minutes |
-| **Headline** | 104, 106, 108, 110 | a short exchange (2-3 turns); then a long one (8+ turns, ~40-60s) | short keeps a lot, long keeps ~0% -- on the toy **and** the real trained model |
+| 4 *(bonus)* | 43-44, 47 | "Cats are..." / "Dogs are..." (same ending); *(YOUR TURN)* your own pair | ON decays smoothly, OFF flat at 0% from word 2 |
+| 5, **the headline** | 52-53, *(bonus)* 54-55, 58, 60 | "Red/Blue cars drive fast"; *(bonus)* the long Monday/Tuesday pair; then a SHORT exchange (2-3 turns); then a LONG one (8+ turns, ~40-60s) | two-bar charts: short keeps much more than long -- on your own conversation, not just a sentence |
+| 6 | 70, 72 | a 2-turn exchange, ~2s pause | gate bar chart, `<eot>` marked; knob sweep reuses block 4's recording |
+| 7 | 80-82 | a request; a proposal; a plain fact | label + confidence + loss for each |
+| Sure. | 88-89 | "Can you book the room?.../Sure."; "Shall we move it to Friday?.../Sure." | the same word, two different labels |
+| 8 | 98, 101, 104 | a 2-turn exchange; (toy LSTM dial reuses block 5's recordings); *(YOUR TURN)* set the dial | the label changes as the knob moves; "KEPT"/"NOT KEPT", not a raw percentage |
+| 9 | 115, 117 | your own 4-6 line meeting (up to 35s); *(YOUR TURN)* label it before the model does | transcript, your labels next to the model's, rendered minutes, then (cell 122) the trained model's real memory reach |
+| 10 | 127, 129 | *(YOUR TURN)* explain it in your own words; nothing to say -- read the summary | your own explanation printed back; "What I built today" |
 
 ## If it goes wrong
 
@@ -46,6 +46,9 @@
 
 - **Part A (block 4):** `new memory = tanh( W_x @ x + W_h @ h_prev + b )` -- one line, `@` is matrix multiply, `tanh` is `np.tanh`.
 - **Part B (block 8):** `new notebook = (what you keep) * (old notebook) + (what you add) * (new note)` -- `c = f * c_prev + i * g`.
+- **Your own pair (block 4, cell 47):** keep the two sentences identical except the very first word.
+- **The dial (block 8, cell 104):** bigger `KNOB` keeps more; the check wants your long conversation to come back "KEPT".
+- **Your own meeting's labels (block 9, cell 117):** one of `act`, `dec`, `dis` per turn, same order as the transcript printed just above.
 
 Stuck either way? Each cell has a collapsed **"Stuck?"** note right below it with the real mistakes people make and what they look like.
 

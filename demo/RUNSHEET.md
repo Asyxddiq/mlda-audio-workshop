@@ -83,76 +83,80 @@ begin speaking so the wait overlaps. 2b is marked optional in the notebook
 | 38 | "Write that one line -- the check tells you right away." | `check (MEMORY_ON = True): OK` once they have it right | <1s | Wrong line -- point them at the "Stuck?" note right below the cell (cell 39), verified against real mistakes. |
 | 41 | "Now run the amnesia version and watch the memory vanish." | The toy RNN's memory gap table dropping from `2.85` to `0.00` from word 2 on | <1s | -- |
 | 43, 44 | **Live mic** *(bonus, if Part A left time)*: "Say 'Cats are sitting near the window this evening,' then the same line with 'Dogs.'" (both cells printed on screen; close is fine, it doesn't need to match word for word) | Two heard-back lines, then (cell 44) a plot: memory ON decays smoothly from 100% and never hits 0%, memory OFF is flat at 0% from word 2 | ~15s each | No mic / not Colab -- fallback clips, plain sentence, no traceback. |
+| 47 | *(bonus)* "Write your own first-word-swap pair -- the check confirms only the first word differs." | `check: OK` and a retained-% number on their own words | <1s | Word counts don't match, or a later word differs too -- the check says exactly which; doesn't block anything below. |
 
 ## Block 5: Why simple memory fades (00:43-00:50, 7 min)
 
 | Cells | Say | Expect | Time | If it fails |
 |---|---|---|---|---|
-| 47 | "Here's that same fading, as a graph -- including your own toy RNN from a minute ago." | A graph, three curves (0.49, 0.95, and the dotted toy-RNN curve) | <1s | `NameError: np`/`plt` -- this cell now imports both itself; if it still fails, cell 2 wasn't run. |
-| 49, 50 | **Live mic:** "Say 'Red cars drive fast,' then 'Blue cars drive fast'" (read each line as shown) | Two heard-back lines | ~10s each | No mic / not Colab -- fallback clips, plain sentence, no traceback. |
-| 51, 52 | **Live mic** *(bonus, if there's time)*: "Now the long Monday/Tuesday pair printed on screen" | Two more heard-back lines, then (cell 52) a two-bar chart: the short pair keeps about half its first word's effect, the long pair is down near a few percent, each number printed exactly | ~15-20s each (the long sentence takes longer to speak and transcribe) | No mic / not Colab -- fallback clips, plain sentence, no traceback. |
+| 50 | "Here's that same fading, as a graph -- including your own toy RNN from a minute ago." | A graph, three curves (0.49, 0.95, and the dotted toy-RNN curve) | <1s | `NameError: np`/`plt` -- this cell now imports both itself; if it still fails, cell 2 wasn't run. |
+| 52, 53 | **Live mic:** "Say 'Red cars drive fast,' then 'Blue cars drive fast'" (read each line as shown) | Two heard-back lines | ~10s each | No mic / not Colab -- fallback clips, plain sentence, no traceback. |
+| 54, 55 | **Live mic** *(bonus, if there's time)*: "Now the long Monday/Tuesday pair printed on screen" | Two more heard-back lines, then (cell 52's successor) a two-bar chart: short keeps about half its first word's effect, long is down near a few percent | ~15-20s each (the long sentence takes longer to speak and transcribe) | No mic / not Colab -- fallback clips, plain sentence, no traceback. |
+| 58 | **Live mic, the headline:** "Say a SHORT 2-3 turn exchange -- the first line holds one key fact, ~2s pause between turns." | Turns printed back | ~20s | No mic / not Colab -- fallback clip, plain sentence, no traceback. |
+| 60 | **Live mic:** "Now a LONG 8+ turn conversation, ~40-60s, same first-line fact." | Two-bar chart: short keeps a clear %, long is near 0% | ~70-90s (longer clip takes longer to transcribe) | Same fallback as above. |
+
+**This is the headline** Asy asked for -- don't cut cells 58/60 if the block runs long; cut the
+bonus cells 54-55 first.
 
 ## Block 6: LSTMs -- an eraser you can set (00:50-01:10, 20 min)
 
 | Cells | Say | Expect | Time | If it fails |
 |---|---|---|---|---|
-| 55 | "Five of these stacked, like an hourglass." | The layer-size table, then a bar chart (8/16/32/16/8) | <1s | `NameError: transcript` -- sections 1-2 weren't run; run from cell 2. |
-| 57 | "And here's the eraser, pencil and voice actually at work, word by word." | A bar chart (3 bars per word) and a printed table; `<eot>` marked | <1s | -- |
-| 59 | "That `<eot>` is the model's only clue someone new is talking." | A token list with `<eot>` visible between two turns | <1s | -- |
-| 60 | "The hourglass folds four words into one step in the middle layer." | A fold/unfold shape check, `True` | <1s | -- |
-| 62 | **Live mic:** "Say two short turns, ~2s apart -- a question, then a one-word answer." | A gate bar chart over YOUR words, `<eot>` visible in the labels | ~15s | No mic / not Colab -- fallback clip, plain sentence, no traceback. |
-| 64 | **Live mic:** "Now put your Cats/Dogs pair from 4b through this same toy LSTM at three knob settings." | A 3-line plot, the gap surviving longest at `+6`, dying fastest at `-6` | <1s (reuses 4b's recording, no new prompt) | `NameError: CATS_LIVE` -- cell 43-44 (block 4b) weren't run; run from cell 2. |
+| 63 | "Five of these stacked, like an hourglass." | The layer-size table, then a bar chart (8/16/32/16/8) | <1s | `NameError: transcript` -- sections 1-2 weren't run; run from cell 2. |
+| 65 | "And here's the eraser, pencil and voice actually at work, word by word." | A bar chart (3 bars per word) and a printed table; `<eot>` marked | <1s | -- |
+| 67 | "That `<eot>` is the model's only clue someone new is talking." | A token list with `<eot>` visible between two turns | <1s | -- |
+| 68 | "The hourglass folds four words into one step in the middle layer." | A fold/unfold shape check, `True` | <1s | -- |
+| 70 | **Live mic:** "Say two short turns, ~2s apart -- a question, then a one-word answer." | A gate bar chart over YOUR words, `<eot>` visible in the labels | ~15s | No mic / not Colab -- fallback clip, plain sentence, no traceback. |
+| 72 | **Live mic:** "Now put your Cats/Dogs pair from 4b through this same toy LSTM at three knob settings." | A 3-line plot, the gap surviving longest at `+6`, dying fastest at `-6` | <1s (reuses 4b's recording, no new prompt) | `NameError: CATS_LIVE` -- cell 43-44 (block 4b) weren't run; run from cell 2. |
 
 ## Block 7: Teaching it, and catching it out (01:10-01:20, 10 min)
 
 | Cells | Say | Expect | Time | If it fails |
 |---|---|---|---|---|
-| 67 | "Confident and right costs almost nothing; confident and wrong costs a lot." | Two lines, `loss = 0.00` and `loss = 5.61` | <1s | -- |
-| 69 | "Keyword rules versus the trained model, on a meeting it's never seen." | `keyword rules: 12/18`, `trained LSTM: 17/18`, one miss line | <1s | -- |
-| 72, 73, 74 | **Live mic:** "Say a request, a proposal, then a plain fact -- one per cell." | Three lines: model label + confidence + loss, and the keyword rule's answer, for each | ~15s each | No mic / not Colab -- fallback clips, plain sentence, no traceback. |
-| 77 | "Same two words, three answers -- this is the hook's 'Sure.' again." | Three label/confidence lines | <1s | -- |
-| 80, 81 | **Live mic:** "Say 'Can you book the room? ... Sure.', then 'Shall we move it to Friday? ... Sure.' -- ~2s pause before each 'Sure.'" | Two label/confidence lines, one per exchange | ~20s each | No mic / not Colab -- fallback clips, plain sentence, no traceback. |
+| 75 | "Confident and right costs almost nothing; confident and wrong costs a lot." | Two lines, `loss = 0.00` and `loss = 5.61` | <1s | -- |
+| 77 | "Keyword rules versus the trained model, on a meeting it's never seen." | `keyword rules: 12/18`, `trained LSTM: 17/18`, one miss line | <1s | -- |
+| 80, 81, 82 | **Live mic:** "Say a request, a proposal, then a plain fact -- one per cell." | Three lines: model label + confidence + loss, and the keyword rule's answer, for each | ~15s each | No mic / not Colab -- fallback clips, plain sentence, no traceback. |
+| 85 | "Same two words, three answers -- this is the hook's 'Sure.' again." | Three label/confidence lines | <1s | -- |
+| 88, 89 | **Live mic:** "Say 'Can you book the room? ... Sure.', then 'Shall we move it to Friday? ... Sure.' -- ~2s pause before each 'Sure.'" | Two label/confidence lines, one per exchange | ~20s each | No mic / not Colab -- fallback clips, plain sentence, no traceback. |
 
 ## Block 8: Hands-on B -- adjust the eraser (01:20-01:40, 20 min)
 
 | Cells | Say | Expect | Time | If it fails |
 |---|---|---|---|---|
-| 84 | "Same deal -- one line, the check confirms it." | `check: OK` | <1s | Wrong line -- point at the "Stuck?" note below (cell 85). |
-| 88 | "Now sweep the knob and watch both numbers move." | Three blocks (-6, 0, +6), toy gap row + trained score each | <1s | Stub unfilled -- prints "not written yet" three times, expected, not an error. |
-| 90 | **Live mic:** "Say a short two-turn exchange -- a question, ~2s pause, then a short answer." | Three lines, one per knob setting, the label on YOUR exchange changing | ~15s | No mic / not Colab -- fallback clip, plain sentence, no traceback. |
+| 92 | "Same deal -- one line, the check confirms it." | `check: OK` | <1s | Wrong line -- point at the "Stuck?" note below (cell 93). |
+| 96 | "Now sweep the knob and watch both numbers move." | Three blocks (-6, 0, +6), toy gap row + trained score each | <1s | Stub unfilled -- prints "not written yet" three times, expected, not an error. |
+| 98 | **Live mic:** "Say a short two-turn exchange -- a question, ~2s pause, then a short answer." | Three lines, one per knob setting, the label on YOUR exchange changing | ~15s | No mic / not Colab -- fallback clip, plain sentence, no traceback. |
+| 101 | "Same idea, through the toy LSTM's dial -- reuses 5c's recordings, no new prompt." | "KEPT" / "NOT KEPT" for short and long, not a raw percentage | <1s | `NameError: short_tokens` -- cells 58/60 (block 5c) weren't run; run from cell 2. |
+| 104 | **YOUR TURN:** "Set the dial so the long conversation comes back KEPT." | `check: OK` once the long conversation is "KEPT" | <1s | Stays "NOT KEPT" -- see the "Stuck?" note below (cell 105); doesn't block anything below. |
 
 ## Block 9: Try it on your own meeting (01:40-01:55, 15 min)
 
 | Cells | Say | Expect | Time | If it fails |
 |---|---|---|---|---|
-| 93 | "Now the whole pipeline, on a real two-speaker transcript." | Rendered minutes (headings, bullets) | <1s | -- |
-| 96 | "Write your own 5 lines here, with labels if you want to check yourself." | Label comparison, rendered minutes, unseen words, the prompt | <1s | Bad input (unlabelled mix, no colon, empty) -- prints a clean one-line message, not a traceback; re-check the format hint it gives. |
-| 98 | "Add one line of context and watch the model's answer flip." | Two label/confidence lines, the second now correct | <1s | -- |
-| 101 | **Live mic:** "Talk a short 4-6 line meeting -- solo (playing both people) or with a partner, ~2s pause between lines." | Transcript with Speaker1/Speaker2, per-turn labels, rendered minutes | ~30-40s | No mic / not Colab -- fallback clip, plain sentence, no traceback. |
-| 104 | **Live mic, the headline:** "Say a SHORT 2-3 turn exchange -- the first line holds one key fact, ~2s pause between turns." | Turns printed back | ~20s | No mic / not Colab -- fallback clip, plain sentence, no traceback. |
-| 106 | **Live mic:** "Now a LONG 8+ turn conversation, ~40-60s, same first-line fact." | Two-bar chart: short keeps a clear %, long is near 0% | ~70-90s (longer clip takes longer to transcribe) | Same fallback as above. |
-| 108 | "Same test, through the toy LSTM at knob +3." | A second two-bar chart, same story | <1s | `NameError: SimpleLSTM` -- cell 62 (block 6b) wasn't run; run from cell 2. |
-| 110 | "Does the TRAINED model's last answer move more when you change line 1, or the line right before it?" | A two-bar chart: "change line 1" barely moves it, "change the line before last" moves it a lot | <1s | Falls back to the block 1-2 sample meeting if 9b's recording was under 3 turns. |
-
-**This headline block adds roughly 2 minutes of live recording** (20s + 70-90s, plus reading the
-prompts) on top of block 9's existing ~15 minutes -- tight. If the block is running long, the
-long-conversation prompt (cell 106) is the one to let run a little over rather than cut, since it
-is the whole point; everything from cell 93 through 101 can be trimmed first.
+| 107 | "Now the whole pipeline, on a real two-speaker transcript." | Rendered minutes (headings, bullets) | <1s | -- |
+| 110 | "Write your own 5 lines here, with labels if you want to check yourself." | Label comparison, rendered minutes, unseen words, the prompt | <1s | Bad input (unlabelled mix, no colon, empty) -- prints a clean one-line message, not a traceback; re-check the format hint it gives. |
+| 112 | "Add one line of context and watch the model's answer flip." | Two label/confidence lines, the second now correct | <1s | -- |
+| 115 | **Live mic:** "Talk a short 4-6 line meeting -- solo (playing both people) or with a partner, ~2s pause between lines. Up to 35s." | The transcript printed, Speaker1/Speaker2 | ~15-35s | No mic / not Colab -- fallback clip, plain sentence, no traceback. |
+| 117 | **YOUR TURN:** "Label each of your turns act/dec/dis, before seeing the model's labels." | `check: OK` | <1s | Wrong count or a typo'd label -- see the "Stuck?" note below (cell 118); the model's labels still print either way. |
+| 119 | (continues from 117) | Your label next to the model's for each turn, rendered minutes | <1s | -- |
+| 122 | "Does the TRAINED model's last answer move when you change line 1, or the line right before it?" | A two-bar chart: both changes move it by a similar, modest amount -- the trained model's context-sensitivity isn't a clean "only the previous line" rule | <1s | Falls back to the longer block 1-2 sample meeting if the spoken meeting (cell 115) had fewer than 6 turns. |
 
 ## Block 10: Wrap-up (01:55-02:00, 5 min)
 
 | Cells | Say | Expect | Time | If it fails |
 |---|---|---|---|---|
-| 112 | "Sound becomes words, memory turns words into meaning, meaning becomes minutes -- and here's what it still gets wrong." | The one-sentence recap and three honest limits | -- | -- |
+| 124 | "Sound becomes words, memory turns words into meaning, meaning becomes minutes -- and here's what it still gets wrong." | The one-sentence recap and three honest limits | -- | -- |
+| 127 | *(time permitting)* "In your own words: why does a long conversation's memory fade so much more than a short one's?" | Whatever they wrote, printed back | <1s | -- |
+| 129 | "Here's what you built today." | A short list: prompts recorded, their dial value, their pair, their labels, their explanation (whichever they did) | <1s | A piece they skipped just doesn't appear in the list -- not an error. |
 
 ## Notes
 
-- Live-mic recording (`demo/hook_demo.ipynb` cells 4/6, and `audio_workshop.ipynb`'s
-  cells 26, 35, 43, 44, 49-52 added in WP7), a real T4 GPU, and how anything
-  actually sounds are all untested from this repo's own checks (no Colab or
-  microphone available here) -- rehearse these yourself before the day, same as
-  the hook's own checklist in `demo/FACILITATOR.md`. `plan/handoffs/HANDOFF-WP7.md`
-  lists exactly what to try on Colab with a real mic for the new live cells. The
+- Live-mic recording (`demo/hook_demo.ipynb` cells 4/6, and every live cell in
+  `audio_workshop.ipynb`), a real T4 GPU, and how anything actually sounds are
+  all untested from this repo's own checks (no Colab or microphone available
+  here) -- rehearse these yourself before the day, same as the hook's own
+  checklist in `demo/FACILITATOR.md`. `plan/handoffs/HANDOFF-WP7.md` and
+  `HANDOFF-WP8.md` list exactly what to try on Colab with a real mic. The
   live-skit path specifically stays unverified, and its checklist item in
   `demo/FACILITATOR.md` stays unticked, until someone actually runs that
   rehearsal.
@@ -163,3 +167,6 @@ is the whole point; everything from cell 93 through 101 can be trimmed first.
 - If a participant's Colab runtime restarts mid-session, point them at the
   boxed note under the notebook's title: run cell 2, then every cell above
   the one they want.
+- **YOUR TURN cells (47, 104, 117, 127) are all optional and self-contained** --
+  none of them gates anything later in the notebook if a participant skips it;
+  cell 129's "What I built today" just lists fewer pieces.

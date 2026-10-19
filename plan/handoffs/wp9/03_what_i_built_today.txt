@@ -1,0 +1,6 @@
+What I built today:
+- 20/20 live-mic prompts recorded (or used the fallback for)
+- the memory dial you set: KNOB = 3
+- your own first-word pair: 'Cats are sitting by the door tonight.' / 'Dogs are sitting by the door tonight.'
+- your own meeting's labels: ['dis', 'dis', 'dis', 'dis']
+- your own explanation: 'YOUR TURN: write your own 1-2 sentence explanation here.'
