@@ -54,11 +54,13 @@ AUDIO_LIVE = ["block2_clear.wav", "block2_noisy.wav", "block2_backward.wav",
               "block3_sentence.wav", "block4_cats.wav", "block4_dogs.wav",
               "block5_short_a.wav", "block5_short_b.wav", "block5_long_a.wav", "block5_long_b.wav",
               "block6_gates.wav", "block7_request.wav", "block7_proposal.wav", "block7_fact.wav",
-              "block8_exchange.wav", "sure_request.wav", "sure_proposal.wav", "block9_meeting.wav"]
+              "block8_exchange.wav", "sure_request.wav", "sure_proposal.wav", "block9_meeting.wav",
+              "headline_short_conv.wav", "headline_long_conv.wav"]
 # live_mic.py and toy_memory.py sit at the zip root (same level as
 # audio_workshop.ipynb), not under prototype/ -- that is where every live cell
-# imports them from.
-NOTEBOOK_TOP = ["live_mic.py", "toy_memory.py"]
+# imports them from. CHEATSHEET.md (WP9 F3) is there for participants to read,
+# not imported by anything.
+NOTEBOOK_TOP = ["live_mic.py", "toy_memory.py", "CHEATSHEET.md"]
 
 # Only for the facilitator notebook (demo/hook_demo.ipynb), on top of the above.
 # ANSWER_KEY.md is deliberately NOT bundled, even here: it is read from the

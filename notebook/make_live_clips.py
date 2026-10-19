@@ -70,6 +70,22 @@ PROMPTS = {
         ("a", "Can you also confirm the guest count by Friday?"),
         ("b", "Sure, I will check with the committee."),
     ],
+    # WP9 F2(a): short vs long conversation, same first-line key fact
+    "headline_short_conv": [
+        ("a", "The meeting is on Friday at three."),
+        ("b", "Got it, thanks."),
+        ("a", "See you then."),
+    ],
+    "headline_long_conv": [
+        ("a", "The meeting is on Friday at three."),
+        ("b", "Sounds good."),
+        ("a", "We also need to finalise the catering order this week."),
+        ("b", "I will call the vendor tomorrow."),
+        ("a", "Can you confirm the guest count by Friday?"),
+        ("b", "Sure, I will check with the committee."),
+        ("a", "Let's also review the budget numbers before we close out."),
+        ("b", "Agreed, I will send those over tonight."),
+    ],
 }
 
 _PS_ONE_LINE = (

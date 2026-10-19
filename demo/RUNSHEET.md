@@ -129,12 +129,21 @@ begin speaking so the wait overlaps. 2b is marked optional in the notebook
 | 96 | "Write your own 5 lines here, with labels if you want to check yourself." | Label comparison, rendered minutes, unseen words, the prompt | <1s | Bad input (unlabelled mix, no colon, empty) -- prints a clean one-line message, not a traceback; re-check the format hint it gives. |
 | 98 | "Add one line of context and watch the model's answer flip." | Two label/confidence lines, the second now correct | <1s | -- |
 | 101 | **Live mic:** "Talk a short 4-6 line meeting -- solo (playing both people) or with a partner, ~2s pause between lines." | Transcript with Speaker1/Speaker2, per-turn labels, rendered minutes | ~30-40s | No mic / not Colab -- fallback clip, plain sentence, no traceback. |
+| 104 | **Live mic, the headline:** "Say a SHORT 2-3 turn exchange -- the first line holds one key fact, ~2s pause between turns." | Turns printed back | ~20s | No mic / not Colab -- fallback clip, plain sentence, no traceback. |
+| 106 | **Live mic:** "Now a LONG 8+ turn conversation, ~40-60s, same first-line fact." | Two-bar chart: short keeps a clear %, long is near 0% | ~70-90s (longer clip takes longer to transcribe) | Same fallback as above. |
+| 108 | "Same test, through the toy LSTM at knob +3." | A second two-bar chart, same story | <1s | `NameError: SimpleLSTM` -- cell 62 (block 6b) wasn't run; run from cell 2. |
+| 110 | "Does the TRAINED model's last answer move more when you change line 1, or the line right before it?" | A two-bar chart: "change line 1" barely moves it, "change the line before last" moves it a lot | <1s | Falls back to the block 1-2 sample meeting if 9b's recording was under 3 turns. |
+
+**This headline block adds roughly 2 minutes of live recording** (20s + 70-90s, plus reading the
+prompts) on top of block 9's existing ~15 minutes -- tight. If the block is running long, the
+long-conversation prompt (cell 106) is the one to let run a little over rather than cut, since it
+is the whole point; everything from cell 93 through 101 can be trimmed first.
 
 ## Block 10: Wrap-up (01:55-02:00, 5 min)
 
 | Cells | Say | Expect | Time | If it fails |
 |---|---|---|---|---|
-| 103 | "Sound becomes words, memory turns words into meaning, meaning becomes minutes -- and here's what it still gets wrong." | The one-sentence recap and three honest limits | -- | -- |
+| 112 | "Sound becomes words, memory turns words into meaning, meaning becomes minutes -- and here's what it still gets wrong." | The one-sentence recap and three honest limits | -- | -- |
 
 ## Notes
 

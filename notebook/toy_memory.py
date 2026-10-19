@@ -60,6 +60,29 @@ def first_word_pair(words_a: list, words_b_spoken: list) -> list:
     return [words_b_spoken[0]] + list(words_a[1:])
 
 
+def first_line_pair(tokens_a: list, alt_line_tokens: list, turn_token: str = "<eot>") -> list:
+    """Line-level version of `first_word_pair`, for a whole conversation (WP9's
+    F2(a)): swap only the FIRST turn's tokens for `alt_line_tokens`, keeping
+    every later turn (including its own `<eot>` markers) exactly as spoken.
+    If there is no `<eot>` in `tokens_a` (a one-turn recording), the whole
+    thing counts as "line 1" and is replaced."""
+    if turn_token in tokens_a:
+        idx = tokens_a.index(turn_token)
+        return list(alt_line_tokens) + list(tokens_a[idx:])
+    return list(alt_line_tokens)
+
+
+def line_boundary_index(tokens: list, turn_token: str = "<eot>") -> int:
+    """Index of the first `<eot>` in `tokens` (end of line 1) -- the right
+    reference point for a LINE-level swap (`first_line_pair`): line 1 can
+    share its first word or two with the alternate line ("The meeting is on
+    Friday..." vs "The meeting is on Monday..."), so the gap can be exactly 0
+    at word 1 -- use the gap once the whole differing line has been read
+    instead. Falls back to the last index if there's no `<eot>` (a one-line
+    recording)."""
+    return tokens.index(turn_token) if turn_token in tokens else len(tokens) - 1
+
+
 def words_below(gaps: list, threshold_pct: float = 10.0) -> int | None:
     """The first word position (1-indexed) at which the gap, as a percentage
     of word 1's gap, drops below `threshold_pct`. None if it never does."""
