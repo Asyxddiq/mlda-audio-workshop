@@ -87,12 +87,19 @@ def record(prompt_id: str, seconds: float = 5.0, out_dir: str = ".") -> str:
         print(f"  {left}...", end="\r", flush=True)
         time.sleep(1)
     print("  done.          ")
-    data_url = eval_js("stopRecording()")
-    _, encoded = data_url.split(",", 1)
-    webm_path = os.path.join(out_dir, f"{prompt_id}.webm")
-    wav_path = os.path.join(out_dir, f"{prompt_id}.wav")
-    with open(webm_path, "wb") as f:
-        f.write(b64decode(encoded))
+    # Everything from here on talks to the browser tab or the filesystem -- wrap all
+    # of it, not just the parts we've personally seen fail, so ANY failure (a stop
+    # call raising, a None/malformed data URL, a mangled base64 string) becomes the
+    # same plain fallback message instead of a raw traceback (see reviews/WP7.md, W3).
+    try:
+        data_url = eval_js("stopRecording()")
+        _, encoded = data_url.split(",", 1)
+        webm_path = os.path.join(out_dir, f"{prompt_id}.webm")
+        wav_path = os.path.join(out_dir, f"{prompt_id}.wav")
+        with open(webm_path, "wb") as f:
+            f.write(b64decode(encoded))
+    except Exception as e:
+        raise RuntimeError(f"Couldn't finish the recording -- using the fallback clip instead. ({e})")
     # ffmpeg converts the browser's webm/opus to WAV -- Whisper reads WAV directly.
     result = subprocess.run(["ffmpeg", "-y", "-i", webm_path, wav_path], capture_output=True, text=True)
     if result.returncode != 0:
@@ -107,24 +114,43 @@ def hear(path: str, model) -> str:
     return model.transcribe(path, language="en")["text"].strip()
 
 
-def say(prompt_id: str, model, seconds: float = 5.0, typed: str = None):
+def need_words(text: str, minimum: int = 2) -> bool:
+    """True if `text` has at least `minimum` words -- guards against a near-silent
+    or noise-only recording, where Whisper often hallucinates a single short word
+    ("You", "Thank you.") instead of raising an error (see reviews/WP7.md, W4)."""
+    return len(text.split()) >= minimum
+
+
+def say(prompt_id: str, model, seconds: float = 5.0, typed: str = None, minimum_words: int = 2):
     """Record (or use `typed`, or fall back to the shipped clip), then transcribe.
 
-    Returns `(text, wav_path, used_fallback)`.
+    If the recording produced fewer than `minimum_words` words (silence, noise,
+    or a mic that cut out all give Whisper almost nothing to work with), prints
+    a plain retry message and uses the fallback clip instead of passing a
+    near-empty transcript on to the rest of the cell. Returns
+    `(text, wav_path, used_fallback)`.
     """
     if typed is not None:
         print(f"(typed override, no audio) heard: {typed}")
         return typed, None, False
-    try:
-        path = record(prompt_id, seconds=seconds)
-        return hear(path, model), path, False
-    except RuntimeError as e:
-        print(e)
+
+    def _fallback(reason: str):
+        print(reason)
         fallback = os.path.join(LIVE_AUDIO_DIR, f"{prompt_id}.wav")
         if not os.path.isfile(fallback):
             raise RuntimeError(f"No fallback clip for {prompt_id!r} either (expected {fallback}) -- can't continue this cell.")
         print(f"Using the fallback clip instead: audio/live/{prompt_id}.wav")
         return hear(fallback, model), fallback, True
+
+    try:
+        path = record(prompt_id, seconds=seconds)
+    except RuntimeError as e:
+        return _fallback(str(e))
+    text = hear(path, model)
+    if not need_words(text, minimum_words):
+        return _fallback(f"Whisper heard almost nothing useful ({text!r}) -- try again, closer to the "
+                          f"mic and a bit louder.")
+    return text, path, False
 
 
 def word_vector(word: str, dim: int = 8) -> np.ndarray:

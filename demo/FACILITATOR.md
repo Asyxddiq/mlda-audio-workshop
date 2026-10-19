@@ -98,11 +98,11 @@ the hook only.
 ## Running it: Colab (primary) or laptop (fallback)
 
 **Colab, `demo/hook_demo.ipynb`** (facilitator-only -- uses its own
-`facilitator_files.zip`, which the facilitator keeps; hand out
-`workshop_files.zip`, the participants' separate zip, only *after* the
-hook, so nobody sees `demo/script.txt` -- or the answer key, which is kept
-out of both zips entirely -- before being asked to call out the decisions
-and to-dos):
+`facilitator_files.zip`, which the facilitator keeps; `workshop_files.zip`,
+the participants' separate zip, has no demo answers in it (`demo/script.txt`
+and the answer key are both facilitator-only, never in either participant
+zip) and is safe to hand out ahead of the session -- see
+`demo/RUNSHEET.md`'s onboarding step):
 - Cell 2, **before the session starts**: installs Whisper, unzips
   `facilitator_files.zip`, prints whether a GPU is present, and preloads
   the model (`medium.en` with a GPU, `small.en` without -- slow the first
