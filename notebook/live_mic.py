@@ -71,7 +71,7 @@ def record(prompt_id: str, seconds: float = 5.0, out_dir: str = ".") -> str:
     below) catch it and fall back to the shipped clip.
     """
     if not _is_colab():
-        raise RuntimeError("No live mic here (not running in Colab) -- using the fallback clip instead.")
+        raise RuntimeError("No mic found. Using the recorded example instead.")
     from base64 import b64decode
 
     from IPython.display import Javascript, display
@@ -81,8 +81,8 @@ def record(prompt_id: str, seconds: float = 5.0, out_dir: str = ".") -> str:
     try:
         eval_js("startRecording()")
     except Exception as e:
-        raise RuntimeError(f"Couldn't start the mic (permission denied, or no mic here) -- using the fallback clip instead. ({e})")
-    print(f"Recording for {int(seconds)}s -- speak now.")
+        raise RuntimeError(f"Couldn't start the mic. Using the recorded example instead. ({e})")
+    print(f"Recording for {int(seconds)}s. Speak now.")
     for left in range(int(seconds), 0, -1):
         print(f"  {left}...", end="\r", flush=True)
         time.sleep(1)
@@ -99,12 +99,12 @@ def record(prompt_id: str, seconds: float = 5.0, out_dir: str = ".") -> str:
         with open(webm_path, "wb") as f:
             f.write(b64decode(encoded))
     except Exception as e:
-        raise RuntimeError(f"Couldn't finish the recording -- using the fallback clip instead. ({e})")
+        raise RuntimeError(f"Couldn't finish the recording. Using the recorded example instead. ({e})")
     # ffmpeg converts the browser's webm/opus to WAV -- Whisper reads WAV directly.
     result = subprocess.run(["ffmpeg", "-y", "-i", webm_path, wav_path], capture_output=True, text=True)
     if result.returncode != 0:
         last_line = result.stderr.strip().splitlines()[-1] if result.stderr else ""
-        raise RuntimeError(f"Couldn't convert the recording -- using the fallback clip instead. (ffmpeg: {last_line})")
+        raise RuntimeError(f"Couldn't convert the recording. Using the recorded example instead. (ffmpeg: {last_line})")
     return wav_path
 
 
@@ -131,15 +131,15 @@ def say(prompt_id: str, model, seconds: float = 5.0, typed: str = None, minimum_
     `(text, wav_path, used_fallback)`.
     """
     if typed is not None:
-        print(f"(typed override, no audio) heard: {typed}")
+        print(f"Typed instead of recorded. Heard: {typed}")
         return typed, None, False
 
     def _fallback(reason: str):
         print(reason)
         fallback = os.path.join(LIVE_AUDIO_DIR, f"{prompt_id}.wav")
         if not os.path.isfile(fallback):
-            raise RuntimeError(f"No fallback clip for {prompt_id!r} either (expected {fallback}) -- can't continue this cell.")
-        print(f"Using the fallback clip instead: audio/live/{prompt_id}.wav")
+            raise RuntimeError(f"No recorded example for {prompt_id!r} either. Can't continue this cell.")
+        print(f"Using the recorded example instead: audio/live/{prompt_id}.wav")
         return hear(fallback, model), fallback, True
 
     try:
@@ -148,8 +148,7 @@ def say(prompt_id: str, model, seconds: float = 5.0, typed: str = None, minimum_
         return _fallback(str(e))
     text = hear(path, model)
     if not need_words(text, minimum_words):
-        return _fallback(f"Whisper heard almost nothing useful ({text!r}) -- try again, closer to the "
-                          f"mic and a bit louder.")
+        return _fallback(f"Heard almost nothing ({text!r}). Try again, closer to the mic.")
     return text, path, False
 
 

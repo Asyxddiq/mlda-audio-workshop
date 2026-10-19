@@ -17,8 +17,9 @@ Writes:
                                question" -- the facilitator notebook is the
                                only thing that needs `demo.py`).
 
-Both are gitignored (rebuild, don't commit) -- see `.gitignore`. Rebuild
-whenever anything in `prototype/`, `notebook/audio/` or `demo/` changes.
+Both are committed to the repo (Asy needs them on GitHub). Rebuild and
+commit the new zips whenever anything in `prototype/`, `notebook/audio/`
+or `demo/` changes.
 
 Deliberately NOT bundled, in either zip:
   - `prototype/hands_on_reference.py` -- the Part A / Part B answers. No

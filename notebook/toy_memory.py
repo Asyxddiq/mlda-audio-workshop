@@ -27,6 +27,15 @@ import numpy as np
 
 KEEP_RATE = 0.8  # a STATED toy setting, not learned -- see the module docstring
 
+# The headline (block 5c) compares whole CONVERSATIONS, 10-100+ tokens long,
+# not single sentences (block 3-5b, 5-16 words). At KEEP_RATE=0.8 an ordinary
+# 2-3 turn exchange already decays to ~10-15%, reading as "mostly gone" next
+# to a long conversation's ~0% -- not the "short keeps it, long loses it"
+# contrast the headline is making. 0.9 keeps a short exchange clearly above
+# the noise floor while a long conversation (80+ tokens) still decays to
+# ~0%. Stated on screen wherever it's used, same as KEEP_RATE above.
+HEADLINE_KEEP_RATE = 0.9
+
 
 def step(word_vec: np.ndarray, h_prev: np.ndarray, keep_rate: float = KEEP_RATE) -> np.ndarray:
     """One step of the toy memory: h_t = keep_rate * h_prev + (1 - keep_rate) * word_vec."""
@@ -65,11 +74,20 @@ def first_line_pair(tokens_a: list, alt_line_tokens: list, turn_token: str = "<e
     F2(a)): swap only the FIRST turn's tokens for `alt_line_tokens`, keeping
     every later turn (including its own `<eot>` markers) exactly as spoken.
     If there is no `<eot>` in `tokens_a` (a one-turn recording), the whole
-    thing counts as "line 1" and is replaced."""
+    thing counts as "line 1" and is replaced.
+
+    `alt_line_tokens` is cycled or trimmed to line 1's own length first, so
+    the two sequences always have the SAME length and every later word
+    stays lined up word-for-word -- a fixed-length alt line of the wrong
+    length would shift everything after it out of step, and `gap_curve`'s
+    `zip` would silently drop the extra words on the longer side (see
+    `reviews/WP9-10.md`, H1)."""
+    idx = tokens_a.index(turn_token) if turn_token in tokens_a else len(tokens_a)
+    alt = list(alt_line_tokens) or ["<unk>"]
+    alt = (alt * (idx // len(alt) + 1))[:idx]
     if turn_token in tokens_a:
-        idx = tokens_a.index(turn_token)
-        return list(alt_line_tokens) + list(tokens_a[idx:])
-    return list(alt_line_tokens)
+        return alt + list(tokens_a[idx:])
+    return alt
 
 
 def line_boundary_index(tokens: list, turn_token: str = "<eot>") -> int:

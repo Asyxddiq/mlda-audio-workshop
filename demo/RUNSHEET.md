@@ -65,11 +65,11 @@ Facilitator-run. Participants can follow or run the cells. Cell 0's boxed note s
 |---|---|---|---|---|
 | 50 | "Here's that same fading as a graph. Your own toy RNN is in it." | A graph with three curves: 0.49, 0.95, and the dotted toy-RNN curve | <1s | `NameError: np`/`plt`. The cell imports both itself. If it still fails, cell 2 wasn't run. |
 | 52, 53 | **Live mic.** "Say 'Red cars drive fast,' then 'Blue cars drive fast.'" Read each line as shown. | Two heard-back lines | ~10s each | No mic or not Colab: plain sentence, fallback clips. |
-| 54, 55 | **Live mic, bonus (if there's time).** "Now the long Monday/Tuesday pair on screen." | Two more heard-back lines. Then (cell 52's successor) a two-bar chart: short keeps about half its first word's effect, long is down near a few percent | ~15-20s each (the long one takes longer to say and transcribe) | No mic or not Colab: plain sentence, fallback clips. |
-| 58 | **Live mic, the headline.** "Say a SHORT 2-3 turn exchange. The first line holds one key fact. Pause ~2s between turns." | Turns printed back | ~20s | No mic or not Colab: plain sentence, fallback clip. |
-| 60 | **Live mic.** "Now a LONG 8+ turn conversation, 40-60s, with the same first-line fact." | Two-bar chart: short keeps a clear %, long is near 0% | ~70-90s (a longer clip takes longer to transcribe) | Same fallback. |
+| 54, 55 | **Live mic, bonus (if there's time).** "Now the long Monday/Tuesday pair on screen." | Two more heard-back lines. Then a two-bar chart: short keeps about half its first word's effect, long is down near a few percent | ~15-20s each (the long one takes longer to say and transcribe) | No mic or not Colab: plain sentence, fallback clips. |
+| 58 | **Live mic, the headline.** "Say a SHORT 2-3 turn exchange. One short reply each. The first line holds one key fact. Pause ~2s between turns." | Turns printed back | ~20s | No mic or not Colab: plain sentence, fallback clip. |
+| 60 | **Plays back a long conversation recorded earlier** -- no live recording needed by default. "Here's a long one we recorded earlier." *(Bonus)* set `RECORD_OWN_LONG = True` in the cell to record your own 8+ turn, ~65s conversation instead. | Two-bar chart: short keeps a clear %, long is near 0% | ~10s (clip) or ~75-95s if recording your own | Same fallback. |
 
-Cells 58 and 60 are the headline Asy asked for. Don't cut them. If the block runs long, cut bonus cells 54-55 first.
+Cells 58 and 60 are the headline Asy asked for. Don't cut them. If the block runs long, cut bonus cells 54-55 first (cell 60's own bonus recording is off by default, so there's nothing to cut there).
 
 ## Block 6: LSTMs, an eraser you can set (00:50-01:10, 20 min)
 
@@ -88,7 +88,7 @@ Cells 58 and 60 are the headline Asy asked for. Don't cut them. If the block run
 |---|---|---|---|---|
 | 75 | "Confident and right costs almost nothing. Confident and wrong costs a lot." | Two lines: `loss = 0.00` and `loss = 5.61` | <1s | - |
 | 77 | "Keyword rules against the trained model, on a meeting it has never seen." | `keyword rules: 12/18`, `trained LSTM: 17/18`, one miss line | <1s | - |
-| 80, 81, 82 | **Live mic.** "Say a request, a proposal, then a plain fact. One per cell." | Three lines: model label, confidence and loss, plus the keyword rule's answer | ~15s each | No mic or not Colab: plain sentence, fallback clips. |
+| 80, 81, 82 | **Live mic.** "Say a request, a proposal not yet agreed to, then a plain fact that's really a decision. One per cell." | Three lines: model label, confidence and loss, plus the keyword rule's answer | ~15s each | No mic or not Colab: plain sentence, fallback clips. |
 | 85 | "Same two words, three answers. This is the hook's 'Sure.' again." | Three label/confidence lines | <1s | - |
 | 88, 89 | **Live mic.** "Say 'Can you book the room? ... Sure.' Then 'Shall we move it to Friday? ... Sure.' Pause ~2s before each 'Sure.'" | Two label/confidence lines, one per exchange | ~20s each | No mic or not Colab: plain sentence, fallback clips. |
 
@@ -112,15 +112,15 @@ Cells 58 and 60 are the headline Asy asked for. Don't cut them. If the block run
 | 115 | **Live mic.** "Talk a short 4-6 line meeting, solo (playing both people) or with a partner. Pause ~2s between lines. Up to 35s." | The transcript, as Speaker1 / Speaker2 | ~15-35s | No mic or not Colab: plain sentence, fallback clip. |
 | 117 | **YOUR TURN.** "Label each of your turns act/dec/dis before you see the model's labels." | `check: OK` | <1s | Wrong count or a typo'd label. See the "Stuck?" note below (cell 118). The model's labels print either way. |
 | 119 | (Continues from 117.) | Your label next to the model's for each turn, plus rendered minutes | <1s | - |
-| 122 | "Does the TRAINED model's last answer move when you change line 1, or the line right before it?" | A two-bar chart. Both changes move it by a similar, modest amount. The trained model's context use is not a clean "only the previous line" rule | <1s | Falls back to the longer block 1-2 sample meeting if the spoken meeting (cell 115) had under 6 turns. |
+| 122 | "Does the TRAINED model's last answer move when you blank line 1, or the line right before it?" | A two-bar chart. Blanking line 1 barely moves it (near 0%); blanking the line before last moves it a lot (~90-97%) | <1s | Falls back to the longer block 1-2 sample meeting if the spoken meeting (cell 115) had under 6 turns. |
 
 ## Block 10: Wrap-up (01:55-02:00, 5 min)
 
 | Cells | Say | Expect | Time | If it fails |
 |---|---|---|---|---|
 | 124 | "Sound becomes words. Memory turns words into meaning. Meaning becomes minutes. And here's what it still gets wrong." | The one-sentence recap and three honest limits | - | - |
-| 127 | *(Time permitting)* "In your own words: why does a long conversation's memory fade so much more than a short one's?" | What they wrote, printed back | <1s | - |
-| 129 | "Here's what you built today." | A short list: prompts recorded, their dial value, their pair, their labels, their explanation (whichever they did) | <1s | A skipped piece just doesn't appear. Not an error. |
+| 127 | *(Bonus, time permitting)* "In your own words: why does a long conversation's memory fade so much more than a short one's?" | What they wrote, printed back | <1s | - |
+| 129 | "Here's what you built today." | A short list: prompts recorded, their dial value, their pair, their labels, their explanation -- a piece left at its default prints "(skipped)" | <1s | A skipped piece prints "(skipped)". Not an error. |
 
 ## Notes
 
@@ -128,4 +128,4 @@ Cells 58 and 60 are the headline Asy asked for. Don't cut them. If the block run
 - The live-skit path is still unverified. Its checklist item in `demo/FACILITATOR.md` stays unticked until someone runs the rehearsal.
 - The backup WAV's voices (Zira as Mei, Hazel as Ravi) are both female. Say the names aloud when you introduce the backup.
 - If a participant's Colab runtime restarts, point them to the boxed note under the notebook's title. Run cell 2, then every cell above the one they want.
-- **YOUR TURN cells (47, 104, 117, 127)** are optional and self-contained. Skipping one blocks nothing later. Cell 129's "What I built today" just lists fewer pieces.
+- **YOUR TURN cells (47, 104, 117, 127)** are optional and self-contained. Skipping one blocks nothing later. Cell 129's "What I built today" prints "(skipped)" for any piece left at its default.
