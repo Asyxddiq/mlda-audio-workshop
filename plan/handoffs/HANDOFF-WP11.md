@@ -91,3 +91,23 @@ All three runs force `live_mic._is_colab = lambda: False`, so every live cell ex
 
 - No Colab/real mic/T4 from this build session, same as every prior package.
 - `notebook/toy_memory.py` has no participant-visible `print()` output in normal use (only in its own `if __name__ == "__main__"` self-test, which participants never run) -- nothing needed changing there.
+
+## Round 2 (review at `15cb22f`, `reviews/WP11.md`)
+
+One blocker left over from H4, plus a nit. H1, H2, H3, H5, the plain-voice pass, `CHEATSHEET.md`, and the committed zips were all independently confirmed by this round's reviewer against their own inputs -- nothing to change there.
+
+- **H4 remainder (cells 121-123)**: the "last line is 4 words or fewer, use it as-is" shortcut is gone. Cell 122 now ALWAYS appends a fresh "Can you book the room?" / "Sure." exchange to whatever meeting it's testing (the participant's own, or the 9-turn sample if theirs was under 6 turns), then blanks line 1 vs. the line before last, as before. Cell 122 also now prints a conditional one-liner based on the two numbers it just computed (`shift_before_last >= 50%` and `shift_first <= 5%` -> "That matches the previous-turn effect..."; otherwise -> "Not a clean result this time -- the last answer may already have been certain either way."). Cell 123's markdown Why no longer asserts "moves it a lot" unconditionally -- it now explains what a strong vs. a weak result would mean, and points at the printed line for which one happened.
+- **Verified on the reviewer's 3 cases plus 2 of my own** (standalone script against `label_probabilities`, same method the notebook cell uses):
+
+  | Case | line 1 | line before last |
+  |---|---|---|
+  | reviewer 1: "Okay, thanks everyone." closer | 0.0% | **96.4%** |
+  | reviewer 2: own meeting already ending "...can you order them by Friday? / Sure, I will do it tonight." | 0.0% | 12.6% |
+  | reviewer 3: constructed "Can you print the agenda? / Sure." ending | 0.0% | **63.7%** |
+  | own A: short casual meeting ("Morning." / "Morning." / ... / "Sounds good.") | 0.1% | **96.7%** |
+  | own B: ends with a plain fact then thanks ("The venue is confirmed..." / "Great, thanks." / "No problem.") | 0.0% | **83.8%** |
+
+  Reviewer case 2 is the one case where the printed numbers DON'T show a clean "previous turn" effect (12.6%, below the 50% bar) -- checked why: the baseline last-turn probability is already 99.2% confident (`action_item`) before any blanking, because the meeting already has an earlier "can you ... / Sure, I will ..." exchange right before the appended one, so there's nothing left for the previous line to move. That's a real property of the trained model (saturated confidence), not a bug in the fix, and it's exactly the case the new conditional print is for: it correctly prints "Not a clean result this time..." instead of the unconditional claim the reviewer flagged.
+- **Nit (cell 37)**: Predict line reworded from "...will the plot below still look the same?" to "...will the gap table below shrink word by word?" -- `hands_on.part_a()` prints a gap table (`word`/`gap` rows), never a plot.
+
+Verification (re-run after this round's fixes, on the final notebook): `compile()` 130/130 cells OK; `python prototype/run_tests.py`: 12 passed, 0 failed, 1 skipped; `git diff --stat main -- prototype/ data/`: empty; both zips rebuilt (`python notebook/make_bundle.py`) and left for the orchestrator to commit -- byte-identical to the already-committed ones, since this round's edits are notebook-only and the notebook itself isn't one of the bundled files; whole notebook run from the freshly rebuilt `workshop_files.zip`, empty folder, no-mic path forced, unsolved with bonus cells skipped: `DONE unsolved+skip_bonus errors: 0`, with cell 117 printing `Add your labels first -- change MY_LABELS above, then run this cell again.` and cell 122 printing `Your meeting only had 4 turns. Using the longer sample meeting instead. / Changing line 1: last answer moved 0%` exactly as expected on the shipped sample meeting path.
