@@ -46,9 +46,10 @@ _CSS = """
 .hk-banner h1 { position: relative; margin: 0; padding: 0; font-size: 46px; line-height: 1.15; font-weight: 700; color: #fff; letter-spacing: -0.2px; }
 .hk-banner p { position: relative; margin: 12px 0 0 0; font-size: 20px; line-height: 1.4; font-weight: 400; color: __MUTED__; }
 
-.hk-prog { display: flex; align-items: center; margin: 10px 0; }
-.hk-step { flex: 1 1 0; text-align: center; padding: 16px 10px; border-radius: 14px; background: __BG1__;
-  border: 1px solid __CARD__; color: __DIM__; font-size: 21px; font-weight: 600; white-space: nowrap; }
+.hk-prog { display: flex; align-items: center; margin: 10px 0; padding: 16px 18px; background: __BG1__;
+  border: 1px solid __CARD__; border-radius: 20px; }
+.hk-step { flex: 1 1 0; text-align: center; padding: 16px 10px; border-radius: 14px; background: __BG0__;
+  border: 1px solid __CARD__; color: __MUTED__; font-size: 22px; font-weight: 600; white-space: nowrap; }
 .hk-step.done { color: __GREEN__; border-color: rgba(34,197,94,.55); }
 .hk-step.now { color: #fff; border-color: transparent; box-shadow: 0 0 30px rgba(168,85,247,.55);
   background: linear-gradient(135deg, __PURPLE__ 0%, __PURPLE2__ 55%, __PINK__ 100%); animation: hk-pulse 1.7s ease-in-out infinite; }
@@ -58,26 +59,26 @@ _CSS = """
 
 .hk-min { margin: 8px 0; padding: 26px 28px; background: __BG0__; border: 1px solid __CARD__; border-radius: 20px; }
 .hk-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px 24px; }
-.hk-title { margin: 0; padding: 0; font-size: 32px; font-weight: 700; color: #fff; }
-.hk-att { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; font-size: 17px; color: __MUTED__; }
-.hk-chip { padding: 4px 14px; border-radius: 999px; background: __CARD__; color: #E5E7EB; font-size: 17px; font-weight: 500; }
+.hk-title { margin: 0; padding: 0; font-size: 40px; line-height: 1.15; font-weight: 700; color: #fff; }
+.hk-att { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; font-size: 18px; color: __MUTED__; }
+.hk-chip { padding: 4px 14px; border-radius: 999px; background: __CARD__; color: #E5E7EB; font-size: 18px; font-weight: 500; }
 .hk-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 20px; }
 @media (max-width: 760px) { .hk-cols { grid-template-columns: 1fr; } }
 .hk-col { padding: 18px 18px 6px 18px; background: __BG1__; border-radius: 16px; }
-.hk-colhead { display: flex; align-items: center; gap: 10px; margin: 0 0 14px 2px; font-size: 24px; font-weight: 700; color: #fff; }
-.hk-dot { width: 12px; height: 12px; border-radius: 50%; flex: none; }
-.hk-count { padding: 2px 12px; border-radius: 999px; background: __CARD__; color: #fff; font-size: 16px; font-weight: 600; }
+.hk-colhead { display: flex; align-items: center; gap: 10px; margin: 0 0 14px 2px; font-size: 28px; font-weight: 700; color: #fff; }
+.hk-dot { width: 14px; height: 14px; border-radius: 50%; flex: none; }
+.hk-count { padding: 2px 14px; border-radius: 999px; background: __CARD__; color: #fff; font-size: 18px; font-weight: 600; }
 .hk-item { display: flex; gap: 14px; align-items: flex-start; margin: 0 0 12px 0; padding: 16px 18px; border-radius: 14px; background: __CARD__; }
 .hk-mark { flex: none; width: 26px; margin-top: 2px; font-size: 22px; line-height: 1.3; }
 .hk-mark.dec { color: __PURPLE2__; }
 .hk-mark.act { color: __PINK__; }
-.hk-text { font-size: 24px; line-height: 1.35; font-weight: 500; color: __TEXT__; word-break: break-word; }
+.hk-text { font-size: 26px; line-height: 1.35; font-weight: 500; color: __TEXT__; word-break: break-word; }
 .hk-pills { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
-.hk-pill { display: inline-flex; align-items: center; gap: 8px; padding: 4px 14px 4px 5px; border-radius: 999px; font-size: 17px; font-weight: 600; }
+.hk-pill { display: inline-flex; align-items: center; gap: 8px; padding: 4px 16px 4px 5px; border-radius: 999px; font-size: 19px; font-weight: 600; }
 .hk-pill.due { padding-left: 14px; }
 .hk-pill.own { background: rgba(139,92,246,.22); color: #D8CCFF; border: 1px solid rgba(139,92,246,.55); }
 .hk-pill.due { background: rgba(236,72,153,.16); color: #FBC3DE; border: 1px solid rgba(236,72,153,.55); }
-.hk-av { width: 24px; height: 24px; border-radius: 50%; background: __PURPLE__; color: #fff; font-size: 13px; line-height: 24px; text-align: center; }
+.hk-av { width: 28px; height: 28px; border-radius: 50%; background: __PURPLE__; color: #fff; font-size: 16px; line-height: 28px; text-align: center; }
 .hk-empty { margin: 0 0 12px 0; padding: 20px; border: 1px dashed __CARD__; border-radius: 14px; color: __DIM__; font-size: 20px; text-align: center; }
 .hk-raw { margin: 8px 0; padding: 22px 26px; background: __BG1__; border: 1px solid __CARD__; border-radius: 16px; }
 .hk-raw pre { margin: 0; white-space: pre-wrap; font-family: Consolas, 'Courier New', monospace; font-size: 20px; line-height: 1.5; color: __TEXT__; background: transparent; border: 0; padding: 0; }
@@ -112,7 +113,9 @@ def banner(title="Who remembers the meeting?", subtitle="Workshop 4 · Deep Lear
 
 # ---------------------------------------------------------------- progress strip
 def _progress_html(stage):
-    stage = (stage or "").strip().lower()
+    stage = re.sub(r"[^a-z ]", "", str(stage or "").lower()).strip()    # "Listening..." -> "listening"
+    if "minutes" in stage:                                              # run_demo_staged says "Writing minutes..."
+        stage = "minutes"
     all_done = stage == "done"
     idx = STAGES.index(stage) if stage in STAGES else (len(STAGES) if all_done else -1)
     parts = []

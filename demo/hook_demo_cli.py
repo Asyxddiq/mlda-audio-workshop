@@ -32,26 +32,23 @@ sys.path.insert(0, HERE)
 os.environ.setdefault("KMP_DUPLICATE_LIB_OK", "TRUE")   # Anaconda on Windows
 
 import demo as demo_module  # prototype/demo.py
-import hook_ui
+import hook_theme
 
 
 def _standalone_html(minutes_markdown: str, source_label: str) -> str:
     """A full, self-contained HTML page with the same dark/purple cards as
-    the notebook, for opening in any browser -- no Colab, no Jupyter."""
-    cards_html = hook_ui.minutes_cards_html(minutes_markdown)
-    if cards_html is None:
-        cards_html = f'<div class="wsx-card"><pre style="white-space: pre-wrap;">{minutes_markdown}</pre></div>'
+    the notebook, for opening in any browser -- no Colab, no Jupyter.
+    `minutes_cards()` never raises (falls back to a raw text card)."""
+    cards_html = hook_theme.minutes_cards(minutes_markdown).data
+    banner_html = hook_theme.banner(subtitle=source_label).data
     return f"""<!doctype html>
 <html>
 <head>
 <meta charset="utf-8">
 <title>Who remembers the meeting?</title>
-{hook_ui.FONT_CSS}
-{hook_ui._css()}
-<style>body {{ background: {hook_ui.BG0}; margin: 0; padding: 32px; }}</style>
 </head>
-<body class="wsx">
-<div class="wsx-banner"><h1>Who remembers the meeting?</h1><p>{source_label}</p></div>
+<body style="background:#0D0D12; margin:0; padding:32px;">
+{banner_html}
 {cards_html}
 </body>
 </html>"""

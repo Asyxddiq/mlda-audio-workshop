@@ -69,7 +69,7 @@ NOTEBOOK_TOP = ["live_mic.py", "toy_memory.py", "CHEATSHEET.md"]
 # out of every zip means a participant who somehow got a facilitator zip
 # still wouldn't have the answers (WP1 review finding 6).
 FACILITATOR_PROTOTYPE = ["demo.py"]
-FACILITATOR_DEMO = ["script.txt", "backup_meeting.wav", "hook_ui.py", "hook_demo_cli.py"]
+FACILITATOR_DEMO = ["script.txt", "backup_meeting.wav", "hook_ui.py", "hook_theme.py", "hook_demo_cli.py"]
 
 
 def _write(out_name: str, prototype: list[str], audio: list[str], demo: list[str],
