@@ -35,9 +35,9 @@ _RECORDER_CSS = """
   background: #2E2E3C; border-radius: 16px; padding: 20px 24px; margin: 10px 0;
   border: 1px solid #ffffff14; box-shadow: 0 0 26px __PURPLE__22; color: __TEXT__;
 }
-.wsxr-card h3 { margin: 0 0 10px 0; font-size: 18px; font-weight: 600; color: __TEXT__; }
+.wsxr-card h3 { margin: 0 0 10px 0; font-size: 26px; font-weight: 700; color: __TEXT__; }
 .wsxr-record-btn, .wsxr-stop-btn {
-  border: none; border-radius: 999px; font-weight: 600; font-size: 15px;
+  border: none; border-radius: 999px; font-weight: 600; font-size: 18px;
   padding: 14px 28px; cursor: pointer; color: __TEXT__; margin-right: 10px;
 }
 .wsxr-record-btn {
@@ -47,11 +47,11 @@ _RECORDER_CSS = """
 .wsxr-record-btn:disabled { opacity: 0.35; cursor: default; box-shadow: none; }
 .wsxr-stop-btn { background: #2E2E3C; border: 1px solid __PINK__; }
 .wsxr-stop-btn:disabled { opacity: 0.35; cursor: default; }
-.wsxr-timer { font-size: 22px; font-weight: 600; color: __PURPLE2__; margin-left: 6px; letter-spacing: 1px; }
-.wsxr-status { font-size: 13px; color: __MUTED__; margin-top: 6px; min-height: 18px; }
+.wsxr-timer { font-size: 28px; font-weight: 700; color: __PURPLE2__; margin-left: 6px; letter-spacing: 1px; }
+.wsxr-status { font-size: 16px; color: __MUTED__; margin-top: 6px; min-height: 20px; }
 .wsxr-canvas-wrap { margin-top: 14px; border-radius: 12px; overflow: hidden; background: __BG0__; }
 .wsxr-silence-row { margin-top: 10px; }
-.wsxr-silence-label { font-size: 12px; color: __MUTED__; margin-bottom: 4px; }
+.wsxr-silence-label { font-size: 16px; color: __MUTED__; margin-bottom: 4px; }
 .wsxr-silence-track { background: #ffffff14; border-radius: 999px; height: 8px; overflow: hidden; }
 .wsxr-silence-fill { background: linear-gradient(90deg, __PURPLE__, __PINK__); height: 100%; width: 0%; transition: width 0.08s linear; }
 .wsxr-silence-flash { color: __PINK__; font-weight: 600; }
