@@ -1,0 +1,171 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Recorder UI preview (oscillator, not mic)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+body { background: #0D0D12; margin: 0; padding: 32px; font-family: 'Poppins','Segoe UI',system-ui,sans-serif; }
+.wsx * { font-family: 'Poppins', 'Segoe UI', system-ui, sans-serif; box-sizing: border-box; }
+.wsx { color: #F4F4F8; }
+.wsx-card {
+  background: #2E2E3C; border-radius: 16px; padding: 20px 24px; margin: 10px 0;
+  border: 1px solid #ffffff14; box-shadow: 0 0 26px #8B5CF622; max-width: 700px;
+}
+.wsx-card h3 { margin: 0 0 10px 0; font-size: 18px; font-weight: 600; color: #F4F4F8; }
+.wsx-record-btn, .wsx-stop-btn {
+  border: none; border-radius: 999px; font-weight: 600; font-size: 15px;
+  padding: 14px 28px; cursor: pointer; color: #F4F4F8; margin-right: 10px;
+}
+.wsx-record-btn {
+  background: radial-gradient(circle at 30% 30%, #A855F7, #8B5CF6);
+  box-shadow: 0 0 22px #8B5CF688;
+}
+.wsx-record-btn:disabled { opacity: 0.35; cursor: default; box-shadow: none; }
+.wsx-stop-btn { background: #2E2E3C; border: 1px solid #EC4899; }
+.wsx-stop-btn:disabled { opacity: 0.35; cursor: default; }
+.wsx-timer { font-size: 22px; font-weight: 600; color: #A855F7; margin-left: 6px; letter-spacing: 1px; }
+.wsx-status { font-size: 13px; color: #9CA3AF; margin-top: 6px; min-height: 18px; }
+.wsx-canvas-wrap { margin-top: 14px; border-radius: 12px; overflow: hidden; background: #0D0D12; }
+.wsx-silence-row { margin-top: 10px; }
+.wsx-silence-label { font-size: 12px; color: #9CA3AF; margin-bottom: 4px; }
+.wsx-silence-track { background: #ffffff14; border-radius: 999px; height: 8px; overflow: hidden; }
+.wsx-silence-fill { background: linear-gradient(90deg, #8B5CF6, #EC4899); height: 100%; width: 0%; transition: width 0.08s linear; }
+.wsx-silence-flash { color: #EC4899; font-weight: 600; }
+.wsx-note { color: #9CA3AF; font-size: 13px; margin-top: 14px; }
+</style>
+</head>
+<body class="wsx">
+<p class="wsx-note">PREVIEW ONLY -- fed by a synthetic tone (an OscillatorNode that periodically mutes itself to exercise the silence meter), not a real microphone. Same canvas-drawing code as `demo/hook_ui.py`'s live recorder. Click Record to start the oscillator + visualizer.</p>
+<div id="root" class="wsx wsx-card">
+  <h3>Record the skit (PREVIEW: oscillator, not mic)</h3>
+  <button class="wsx-record-btn">&#9679; Record</button>
+  <button class="wsx-stop-btn" disabled>&#9632; Stop</button>
+  <span class="wsx-timer">00:00</span>
+  <div class="wsx-status"></div>
+  <div class="wsx-canvas-wrap"><canvas class="wsx-canvas" width="640" height="150"></canvas></div>
+  <div class="wsx-silence-row">
+    <div class="wsx-silence-label">pause > 1.5s = next speaker</div>
+    <div class="wsx-silence-track"><div class="wsx-silence-fill"></div></div>
+  </div>
+</div>
+<script>
+// Same drawing logic as demo/hook_ui.py's _RECORDER_JS, with the mic swapped
+// for an OscillatorNode (connects directly to the AnalyserNode -- no
+// MediaStream needed) so this can be tested without Colab or a real mic.
+(function() {
+  const root = document.getElementById("root");
+  const recordBtn = root.querySelector(".wsx-record-btn");
+  const stopBtn = root.querySelector(".wsx-stop-btn");
+  const timerEl = root.querySelector(".wsx-timer");
+  const statusEl = root.querySelector(".wsx-status");
+  const silenceFill = root.querySelector(".wsx-silence-fill");
+  const silenceLabel = root.querySelector(".wsx-silence-label");
+  const canvas = root.querySelector(".wsx-canvas");
+  const ctx = canvas.getContext("2d");
+  const W = canvas.width, H = canvas.height;
+  const SILENCE_MS = 1500;
+
+  let audioCtx, analyser, osc, gainNode, rafId, startTime, timerId, muteTimer;
+  let lastLoudTime = 0;
+
+  function fmtTime(ms) {
+    const s = Math.floor(ms / 1000);
+    return String(Math.floor(s / 60)).padStart(2, "0") + ":" + String(s % 60).padStart(2, "0");
+  }
+
+  function draw() {
+    const timeData = new Uint8Array(analyser.fftSize);
+    const freqData = new Uint8Array(analyser.frequencyBinCount);
+    analyser.getByteTimeDomainData(timeData);
+    analyser.getByteFrequencyData(freqData);
+
+    ctx.fillStyle = "#0D0D12";
+    ctx.fillRect(0, 0, W, H);
+
+    const barCount = 48;
+    const step = Math.floor(freqData.length / barCount);
+    const barW = W / barCount;
+    for (let i = 0; i < barCount; i++) {
+      const v = freqData[i * step] / 255;
+      const barH = v * H * 0.85;
+      const grad = ctx.createLinearGradient(0, H, 0, H - barH);
+      grad.addColorStop(0, "#8B5CF6" + "44");
+      grad.addColorStop(1, "#EC4899" + "99");
+      ctx.fillStyle = grad;
+      ctx.fillRect(i * barW + 1, H - barH, barW - 2, barH);
+    }
+
+    ctx.lineWidth = 2.5;
+    ctx.strokeStyle = "#A855F7";
+    ctx.shadowBlur = 8;
+    ctx.shadowColor = "#8B5CF6";
+    ctx.beginPath();
+    let maxDev = 0;
+    for (let i = 0; i < timeData.length; i++) {
+      const x = (i / timeData.length) * W;
+      const v = timeData[i] / 128.0 - 1.0;
+      maxDev = Math.max(maxDev, Math.abs(v));
+      const y = H / 2 + v * H * 0.4;
+      if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+    }
+    ctx.stroke();
+    ctx.shadowBlur = 0;
+
+    const now = performance.now();
+    if (maxDev > 0.04) { lastLoudTime = now; }
+    const quietMs = now - lastLoudTime;
+    const pct = Math.min(quietMs / SILENCE_MS, 1) * 100;
+    silenceFill.style.width = pct.toFixed(0) + "%";
+    if (quietMs >= SILENCE_MS) {
+      silenceLabel.innerHTML = '<span class="wsx-silence-flash">pause &gt; 1.5s -- next speaker!</span>';
+    } else {
+      silenceLabel.textContent = "pause > 1.5s = next speaker";
+    }
+
+    timerEl.textContent = fmtTime(now - startTime);
+    rafId = requestAnimationFrame(draw);
+  }
+
+  recordBtn.onclick = () => {
+    recordBtn.disabled = true;
+    stopBtn.disabled = false;
+    statusEl.textContent = "Recording (preview: synthetic tone, muting every 3s for ~2s to show the silence meter)...";
+
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    osc = audioCtx.createOscillator();
+    osc.type = "sawtooth";
+    osc.frequency.value = 220;
+    gainNode = audioCtx.createGain();
+    gainNode.gain.value = 0.15;
+    analyser = audioCtx.createAnalyser();
+    analyser.fftSize = 1024;
+    osc.connect(gainNode);
+    gainNode.connect(analyser);
+    gainNode.connect(audioCtx.destination);
+    osc.start();
+
+    // periodically mute for ~2s to exercise the silence meter, like a pause between turns
+    muteTimer = setInterval(() => {
+      gainNode.gain.setValueAtTime(0.0, audioCtx.currentTime);
+      setTimeout(() => { if (gainNode) gainNode.gain.setValueAtTime(0.15, audioCtx.currentTime); }, 2000);
+    }, 3500);
+
+    startTime = performance.now();
+    lastLoudTime = startTime;
+    draw();
+
+    stopBtn.onclick = () => {
+      stopBtn.disabled = true;
+      statusEl.textContent = "Stopped (preview).";
+      cancelAnimationFrame(rafId);
+      clearInterval(muteTimer);
+      osc.stop();
+      audioCtx.close();
+    };
+  };
+})();
+</script>
+</body>
+</html>
