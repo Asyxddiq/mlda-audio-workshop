@@ -5,7 +5,7 @@ decision examples were added (Asy + Claude).
 These 9 meetings are never trained on and never used to pick an epoch, a seed
 or a setting. They exist to answer one question: did the 16 Oct update
 (text clean-up + more decision styles) help on meetings the model has not seen?
-See testing/model_update_16oct/ship_rule.md for the rule that was fixed before training.
+Fixed before training so it could not be tuned against.
 
 Labels follow labelling_guide.md like training_data.py:
     dis = discussion   dec = decision   act = action_item

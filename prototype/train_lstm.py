@@ -54,7 +54,7 @@ Training choices, and why
   meetings and the probe set are only looked at after training, and every
   seed's test score is printed so a lucky seed can't hide.
 - Settings tuned 13 Oct on the dev meetings only (12 one-at-a-time
-  changes, then the best combination; see progress.md): learning rate
+  changes, then the best combination): learning rate
   0.01 (was 0.005) and 32-number embeddings (was 16). Test, probes and the
   scorecard were scored once, after the choice.
 
@@ -91,7 +91,7 @@ UNK_DROPOUT = 0.15     # 13 Oct: was 0.25
 SEEDS = [0, 1, 2, 3, 4]
 ENSEMBLE = True        # 13 Oct: average all 5 seeds instead of keeping one
 
-# Same keyword lists as train_classifier.py and meeting_minutes.py.
+# Same keyword lists as meeting_minutes.py.
 _DECISION_KEYWORDS = ["confirmed", "agreed", "approved", "decided", "noted"]
 _ACTION_KEYWORDS = ["can you", "could you", "please", "follow up"]
 

@@ -1,7 +1,0 @@
-# Audio test 5: THREE people, in this order. Known limit: speakers are labelled by taking turns
-# (Speaker1, Speaker2, Speaker1...), so a third voice is not told apart.
-dec  Ana: The hall is booked for Saturday morning.
-dis  Ben: Do we have enough chairs?
-dis  Cai: We have forty, which should be fine.
-act  Ana: Cai, can you bring the extension cables?
-act  Cai: Sure.

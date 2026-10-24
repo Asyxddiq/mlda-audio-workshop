@@ -1,7 +1,7 @@
 """A toy memory with a STATED, fixed keep rate -- shared by the live blocks
 3-5 (and reused by WP8's block 6 toy LSTM knob demo) so the short-vs-long
 "how much of the first word survives" aha is visible and exactly predictable,
-instead of an emergent property of random weights (see `reviews/WP7.md`, W1).
+instead of an emergent property of random weights.
 
 This is deliberately NOT how a real RNN computes its hidden state (no
 learned W_x/W_h, no tanh squashing) -- it is a leaky integrator with one
@@ -65,7 +65,7 @@ def first_word_pair(words_a: list, words_b_spoken: list) -> list:
     `words_b_spoken` is only ever used for its first word -- whatever Whisper
     heard for the rest of that second recording is discarded, so a mis-heard
     tail can never show up as a false "difference" in the gap (see
-    `reviews/WP7.md`, W2)."""
+    )."""
     return [words_b_spoken[0]] + list(words_a[1:])
 
 
@@ -80,8 +80,7 @@ def first_line_pair(tokens_a: list, alt_line_tokens: list, turn_token: str = "<e
     the two sequences always have the SAME length and every later word
     stays lined up word-for-word -- a fixed-length alt line of the wrong
     length would shift everything after it out of step, and `gap_curve`'s
-    `zip` would silently drop the extra words on the longer side (see
-    `reviews/WP9-10.md`, H1)."""
+    `zip` would silently drop the extra words on the longer side."""
     idx = tokens_a.index(turn_token) if turn_token in tokens_a else len(tokens_a)
     alt = list(alt_line_tokens) or ["<unk>"]
     alt = (alt * (idx // len(alt) + 1))[:idx]

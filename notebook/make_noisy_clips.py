@@ -71,7 +71,7 @@ def build() -> list[str]:
     #
     # Mix factor 0.45: chosen by sweeping 0.25-1.0 and measuring word_accuracy
     # on base.en, small.en and medium.en (the three sizes the notebook can
-    # pick -- see plan/handoffs/HANDOFF-WP2.md Round 2). Below ~0.4 the clip ties the ideal
+    # pick). Below ~0.4 the clip ties the ideal
     # one at 100% on small.en (the model Colab picks on a GPU); above ~0.5 the
     # ranking itself changes (hiss overtakes it). 0.45 is the only factor
     # tried where "ideal" is the unique top AND the order (ideal > second

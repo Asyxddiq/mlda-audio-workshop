@@ -20,7 +20,7 @@ It also measures memory reach: blank out the turn d turns back (its words
 become <unk>) and see how much the current turn's label probabilities move
 (total variation, 0 = that earlier turn had no effect).
 
-Results are in progress.md (13 Oct 2026 log).
+Result: no clear difference between the two on this task.
 """
 
 import time

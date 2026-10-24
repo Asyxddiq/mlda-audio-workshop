@@ -124,7 +124,7 @@ Cells 58 and 60 are the headline Asy asked for. Don't cut them. If the block run
 
 ## Notes
 
-- Not tested from this repo (no Colab or microphone here): live-mic recording (`demo/hook_demo.ipynb` cells 4/6 and every live cell in `audio_workshop.ipynb`), a real T4 GPU, and how anything sounds. Rehearse these before the day, like the hook checklist in `demo/FACILITATOR.md`. `plan/handoffs/HANDOFF-WP7.md` and `HANDOFF-WP8.md` list what to try on Colab with a real mic.
+- Not tested from this repo (no Colab or microphone here): live-mic recording (`demo/hook_demo.ipynb` cells 4/6 and every live cell in `audio_workshop.ipynb`), a real T4 GPU, and how anything sounds. Rehearse these before the day, like the hook checklist in `demo/FACILITATOR.md`.
 - The live-skit path is still unverified. Its checklist item in `demo/FACILITATOR.md` stays unticked until someone runs the rehearsal.
 - The backup WAV's voices (Zira as Mei, Hazel as Ravi) are both female. Say the names aloud when you introduce the backup.
 - If a participant's Colab runtime restarts, point them to the boxed note under the notebook's title. Run cell 2, then every cell above the one they want.

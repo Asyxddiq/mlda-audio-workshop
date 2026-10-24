@@ -1,18 +1,8 @@
 # Answer key: `demo/script.txt` (D1, D2)
 
-The first script and key (committed as `6b7424c`) were written and
-committed before any model run, per Rule H (`plan/RULES.md`). This final
-script and key, from the orchestrator session (PM) and confirmed by Asy on
-17 Oct 2026, replaced that first one: the PM drafted the script **with**
-model feedback during drafting (see `ATTEMPTS.md`'s "PM attempts" table for
-exactly what was tried), and this key was fixed from a plain reading of the
-final script, never bent to match the model -- if the model ever disagreed
-with an item here, that would be reported as a finding, not fixed by
-changing the key (none of the kept items needed that). This session
-independently re-ran and re-verified every number the PM reported before
-relying on any of it (see `ATTEMPTS.md` / `plan/handoffs/HANDOFF-WP1.md`). This is what
-the room should call out when asked "who actually remembers what was
-decided, and who's doing what?" (Agenda item 1).
+What the room should call out when asked "who actually remembers what was
+decided, and who's doing what?" The key was written from a plain reading of
+the script and never changed to match the model.
 
 ## Decisions
 

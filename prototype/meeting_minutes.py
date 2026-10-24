@@ -40,7 +40,7 @@ from lstm_model import label_probabilities, load_trained_model, run_pipeline
 Turn = tuple[str, str]  # (speaker, text)
 
 # Same lists as the keyword baseline in train_lstm.py and
-# train_classifier.py, so the fallback and the baseline the trained model
+# the training baseline, so the fallback and the baseline the trained model
 # is measured against agree.
 _DECISION_KEYWORDS = ["confirmed", "agreed", "approved", "decided", "noted"]
 _ACTION_KEYWORDS = ["can you", "could you", "please", "follow up"]

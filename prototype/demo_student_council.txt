@@ -1,7 +1,7 @@
 # Demo meeting for the workshop: a student council, 18 turns, three speakers, never trained on.
 # The trained model gets 17 of 18 turns right and no wrong minutes items; the one miss (the last decision) is worth discussing.
 #   python prototype/pipeline.py --compare --text prototype/demo_student_council.txt
-# (For a LIVE AUDIO demo use the two-speaker sample meeting instead: testing/scripts/solo_1_sample_meeting.txt.
+# (For a LIVE AUDIO demo use the two-speaker sample meeting instead: demo/script.txt.
 #  The audio pipeline tells only two speakers apart.)
 dis  Marcus: Let us begin. First, the Friday assembly.
 dis  Ella: The hall is booked from two to four.

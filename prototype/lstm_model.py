@@ -330,7 +330,7 @@ def run_pipeline(audio_path: str | None = None,
                  transcript: str | None = None,
                  use_trained: bool = True,
                  ) -> tuple[list[tuple[str, str]], np.ndarray, list[int]]:
-    """Run the pipeline once and return the hand-off contract from progress.md:
+    """Run the pipeline once and return the hand-off contract:
     turns, the (num_tokens, 8) hourglass output, and turn_end_indices.
 
     Mirrors the __main__ block below as an importable function instead of a

@@ -1,8 +1,0 @@
-# Audio test 3: the same lines as test 2, but person B answers INSTANTLY (no pause).
-# Known limit: replies that start less than 0.8 s after the last word may merge into the turn before.
-act  Sam: Can you print the agenda for tomorrow?
-act  Lee: Sure.
-dis  Sam: How about we start at ten instead of nine?
-dec  Lee: Sounds good.
-dis  Sam: The projector in room two is broken.
-dis  Lee: Okay.

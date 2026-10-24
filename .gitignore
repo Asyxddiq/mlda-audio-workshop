@@ -6,6 +6,3 @@ venv/
 .env
 .DS_Store
 Thumbs.db
-
-# built by demo/hook_demo_cli.py each run -- not the demo itself
-demo/hook_demo_report.html

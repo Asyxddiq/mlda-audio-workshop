@@ -18,9 +18,9 @@ notebook does not call this file at all; see RULES.md's "where the builder
 may write").
 
 Two audio-specific choices, both from the 17 Oct PM direction (see
-demo/ATTEMPTS.md):
+the build notes):
   - pause_gap=1.5, not transcriber.py's 0.8 default: 1.5s is what was
-    actually tested on two people talking (see testing/); 0.8s has only
+    actually tested on two people talking; 0.8s has only
     been tested on a solo reading.
   - Speaker1/Speaker2 are renamed to the real actor names (SPEAKER_NAMES)
     before labelling. The model itself never reads speaker names
@@ -83,7 +83,7 @@ def run_from_audio(audio_path: str, pause_gap: float = PAUSE_GAP,
     # label_turns_keywords) reads turns[i][0] as the owner's name, so renaming has to
     # happen here, not after, or the owners in the minutes stay "Speaker1"/"Speaker2"
     # even though the Attendees line already shows the real names (found while
-    # testing this file -- see demo/ATTEMPTS.md). output/turn_end_indices don't
+    # testing this file). output/turn_end_indices don't
     # depend on the speaker strings, only on token position, so this is safe.
     turns = _rename_speakers(turns, speaker_names)
     labels = label_turns_model(turns, output, turn_end_indices) or label_turns_keywords(turns)
@@ -115,58 +115,6 @@ def run_demo(source: str | None = None, banner: bool = True) -> str:
     if is_audio:
         minutes = run_from_audio(source)
     else:
-        minutes = run(text=source, verbose=False)
-
-    if banner:
-        print(_banner(minutes))
-        print("\nCompare this with what the room called out.")
-    return minutes
-
-
-def run_demo_staged(source: str | None = None, banner: bool = False, on_stage=None) -> str:
-    """Same result as `run_demo()`, broken into its real stage boundaries so
-    a caller (`demo/hook_ui.py`'s progress strip) can show progress as each
-    stage genuinely starts -- no fake delays, no changed logic. Calls the
-    exact same underlying functions, in the same order, with the same
-    arguments as `run_demo()` / `run_from_audio()` above; if those ever
-    change, update this to match (see `demo/hook_ui.progress_strip`).
-
-    `on_stage(name)` is called right before that stage's real work begins.
-    Stage names match `demo/hook_ui.py`'s `_STAGES`: "Listening...",
-    "Transcribing...", "Labelling...", "Writing minutes...".
-    """
-    from pipeline import run
-
-    def stage(name):
-        if on_stage:
-            on_stage(name)
-
-    if source is None:
-        source = DEFAULT_SCRIPT
-    is_audio = source.lower().endswith(AUDIO_EXTENSIONS)
-
-    print("Press. One. Button.\n")
-    print(f"(input: {source})\n")
-
-    if is_audio:
-        from lstm_model import run_pipeline
-        from meeting_minutes import generate_minutes, label_turns_keywords, label_turns_model
-        from transcriber import get_transcript
-
-        stage("Listening...")
-        stage("Transcribing...")
-        transcript = get_transcript(source, pause_gap=PAUSE_GAP)
-        stage("Labelling...")
-        turns, output, turn_end_indices = run_pipeline(transcript=transcript)
-        turns = _rename_speakers(turns, SPEAKER_NAMES)
-        labels = label_turns_model(turns, output, turn_end_indices) or label_turns_keywords(turns)
-        stage("Writing minutes...")
-        minutes = generate_minutes(turns, labels)
-    else:
-        # pipeline.run() does labelling and minutes-writing in one call for
-        # text input -- there's no real boundary between them to show.
-        stage("Labelling...")
-        stage("Writing minutes...")
         minutes = run(text=source, verbose=False)
 
     if banner:

@@ -90,7 +90,7 @@ def record(prompt_id: str, seconds: float = 5.0, out_dir: str = ".") -> str:
     # Everything from here on talks to the browser tab or the filesystem -- wrap all
     # of it, not just the parts we've personally seen fail, so ANY failure (a stop
     # call raising, a None/malformed data URL, a mangled base64 string) becomes the
-    # same plain fallback message instead of a raw traceback (see reviews/WP7.md, W3).
+    # same plain fallback message instead of a raw traceback.
     try:
         data_url = eval_js("stopRecording()")
         _, encoded = data_url.split(",", 1)
@@ -117,7 +117,7 @@ def hear(path: str, model) -> str:
 def need_words(text: str, minimum: int = 2) -> bool:
     """True if `text` has at least `minimum` words -- guards against a near-silent
     or noise-only recording, where Whisper often hallucinates a single short word
-    ("You", "Thank you.") instead of raising an error (see reviews/WP7.md, W4)."""
+    ("You", "Thank you.") instead of raising an error."""
     return len(text.split()) >= minimum
 
 

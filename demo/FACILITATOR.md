@@ -37,7 +37,7 @@ Blocks 2-10 are in `demo/RUNSHEET.md`.
 3. Leave a clear 2-second pause before the other person speaks.
 4. Don't overlap.
 
-Don't use a natural pace. The transcriber starts a new speaker at a gap of 1.5 seconds or more. A quick back-and-forth gets heard as one person. A long pause mid-turn gets heard as a speaker change. Either way the owners in the minutes come out wrong. See the backup-WAV attempts in `ATTEMPTS.md`.
+Don't use a natural pace. The transcriber starts a new speaker at a gap of 1.5 seconds or more. A quick back-and-forth gets heard as one person. A long pause mid-turn gets heard as a speaker change. Either way the owners in the minutes come out wrong.
 
 ## Rehearsal checklist
 
@@ -87,16 +87,7 @@ Use `small.en`. On the backup WAV (53.5 s of audio, nothing else running), `medi
 
 ## The two "Sure." exchanges
 
-These are a human exercise (D5 in `plan/SPEC.md`). Read them aloud. Don't run them in the app on stage.
+These are a human exercise. Read them aloud. Don't run them in the app on stage.
 
-We did run them through the model once (`demo/sure_exchanges.txt`). It gets the second exchange wrong. That is why you ask the room instead of the app. The notebook's "Sure. test" cell (blocks 6-7) shows the model's confidence.
+We did run them through the model once (`demo/sure_exchanges.txt`). It gets the second exchange wrong. That is why you ask the room instead of the app. The notebook's "Sure. test" cell (block 7) shows the model's confidence.
 
----
-
-## Provenance
-
-- The first script and key (`6b7424c`) were committed before any model run.
-- The final script and key were drafted by the PM, with model feedback while drafting. The key came from a plain reading of each draft. It was never bent to match the model. See `ATTEMPTS.md`.
-- Both decisions are agreements to a proposal ("Sounds good"). The model scores them 0.77 and 0.60 for `decision`. Re-derived in `plan/handoffs/HANDOFF-WP1.md`.
-- Plain-fact decisions ("Venue is confirmed for the 14th") are the model's weak spot. They are left out on purpose. See `labelling_guide.md` and `plan/SPEC.md`.
-- The default text run and the backup-WAV runs (`medium.en` and `small.en`, `pause_gap=1.5`) all match the key. That is 10/10 turns, both decisions, both action items, correct owners and deadlines. "Match" means at least 80% word similarity, not identical text. See `plan/handoffs/HANDOFF-WP1.md`.

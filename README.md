@@ -1,266 +1,30 @@
-# mlda-audio-workshop
+# Deep Learning in Audio Applications: Workshop 4
 
-Backend prototype for the MLDA Academics workshop **Deep Learning in Audio Applications**.
+MLDA@EEE Learnova Workshop 4, NTU, 22 Oct 2026. Final deliverable: the participants' notebook, the opening demo, and the prototype behind them.
 
-The pipeline is audio → transcript → LSTM → meeting minutes. It is written as small, readable NumPy code so that beginner-to-intermediate participants can follow every step and run it on free Google Colab.
+## What the workshop aimed to do
 
-| Component | Owner | Status (17 Oct 2026) |
-|---|---|---|
-| Real audio → transcript (Whisper, English only, pause-based speakers) | Pasan, Rahini | Passes on clean synthetic speech (98% of words). **Real microphone, 17 Oct: one point short** (Asy's recording: 9 of 9 turns and 89% of words with the default `medium.en`, 60–72% with `small.en`; bar is 90%; see [testing](testing/testing.md)). Two speakers only; a reply under 0.8 s can still be merged |
-| RNN + CTC teaching demo | Pasan, Rahini | Working |
-| 5-layer hourglass LSTM | Asy | Working |
-| Training data: 40 hand-labelled meetings (577 turns) + 60 generated practice meetings, plus a frozen 6-meeting scorecard (105 turns) | Asy (drafted by Claude); Nomt checked his half (4 meetings) 8 Oct | Draft; the 29 meetings added 8 and 13 Oct are not yet checked by a person; Asy's blind check to do |
-| Trained turn classifier (`train_lstm.py`, NumPy) | Asy | Working; ships the **tuned 13 Oct ensemble** (5 seeds) behind the 16 Oct text clean-up: test 0.84, probes 9/12, scorecard 0.90 (see [results](#step-4-training-the-classifier)). Two 16 Oct retrains failed their ship rule ([model update](testing/model_update_16oct/model_update.md)) |
-| Meeting minutes (trained labels, keyword fallback) | Nomt | Working |
-| Participants' notebook (`notebook/audio_workshop.ipynb`) and hands-on (`hands_on.py`) | Asy | Notebook built 17 Oct, five sections like the poster; every cell ran from a fresh folder on a laptop, **not yet run on Colab**. Part A writes the RNN step and switches its memory off; Part B writes the LSTM notebook update and turns the forget knob |
-| RNN vs LSTM comparison (`compare_rnn.py`) | Asy, for Pasan and Rahini | Done 13 Oct, with both the old and the tuned settings: **no clear difference** on our data by the rule written beforehand; both use about one turn of context |
-| Whole chain in one command (`pipeline.py`) | All | Working on the sample meeting |
+Show beginners how AI turns speech into text and then **remembers context** in a conversation, using one running example: turning a meeting into minutes.
 
-**Contents:** [Quick start](#quick-start) · [High-level alignment](#high-level-alignment) · [Architecture](#architecture) · [Key commands](#key-commands) · [Limitations](#simplifications-and-known-limitations) · [References](#references)
+- **Sound to words.** Waveforms, spectrograms, and Whisper transcribing live speech, including where it breaks (noise, poor mics, accents).
+- **RNNs.** Memory as a running summary, written by participants in one line, then switched off to show where the memory lives, and why simple memory fades in a long conversation.
+- **LSTMs.** A memory with an eraser, a pencil and a voice (forget, input and output gates), with a knob participants turn to see what is kept and what is lost.
+- **Meeting minutes.** A trained model labels each turn as a decision, an action item or discussion, and writes the minutes. Participants test it on their own spoken meeting and catch its mistakes.
 
----
-
-## Quick start
-
-```bash
-git clone https://github.com/Asyxddiq/mlda-audio-workshop.git
-cd mlda-audio-workshop
-pip install -r requirements.txt
-python prototype/lstm_model.py
-```
-
-Expected output (abridged):
-
-```text
-Vocab size: 66 words (incl. <eot>)
-Tokens in conversation: 88 (padded to 88 so it divides by 4)
-Fold -> unfold round trip is lossless: True
-
-Hourglass shape (compare with the paper's Table 1):
-  layer      units   time steps
-  layer 1        8           88
-  layer 2       16           44
-  layer 3       32           22
-  layer 4       16           44
-  layer 5        8           88
-
-[Alex] Let's kick off. First item is the Q3 budget review.
-  -> output after this turn (first 4 of 8 dims): [0.008 0.016 0.017 0.006]
-...
-```
-
-The only dependency is `numpy`. No GPU is needed; the full run takes well under a second.
-
-To run the whole chain (transcript → LSTM → minutes) in one go:
-
-```bash
-python prototype/pipeline.py                # sample meeting, no audio needed
-python prototype/pipeline.py meeting.wav    # real audio: pip install openai-whisper, plus ffmpeg
-python prototype/pipeline.py --meeting hackathon_1 --compare   # a hand-labelled meeting, hand labels alongside
-python prototype/pipeline.py --compare --text prototype/my_meeting_example.txt   # your own lines from a text file
-python prototype/hands_on.py                # the participants' hands-on (Parts A and B)
-```
-
-The trained weights (`prototype/trained_lstm.npz`) are in the repo, so the pipeline labels turns with the trained model straight away. To retrain them from [`training_data.py`](prototype/training_data.py) (a few minutes on a laptop CPU, numpy only):
-
-```bash
-python prototype/train_lstm.py
-```
-
----
-
-## High-level alignment
-
-### Where this repo sits in the learning arc
-
-The workshop teaches **Audio → Python → RNN → LSTM → Practical applications**. Each stage of the arc has an owner and a piece of this repo.
-
-```mermaid
-flowchart LR
-    A["Audio"] --> B["Python"] --> C["RNN"] --> D["LSTM"] --> E["Practical applications"]
-    C -.-> T1["Transcriber track<br/>Pasan + Rahini"]
-    D -.-> T2["LSTM track<br/>Asy + Nomt"]
-    E -.-> T3["Meeting minutes<br/>Nomt"]
-    T1 --> P1["prototype/transcriber.py<br/>(Whisper; placeholder if no audio)"]
-    T2 --> P2["prototype/lstm_model.py"]
-    T3 --> P3["prototype/meeting_minutes.py"]
-```
-
-### Team tracks
-
-| Track | People | Builds | Hands off |
-|---|---|---|---|
-| 1. Transcriber (RNN) | Pasan, Rahini | audio file → speaker-labelled transcript | `get_transcript(audio_path) -> str` |
-| 2. LSTM | Asy, Nomt | transcript → hourglass LSTM → 8 numbers per word | `(tokens, 8)` array + turn boundaries |
-| 3. Meeting minutes | Nomt | LSTM output → summary and/or action items | minutes text |
-
-The tracks meet at two **contracts**: the transcript string, and the LSTM output array. As long as each side keeps its contract, the tracks can be built in parallel and swapped in without touching each other's code.
-
-```mermaid
-flowchart LR
-    subgraph T1["Track 1: Pasan + Rahini"]
-        R["Real RNN transcriber"]
-        PH["Placeholder transcript<br/>(used until R is ready)"]
-    end
-    subgraph T2["Track 2: Asy"]
-        L["Hourglass LSTM"]
-    end
-    subgraph T3["Track 3: Nomt"]
-        M["Meeting minutes"]
-    end
-    R -. "later: same contract" .-> C1
-    PH --> C1(["contract 1:<br/>get_transcript() -> str"])
-    C1 --> L
-    L --> C2(["contract 2:<br/>output (tokens x 8)<br/>+ turn_end_indices"])
-    C2 --> M
-```
-
-### How the workshop session maps onto the code
-
-```mermaid
-flowchart TD
-    P1["Part 1: Intro to audio + Python"] --> P2["Part 2: Challenges in audio + Kahoot"]
-    P2 --> P3["Part 3: Case studies"]
-    P3 --> P4["Part 4: RNN concepts"]
-    P4 --> P5["Part 5: First hands-on demo<br/>80% given, 20% participants complete"]
-    P5 --> P6["Part 6: LSTM + meeting minutes"]
-    P6 --> P7["Part 7: Extend the MVP<br/>two-part backend"]
-    P7 --> P8["Part 8: Try and test"]
-    P8 --> P9["Part 9: Debug time"]
-    P9 --> P10["Part 10: Wrap-up"]
-
-    P5 -.-> C1["Transcriber code<br/>(Track 1)"]
-    P6 -.-> C2["lstm_model.py<br/>SimpleLSTM, gates"]
-    P7 -.-> C3["lstm_model.py -> meeting_minutes.py<br/>Part A given, Part B built"]
-```
-
-Which 20% participants complete in Part 5, and how the Part 7 backend splits into Part A and Part B, is decided **after** the MVP runs end to end (see [progress.md](progress.md)).
-
-### Build plan
-
-Three build weekends (26 Sep, 3 Oct, 10 Oct), then slides from 12 Oct. The dated timeline and what is done are in [progress.md](progress.md#checklist).
-
-### Definition of done before slide planning starts
-
-- [ ] Audio → transcript → meeting minutes runs end to end without manual steps
-- [ ] The 80/20 hands-on split is testable by someone who isn't Pasan or Rahini
-- [ ] The Part A/B extension is testable by someone who isn't Asy or Nomt
-- [ ] Known failure modes are written down for debug time
-- [ ] All four team members have run the full pipeline themselves
-
----
+Every theory block has live-mic cells: participants say a prompt, see the result, and connect it back to the theory.
 
 ## Architecture
 
-### Repository layout
-
-```text
-mlda-audio-workshop/
-├── README.md                          you are here
-├── progress.md                        Asy's LSTM-track progress tracker: log, decisions, next up
-├── labelling_guide.md                 rules for labelling training turns
-├── debug_cheatsheet.md                for Part 9, Debug time: symptom, cause, fix
-├── requirements.txt                   numpy
-├── prototype/
-│   ├── pipeline.py                    whole chain in one command (start here)
-│   ├── transcriber.py                 audio → transcript with Whisper (Track 1)
-│   ├── transcript_placeholder.py      sample meeting, used when no audio is given
-│   ├── rnn_ctc_demo.py                RNN + CTC teaching demo (Part 5)
-│   ├── lstm_model.py                  text clean-up, tokenize, embed, 5-layer hourglass LSTM (Track 2)
-│   ├── meeting_minutes.py             label turns, write Markdown minutes (Track 3)
-│   ├── training_data.py               hand-labelled meetings, probe set, practice-meeting generator, leak check
-│   ├── train_lstm.py                  trains the hourglass + classifier head (NumPy backprop)
-│   ├── trained_lstm.npz               the trained weights (made by train_lstm.py)
-│   ├── hands_on.py                    participants' hands-on: RNN step, LSTM notebook update, forget knob
-│   ├── hands_on_reference.py          reference answers for hands_on.py (facilitators)
-│   ├── my_meeting_example.txt         example input for pipeline.py --text
-│   ├── demo_student_council.txt       the typed demo meeting: 17 of 18 turns right, never trained on
-│   ├── scorecard_data.py              6 frozen held-out meetings (never trained on or tuned against)
-│   ├── scorecard.py                   aggregate scores on the scorecard
-│   ├── holdout_data.py                17 fresh held-out meetings written 16 Oct (never trained on)
-│   ├── compare_rnn.py                 the same hourglass with plain RNN layers, vs the LSTM
-│   ├── run_tests.py                   all repo checks in one command
-│   ├── minutes_tests.py               67 typed meeting tests with expected minutes
-│   ├── normalise_tests.py             checks for the text clean-up
-│   ├── audio_check.py                 scores a recording of a script: transcriber and end-to-end verdicts
-│   ├── audio_features.py              audio -> 13 numbers per 10 ms (MFCC), the RNN's input
-│   ├── audio_tests/                   older copy of the reading scripts (use testing/scripts/)
-│   └── train_classifier.py            earlier PyTorch scaffold (Nomt), kept for reference
-├── notebook/                          the participants' Colab notebook
-│   ├── audio_workshop.ipynb           five sections: audio to text, where it struggles, RNN, LSTM, minutes
-│   ├── make_bundle.py                 makes workshop_files.zip, the code + audio to upload to Colab
-│   └── audio/                         two synthetic-voice samples the notebook uses
-└── testing/                           the testing phase: start at testing/testing.md
-    ├── testing.md                     how to run each test, and every result
-    ├── try_it.py                      talk like a meeting: your audio through all four phases, PASS or FAIL each
-    ├── phases.py                      each stage on its own: audio to text, RNN, LSTM, minutes
-    ├── solo_test.py                   one-person recording test
-    ├── scripts/                       scripts to read aloud
-    ├── testing script.md              the 67 meeting tests, written from minutes_tests.py
-    ├── model_update_16oct/            the 16 Oct model update: rule, write-up, scores, patch
-    └── results/                       result files (claude/ and manual/)
-```
-
-### End-to-end data flow
-
-One run of `python prototype/lstm_model.py`:
-
 ```mermaid
-sequenceDiagram
-    autonumber
-    participant Main as lstm_model.py (main)
-    participant TP as transcript_placeholder
-    participant Tok as tokenize + embed
-    participant HG as HourglassLSTM
-    participant Out as output
-
-    Main->>TP: get_transcript()
-    TP-->>Main: 9 speaker-labelled lines
-    Main->>Tok: tokenize_transcript(turns)
-    Tok-->>Main: 88 tokens (with <eot>) + turn_end_indices
-    Main->>Tok: build_vocab, embed_tokens
-    Tok-->>Main: 88 x 16 numbers
-    Main->>Main: pad_to_multiple_of_4 -> 88 x 16 (already a multiple of 4)
-    Main->>HG: forward(x_padded)
-    HG->>HG: layer 1 -> fold -> layer 2 -> fold -> layer 3
-    HG->>HG: unfold + skip -> layer 4 -> unfold + skip -> layer 5
-    HG-->>Main: 88 x 8 output (+ every layer's output)
-    Main->>Out: drop padding -> 88 x 8
-    Out-->>Main: one 8-number vector per word, read off at each turn end
+flowchart LR
+    A["Audio<br/>(live mic or file)"] --> B["Whisper<br/>speech to text"]
+    B --> C["Pause rule<br/>splits speakers"]
+    C --> D["Hourglass LSTM<br/>5 layers"]
+    D --> E["Turn labels<br/>decision / action / discussion"]
+    E --> F["Meeting minutes"]
 ```
 
-### Module interfaces
-
-```mermaid
-classDiagram
-    class transcript_placeholder {
-        +SAMPLE_TRANSCRIPT: str
-        +get_transcript(audio_path=None) str
-    }
-    class SimpleLSTM {
-        +input_size: int
-        +hidden_size: int
-        +W_f, W_i, W_c, W_o
-        +b_f, b_i, b_c, b_o
-        +step(x_t, h_prev, c_prev) (h_t, c_t)
-        +forward(x_seq) ndarray
-    }
-    class HourglassLSTM {
-        +layer1..layer5: SimpleLSTM
-        +forward(x_seq) (output, layers)
-    }
-    class helpers {
-        +tokenize_transcript(turns) (tokens, turn_end_indices)
-        +build_vocab(tokens) dict
-        +embed_tokens(tokens, vocab, embeddings) ndarray
-        +pad_to_multiple_of_4(x_seq) ndarray
-        +fold_time(x) ndarray
-        +unfold_time(x) ndarray
-    }
-    HourglassLSTM *-- "5" SimpleLSTM : built from
-    HourglassLSTM ..> helpers : fold / unfold
-    helpers ..> transcript_placeholder : reads turns from
-```
+Whisper does the audio-to-text step. Our own model, a small NumPy hourglass LSTM trained on hand-written meetings, reads the words and labels each turn. Rule-based code then writes the minutes, with owners and due dates.
 
 ### Step 1: words become numbers
 
@@ -367,182 +131,42 @@ h_t  = o_t * tanh(c_t)                        output for this word
 
 Each gate has an 8 x 24 weight grid plus 8 biases: 800 numbers in layer 1 and 13,888 across all five layers. In `lstm_model.py`'s walk-through they are random, which is why every gate sits near 0.5; `train_lstm.py` learns them.
 
-### Step 4: training the classifier
+### The trained model
 
-`train_lstm.py` teaches the hourglass to label each turn as **discussion**, **decision** or **action_item**. It trains the same network `lstm_model.py` runs, plus a small head on top, and saves the weights in the same shapes, so `lstm_model.py` loads them directly.
+`prototype/train_lstm.py` trains the hourglass plus a small classifier head with hand-written NumPy backprop, on hand-labelled meetings plus generated practice meetings. The shipped weights (`prototype/trained_lstm.npz`) are a 5-seed ensemble.
 
-```mermaid
-flowchart LR
-    D["training_data.py<br/>labelled meetings"] --> E["embeddings<br/>(learned)"]
-    E --> H["hourglass LSTM<br/>5 layers (learned)"]
-    H -->|"8 numbers at each<br/>turn's last token"| HD["head: 8 -> 3 scores<br/>(learned)"]
-    HD --> P["softmax -><br/>label per turn"]
-    P -->|"compare with gold label:<br/>cross-entropy loss"| L(("loss"))
-    L -. "backprop through time,<br/>Adam update" .-> E
-    L -.-> H
-    L -.-> HD
-```
-
-| Data | Meetings | Turns | Used for |
-|---|---|---|---|
-| Hand-written: group project, lab stand-up, CCA committee, club event, orientation planning (7 and 8 Oct) | 8 | 165 | training |
-| Hand-written: 24 clubs and student groups, from a photo club to a blood drive (13 Oct) | 24 | 299 | training |
-| Generated practice meetings (phrase lists in `training_data.py`) | 60 | 553 | training only |
-| Hand-written: club event (a follow-up to a training meeting), plus music club, debate team, coding club, hostel floor (13 Oct) | 5 | 68 | dev: picks the best epoch and seed, and judges retrains |
-| Hand-written: group project, hackathon, the sample meeting | 3 | 45 | **test**, scored once |
-| Probe set: bare replies ("Sure.", "Okay.") after a request, a proposal or plain information | 12 | 12 replies | **cross-turn test**, never trained on |
-| Scorecard (`scorecard_data.py`): hall council, tutoring, band, research group, football, charity drive | 6 | 105 | **second look**, frozen 13 Oct before any training; aggregate scores only |
-| Holdout (`holdout_data.py`): two sets written 16 Oct | 17 | 271 | **fresh test** for the 16 Oct update, never trained on |
-
-#### Current results
-
-The shipped weights are the **tuned 13 Oct ensemble**: 5 seeds, each turn's label probabilities averaged, `<unk>` dropout 0.15, learning rate 0.01, 32-number embeddings, all settings chosen on dev only (`python prototype/train_lstm.py` reproduces it, about 12 minutes). Since 16 Oct a text clean-up runs in front of it ("I will" → "I'll", "let us" → "let's", "OK" → "okay", fillers dropped); it changes no dev or test turn. Every candidate was judged by a ship rule written before training. How earlier models got here (7 Oct, the 8 Oct rollback, the first 13 Oct retrain, the tuning runs) is in the [progress log](progress.md#log); the 16 Oct retrains that failed are in the [model update](testing/model_update_16oct/model_update.md).
-
-| KPI | 7 Oct model | **Shipped** | Keyword rules | Always "discussion" |
-|---|---|---|---|---|
-| Dev accuracy / macro-F1 (68 turns) | 0.90 / 0.87 | **0.96 / 0.95** | | |
-| Test accuracy / macro-F1 (45 turns) | 0.84 / 0.82 | 0.84 / 0.825 | 0.69 / 0.59 | 0.56 / 0.24 |
-| The two test meetings nobody wrote rules against, accuracy (36 turns) | 0.86 | 0.86 | 0.64 | |
-| Probes correct (of 12) | 9 | 9 | 3 | 3 |
-| Sample meeting turns correct (of 9) | 7 | 7 | 8 | |
-| Scorecard accuracy / macro-F1 (105 turns, scored once) | 0.78 / 0.72 | **0.90 / 0.87** | 0.76 / 0.61 | |
-| Holdout 1 / holdout 2 accuracy (149 / 122 turns) | | 0.879 / 0.852 | | |
-| 67 meeting tests passed ([testing](testing/testing.md)) | | 45 | 28 | |
-
-- Single seeds of the tuned run range from 0.73 to 0.87 test accuracy; the ensemble is steadier than any one of them.
-- Scorecard per label (precision / recall), 7 Oct vs shipped: decision 0.62 / 0.59 vs 0.71 / 0.88, action_item 0.76 / 0.65 vs 0.94 / 0.85, discussion 0.82 / 0.87 vs 0.94 / 0.91.
-- What it gets right that keywords can't: "Sure." after "Kai, you handle the judging rubric" (action item) vs "Makes sense." after "How about we split the prizes?" (decision) vs "Okay." after "The bus was late again" (discussion).
-- **Flagged failures:** decisions stated as facts ("Venue is confirmed for the 14th", "We have three sponsors confirmed so far") and "Noted, let's add that to the next agenda."; the chair settling a plan ("Okay, Thursday at four then."); 3 of the 4 agreement probes ("Sure.", "Sounds good.", "Fine by me." after a proposal); one missed request ("Could you order for seventy instead of sixty this time?"); two false action items ("Can you remind me where the form is?", "I won't be able to come on the second day"). Decisions are the weak class everywhere, including the meeting tests (9 of 18 found).
-- On the sample meeting the minutes list the catering follow-up as an action item, no decisions, and no wrong items. `group_project_3` matches 16/18 hand labels (keyword rules 12/18), `hackathon_1` 15/18 (11/18).
-- `python prototype/training_data.py` re-runs the leak check: no probe, test, scorecard, holdout or meeting-test sentence shares 5 words in a row with the training data.
-- Caveat: all the data, including the scorecard and holdouts, was written by us (drafted by Claude). Real meetings would settle it.
-
-#### RNN vs LSTM (`compare_rnn.py`)
-
-Pasan and Rahini asked whether the LSTM actually beats a plain RNN here. `compare_rnn.py` builds the same hourglass (same sizes, folds, skips, data, settings and 5 seeds) with plain RNN layers and trains both. The rule was written before the first run: "LSTM better" needs at least +1 probe **and** +0.05 macro-F1 on 5-seed means.
-
-| 5-seed means, test (45 turns) | Accuracy | Macro-F1 | Probes (of 12) |
-|---|---|---|---|
-| LSTM hourglass, old settings | 0.82 | 0.80 | 7.6 |
-| RNN hourglass, old settings | 0.80 | 0.76 | 9.0 |
-| LSTM hourglass, tuned settings | 0.80 | 0.77 | 7.8 |
-| RNN hourglass, tuned settings | 0.80 | 0.78 | 8.0 |
-
-Verdict, both times: **no clear difference** (old settings: LSTM +0.046 macro-F1 but 1.4 fewer probes; tuned: LSTM −0.01 macro-F1, 0.2 fewer probes). These are single-seed means; the shipped ensemble scores higher than any of them. Memory reach, i.e. how much blanking out the turn d turns back moves the current turn's prediction (0 = no effect, 1 = completely), tuned settings: LSTM 0.053 / 0.006 / 0.002 / 0.001 for 1, 2, 3 and 4 turns back; RNN 0.075 / 0.013 / 0.004 / 0.000. Both rely almost entirely on the previous turn, which is all this labelling task needs, so the workshop shouldn't claim our trained LSTM remembers further back than an RNN. The memory difference is shown with `hands_on.py` instead, where the forget gate is set by hand.
-
----
-
-## Key commands
-
-### Run
-
-| What | Command |
-|---|---|
-| Install the one dependency | `pip install -r requirements.txt` |
-| Run the whole chain | `python prototype/pipeline.py` |
-| Run it on real audio | `python prototype/pipeline.py meeting.wav` (needs `pip install openai-whisper` and ffmpeg) |
-| Run all checks before a push or the workshop | `python prototype/run_tests.py` (about 25 s, no training, no internet; `--audio FILE` adds an audio run) |
-| Make the Colab zip for participants | `python notebook/make_bundle.py` (writes `notebook/workshop_files.zip`; rebuild after changing `prototype/`) |
-| Show the model at its best (typed demo meeting) | `python prototype/pipeline.py --compare --text prototype/demo_student_council.txt` |
-| Test each phase on your own voice | `python testing/try_it.py --name YOU` (talk like a meeting; audio -> text, RNN, LSTM and minutes each say PASS or FAIL) |
-| Test one stage at a time | `python testing/phases.py` (all four phases, automatic) or `python testing/phases.py --manual --name YOU` (by hand: you give each phase its input) |
-| Meeting tests, clean-up tests, audio tests | `python prototype/minutes_tests.py`, `python prototype/normalise_tests.py`, `python testing/solo_test.py --name YOU`: all explained in [testing/testing.md](testing/testing.md) |
-| Compare keyword rules with the trained LSTM | `python prototype/pipeline.py --compare` (shows both labels for every turn; also works with `meeting.wav`) |
-| Run a hand-labelled meeting | `python prototype/pipeline.py --meeting hackathon_1 --compare` (any meeting name in `training_data.py`; adds the hand labels to the comparison) |
-| Run the LSTM stage only | `python prototype/lstm_model.py` |
-| Train the LSTM classifier | `python prototype/train_lstm.py` (numpy only, a few minutes) |
-| Check the training data | `python prototype/training_data.py` |
-| Run your own lines | `python prototype/pipeline.py --compare --text my_meeting.txt` (one "Speaker: text" per line; optional `act` / `dec` / `dis` labels in front; lists words the model never saw) |
-| Participants' hands-on | `python prototype/hands_on.py` (`--solution` runs the reference answers) |
-| Score the frozen scorecard | `python prototype/scorecard.py` (or `python prototype/scorecard.py other.npz`) |
-| RNN vs LSTM | `python prototype/compare_rnn.py` (trains 5 seeds of each, about 15 to 20 minutes) |
-| Earlier PyTorch scaffold | `python prototype/train_classifier.py` (needs `pip install torch`) |
-| RNN + CTC teaching demo | `python prototype/rnn_ctc_demo.py` |
-| Print the placeholder transcript only | `python prototype/transcript_placeholder.py` |
-| Check numpy is available | `python -c "import numpy; print(numpy.__version__)"` |
-
-### Google Colab (free tier)
-
-The repo is private, so participants get the code as one zip and the notebook as one file.
-
-1. Make the zip (rebuild it whenever anything in `prototype/` changes): `python notebook/make_bundle.py` writes `notebook/workshop_files.zip`.
-2. In Colab: **File > Upload notebook**, choose `notebook/audio_workshop.ipynb`. Drag `workshop_files.zip` into the Files panel on the left. Optional but several times faster: **Runtime > Change runtime type > T4 GPU**.
-3. Run the cells top to bottom. The first cell installs Whisper (about a minute) and unpacks the zip. The notebook has two **YOUR TURN** cells (the RNN step, the LSTM notebook update).
-
-Tested 17 Oct: every cell ran from a fresh folder holding only the zip, on a laptop CPU. **Not yet tested on Colab itself**: do a dry run with a fresh runtime before the day. Whisper downloads its model on first use (139 MB for `base.en`, 461 MB for `small.en`), so Colab needs internet. The scripts also run in a cell, for example `!python prototype/hands_on.py`.
-
-### Git workflow
-
-```mermaid
-gitGraph
-    commit id: "Initial commit"
-    commit id: "Prototype + docs"
-    branch nomt/meeting-minutes
-    checkout nomt/meeting-minutes
-    commit id: "minutes v1"
-    checkout main
-    branch asy/lstm-training
-    checkout asy/lstm-training
-    commit id: "training loop"
-    checkout main
-    merge nomt/meeting-minutes
-    merge asy/lstm-training
-```
-
-```bash
-# once
-git clone https://github.com/Asyxddiq/mlda-audio-workshop.git
-cd mlda-audio-workshop
-
-# every time you start working
-git checkout main
-git pull
-
-# work on your own branch
-git checkout -b yourname/short-topic      # e.g. nomt/meeting-minutes
-# ...edit files...
-python prototype/lstm_model.py            # make sure it still runs
-git add prototype/your_file.py
-git commit -m "Short description of the change"
-git push -u origin yourname/short-topic
-
-# then open a Pull Request on GitHub and ask a teammate to review
-```
-
-Conventions:
-
-- One branch per person per topic: `asy/...`, `nomt/...`, `pasan/...`, `rahini/...`.
-- Run `python prototype/lstm_model.py` before every push. If it breaks, fix it before merging.
-- Keep the two contracts stable (`get_transcript() -> str`, and the `(tokens, 8)` LSTM output). If one has to change, tell the other track first.
-- Update [progress.md](progress.md) when you finish something.
-
----
-
-## Simplifications and known limitations
-
-| Limitation | Why it's fine for now | What changes later |
+| Measure | Trained LSTM | Keyword rules |
 |---|---|---|
-| Training data is small and written by us (577 hand-written turns, all drafted by Claude, + generated practice meetings) | Enough to show training works and beats keyword rules | Blind cross-check, then real meetings: all the data, including the scorecard and holdouts, is still ours |
-| Our trained LSTM and a plain RNN score about the same here, and both use about one turn of context | The labels mostly depend on the previous turn only | Examples where a turn depends on something several turns back, if we want the trained model to show the LSTM's edge |
-| Speakers are told apart only by pauses (0.8 s) | Simple and teachable; works for two people taking turns | Replies under 0.8 s merge, a third speaker isn't separated; a diarisation model if needed |
-| No attention gates on the skips (the paper has them) | Plain addition is easier to teach | Optional stretch topic |
-| Folding lets a word see up to 3 words ahead | Minutes are written from the full transcript anyway | Only matters for live, word-by-word use |
-| Simple tokenizer: lowercase words, `?` and `!` as tokens, other punctuation dropped | Simple enough to explain in one slide | A library tokenizer, if ever needed |
-| Training is hand-written NumPy backprop, not a framework | No port between frameworks; one dependency; checked against numerical gradients | PyTorch scaffold (`train_classifier.py`) is there if we switch |
-| The trained model misses many decisions (reported confirmations like "Venue is confirmed", short ones like "Saturday it is") | Visible, honest failure case for *Try and test* | Retrains with more of our own examples (8, 13 and 16 Oct) did not fix it without breaking something else. Next: real meetings, or a small decision-phrase rule layer |
+| Test accuracy (45 turns) | 0.84 | 0.69 |
+| Held-out scorecard accuracy (105 turns) | 0.90 | 0.76 |
+| Cross-turn probes ("Sure." after a request vs a proposal) | 9 / 12 | 3 / 12 |
 
----
+Known limits: it misses decisions stated as plain facts ("Venue is confirmed for the 14th"), uses about one previous turn of context (no clear gain over a plain RNN on this task), and all data was written by the team.
 
-## Interactive explainers
+## Repository layout
 
-Two interactive pages walk through this backend with the real numbers from the code:
+```text
+notebook/    the participants' Colab notebook, its helpers, audio clips, cheat sheet and zips
+demo/        the opening "who remembers the meeting?" demo: notebook, script, answer key, facilitator guide, run sheet
+prototype/   the pipeline: transcriber, hourglass LSTM, training, minutes, hands-on code, data and tests
+labelling_guide.md   how meeting turns were labelled
+```
 
-- **Minutes Pipeline**: the four stages, the hourglass layer by layer, and the output turn by turn.
-- **Inside the LSTM Cell**: one word at a time through the six steps of `SimpleLSTM.step()`, plus a forget-gate memory demo.
+## How to run it
 
-They are private to Asy until shared, so ask Asy for the links.
+**On Google Colab (as in the workshop):**
+1. Upload `notebook/audio_workshop.ipynb` (File > Upload notebook) and set Runtime > Change runtime type > T4 GPU.
+2. Drag `notebook/workshop_files.zip` into the Files panel and run the setup cell.
+3. For the opening demo, do the same with `demo/hook_demo.ipynb` and `notebook/facilitator_files.zip`, and follow `demo/FACILITATOR.md`.
 
----
+**On a laptop:**
+```bash
+pip install -r requirements.txt openai-whisper
+python prototype/pipeline.py              # sample meeting, typed, no audio needed
+python prototype/pipeline.py meeting.wav  # your own recording (needs ffmpeg)
+python prototype/run_tests.py             # all checks
+python notebook/make_bundle.py            # rebuild the Colab zips
+```
 
 ## References
 
@@ -552,3 +176,4 @@ They are private to Asy until shared, so ask Asy for the links.
 ## Team
 
 MLDA Academics: Asy (Main Comm, LSTM), Nomt (LSTM, meeting minutes), Pasan and Rahini (RNN transcriber).
+

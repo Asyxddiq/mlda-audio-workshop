@@ -1,10 +1,10 @@
 """
 Audio test: does what you SAID come out the same as what you TYPED? (Track 1 check)
 
-    python prototype/audio_check.py prototype/audio_tests/1_sample_meeting.txt meeting.m4a
-    python prototype/audio_check.py prototype/audio_tests/1_sample_meeting.txt --heard heard.txt
+    python prototype/audio_check.py your script 1_sample_meeting.txt meeting.m4a
+    python prototype/audio_check.py your script 1_sample_meeting.txt --heard heard.txt
 
-Read one of the scripts in prototype/audio_tests/ aloud (two people taking
+Read one of the scripts in your script  aloud (two people taking
 turns, or one person reading every line for the solo_* scripts), record it,
 and give this script the recording. It runs the audio
 through the real chain (Whisper -> pause-based speakers -> LSTM -> minutes)
